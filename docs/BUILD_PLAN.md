@@ -4,7 +4,7 @@
 architecture, offline-first provider design, GSD autonomous-loop setup, Opus/Sonnet routing, and a roadmap
 with **runnable, key-free exit conditions** so the loop terminates cleanly without a live-LLM quality signal.
 
-**Locked:** new repo `~/inclusify-audit-agent/` · GSD `new-project → autonomous` (yolo + auto-chain) ·
+**Locked:** repo `inclusify-audit-agent/` (inside the course Project folder) · GSD `new-project → autonomous` (yolo + auto-chain) ·
 model split (plan/review → Opus 4.8 max, code → Sonnet medium) · offline-first (no LLM/vector keys) ·
 **ponytail** (prompt-only) as the coding-leanness ruleset + per-phase review gate.
 
@@ -87,7 +87,7 @@ that tests assert on. **Contract tests** (`tests/contract/`) prove `MockLLM`/`Az
 
 ## 5. GSD setup & model routing
 
-**5.1 Bootstrap (P0, done by Opus before the loop):** `mkdir ~/inclusify-audit-agent && git init` →
+**5.1 Bootstrap (P0, done by Opus before the loop):** `mkdir inclusify-audit-agent && git init` (in the course Project folder) →
 `git checkout -b dev` → write base files (§2) + seed `.planning/` from the PRD → write `config.json`,
 `.claude/agents/*` model frontmatter, `.claude/settings.local.json` → **vendor ponytail prompt-only skills (§5.5)** → **install the git-attribution hook + `CLAUDE.md` rule (§5.6)** →
 `git tag p0-bootstrap` → launch `gsd-autonomous` at **standard granularity**.
