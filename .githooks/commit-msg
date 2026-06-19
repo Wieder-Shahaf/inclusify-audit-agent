@@ -1,0 +1,12 @@
+#!/bin/sh
+# Project rule (CLAUDE.md / BUILD_PLAN §5.6): no commit may credit Claude / Claude Code / Anthropic
+# as author or co-author. Strip such lines automatically so a slip never reaches history.
+# Edits the message in place and always exits 0 (never blocks the autonomous loop).
+f="$1"
+[ -f "$f" ] || exit 0
+grep -viE '^[[:space:]]*Co-Authored-By:.*(Claude|Anthropic)' "$f" \
+  | grep -viE 'Generated with \[?Claude Code' \
+  | grep -viE '🤖[[:space:]]*Generated with' > "$f.pt.tmp" 2>/dev/null
+# Only replace if the filter produced output (guard against an empty message edge case)
+if [ -s "$f.pt.tmp" ]; then mv "$f.pt.tmp" "$f"; else rm -f "$f.pt.tmp"; fi
+exit 0

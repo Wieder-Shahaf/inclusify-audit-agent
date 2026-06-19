@@ -1,0 +1,24 @@
+# Offline-first: large data + local stores never committed
+data/eric/*
+!data/eric/.gitkeep
+.chroma/
+models/
+*.sqlite3
+
+# Secrets (none required in dev; never commit)
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+
+# OS
+.DS_Store
