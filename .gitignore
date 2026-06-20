@@ -2,8 +2,18 @@
 data/eric/*
 !data/eric/.gitkeep
 .chroma/
+qdrant_storage/
 models/
 *.sqlite3
+
+# Runtime artifacts that can capture a live endpoint URL / auth header — never commit
+traces/
+*.trace.json
+logs/
+*.log
+.cache/
+tests/cassettes/
+*.cassette.yaml
 
 # Secrets (none required in dev; never commit)
 .env

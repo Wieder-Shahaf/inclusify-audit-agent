@@ -1,0 +1,30 @@
+#!/bin/sh
+# Project rule (CLAUDE.md / BUILD_PLAN §5.6 + offline-first rule #2): real endpoint
+# URLs, keys, and tokens live ONLY in .env (gitignored) — never in tracked files or
+# history. This guard reads the secret-ish values from .env and BLOCKS any commit whose
+# staged content contains one of them. Auto-adapts to the work-VM endpoints now and the
+# course endpoints later, without hardcoding any hostname into a tracked file.
+# Exits 1 (blocks) on a hit; otherwise exits 0.
+ENV="$(git rev-parse --show-toplevel)/.env"
+[ -f "$ENV" ] || exit 0
+
+# Values worth guarding: vars whose NAME signals a URL/endpoint/key/token/secret,
+# value >= 8 chars. Skips comments, blanks, and short non-secret values (e.g. counts).
+secrets=$(grep -vE '^[[:space:]]*#' "$ENV" \
+  | grep -iE '^[A-Za-z0-9_]*(_URL|_ENDPOINT|_BASE|_KEY|_TOKEN|_SECRET|_PASSWORD)=' \
+  | sed -E 's/^[^=]*=//; s/^["'"'"']//; s/["'"'"']$//' \
+  | awk 'length($0) >= 8')
+
+[ -z "$secrets" ] && exit 0
+
+staged=$(git diff --cached)
+printf '%s\n' "$secrets" | while IFS= read -r val; do
+  [ -z "$val" ] && continue
+  if printf '%s' "$staged" | grep -qF -- "$val"; then
+    echo "pre-commit: BLOCKED — a staged change contains a value from .env" >&2
+    echo "            (a live endpoint URL / key / token). Remove it before committing;" >&2
+    echo "            real endpoints belong only in .env, which is gitignored." >&2
+    exit 1
+  fi
+done || exit 1
+exit 0
