@@ -17,23 +17,25 @@ behind provider interfaces and left dormant until keys arrive.
 | Real precision/recall metrics | `eval/run.py` against the Achva gold set | scaffold only — synthetic gold | (none new; once LLM is real) | TBD |
 | Real agent-vs-baseline ablation numbers | same | scaffold only | (none new) | TBD |
 
-## Switching to live providers (work VM, available now)
+## Switching to live providers (OpenAI-compatible LLM + embedder + Qdrant)
 
 ```bash
 cp .env.example .env
-# Edit .env (gitignored):
+# Edit .env (gitignored). Fill in your own endpoints — the agent works with any
+# OpenAI-compatible LLM endpoint, any OpenAI-shaped embeddings endpoint that
+# returns a JSON `data[].embedding` array, and any Qdrant server.
 LLM_PROVIDER=openai_compat
-LLM_BASE_URL=http://192.168.100.112:8222/v1
-LLM_API_KEY=fake
-LLM_MODEL=google/gemma-4-26B-A4B-it
+LLM_BASE_URL=<your LLM endpoint, e.g. http://host:port/v1>
+LLM_API_KEY=<key or 'fake' for unauthenticated endpoints>
+LLM_MODEL=<model id served by that endpoint>
 
 EMBEDDINGS_PROVIDER=openai_compat
-EMBEDDINGS_BASE_URL=http://192.168.100.112:8888
-EMBEDDINGS_MODEL=bge-m3
-EMBED_DIM=1024
+EMBEDDINGS_BASE_URL=<your embeddings endpoint>
+EMBEDDINGS_MODEL=<model id, e.g. bge-m3>
+EMBED_DIM=<dim of that model, e.g. 1024>
 
 VECTOR_STORE=qdrant
-QDRANT_URL=http://192.168.100.112:6333
+QDRANT_URL=<your Qdrant URL, e.g. http://host:6333>
 QDRANT_COLLECTION=inclusify_eric
 QDRANT_COLLECTION_PREFIX=inclusify_
 
