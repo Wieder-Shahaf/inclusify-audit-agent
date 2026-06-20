@@ -1,0 +1,18 @@
+services:
+  ingest:
+    build: .
+    command: ["python", "-m", "inclusify_agent.ingest", "--sample", "50", "--embedder", "hash"]
+    volumes:
+      - chroma:/app/.chroma
+      - ./data:/app/data:ro
+    profiles: ["ingest"]
+
+  agent:
+    build: .
+    depends_on: []
+    volumes:
+      - chroma:/app/.chroma
+      - ./data:/app/data:ro
+
+volumes:
+  chroma:

@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inclusify-audit-agent"
+version = "0.1.0"
+description = "Autonomous agent that audits academic text for non-inclusive language (LangGraph ReAct + Reflection + Agentic-RAG, offline-first)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Shahaf Wieder" }, { name = "Barak Sharon" }]
+
+# Pinned per BUILD_PLAN §8 — Version churn is a known risk; P1 import-smoke catches breakage.
+dependencies = [
+    "langgraph==0.2.74",
+    "langchain==0.3.18",
+    "langchain-core==0.3.34",
+    "chromadb==0.5.23",
+    "pydantic==2.10.6",
+    "python-dotenv==1.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.4",
+    "ruff==0.9.6",
+]
+local-st = [
+    # Optional: sentence-transformers for richer offline embeddings (one-time download).
+    "sentence-transformers==3.4.1",
+]
+live = [
+    # Optional: live providers behind interfaces (work-VM Gemma, BGE-M3, Qdrant).
+    "openai==1.61.1",
+    "qdrant-client==1.13.2",
+    "requests==2.32.3",
+]
+
+[project.scripts]
+inclusify-audit = "inclusify_agent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+    "live: tests that hit a live endpoint (skipped by default; opt-in)",
+]
