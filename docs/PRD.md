@@ -1,12 +1,12 @@
 # AI Agent — Technical PRD (DRAFT v0.1)
 
 **Course:** AI Agent Systems (Technion 00960237), Spring 2026
-**Team:** Shahaf Wieder (318159506) · Barak Sharon (207283888) · Ido Avital (207850280)
+**Team:** Shahaf Wieder (318159506) · Barak Sharon (207283888)
 **Deliverable:** Week-7 "AI Agent Technical PRD"
 **Selected idea:** #1 — **Inclusify** (Curriculum Inclusivity Auditor, Higher-Education domain)
 
 > Status: working draft for team review. Sections marked **[OPEN]** still need a decision. The final
-> submission should be exported following the convention `<Assignment>_318159506_207283888_207850280.{pdf,docx}`.
+> submission should be exported following the convention `<Assignment>_318159506_207283888.{pdf,docx}`.
 >
 > **Verified from the course briefs (2026-06-19):** the **"Idea Funnel" narrows to one agent by the Week-7
 > PRD** (3 ideas → 2 domains → **1 built agent**) — so this PRD covers **Inclusify only**. Demo Day
