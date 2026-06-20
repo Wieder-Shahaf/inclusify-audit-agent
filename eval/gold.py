@@ -1,12 +1,23 @@
-"""Gold-set harness scaffold.
+"""Gold-set harness.
 
-BUILD_PLAN §9: real precision/recall numbers are needs-keys (gpt-5-mini + the
-Achva gold set). Offline this module ships the *structure* — a tiny synthetic gold
-set + scoring functions that work with any audit output.
+Two gold sets available:
+- `SYNTHETIC` — 8 hand-crafted items; always available, used by the smoke ablation.
+- `ACHVA` — 100 expert-labeled rows (50 EN / 50 HE, 20 per label across the 5 Achva
+  categories: Correct, Biased, Potentially Offensive, Factually Incorrect, Outdated).
+  Loaded from data/gold/achva_review_set.csv when present.
+
+Achva 5-label → agent 3-label mapping:
+- Correct                → skip (no flag expected)
+- Biased / Potentially Offensive / Factually Incorrect / Outdated → flag
+
+The agent's existing `flag/ask/skip` schema lets us score this as a binary
+(flag-or-not) on a real expert-labeled set without any code-level changes.
 """
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -15,10 +26,11 @@ class GoldItem:
     text: str
     expected_flag: bool
     expected_category: str | None = None
+    language: str = "EN"  # "EN" or "HE"
 
 
-# Synthetic gold set — placeholder for the real Achva set (needs-keys).
-GOLD: list[GoldItem] = [
+# Synthetic gold set — always loadable, used by the smoke ablation.
+SYNTHETIC: list[GoldItem] = [
     GoldItem("The chairman approved the budget.", True, "gendered"),
     GoldItem("The committee approved the budget.", False),
     GoldItem("Each student should bring his own laptop.", True, "gendered"),
@@ -28,6 +40,61 @@ GOLD: list[GoldItem] = [
     GoldItem("Review the blacklist of plagiarism cases.", True, "exclusionary"),
     GoldItem("Review the blocklist of plagiarism cases.", False),
 ]
+
+# Default gold set for `eval.run` is SYNTHETIC; switch via --gold achva or
+# --gold achva-en when running the eval CLI.
+GOLD = SYNTHETIC
+
+
+# Achva 5-label → 3-label mapping used at load time.
+ACHVA_LABEL_TO_FLAG: dict[str, bool] = {
+    "Correct": False,
+    "Biased": True,
+    "Potentially Offensive": True,
+    "Factually Incorrect": True,
+    "Outdated": True,
+}
+
+# Achva raw label → our category string (passed through to the Finding.category check).
+ACHVA_LABEL_TO_CATEGORY: dict[str, str] = {
+    "Biased": "biased",
+    "Potentially Offensive": "potentially-offensive",
+    "Factually Incorrect": "factually-incorrect",
+    "Outdated": "outdated",
+}
+
+
+def load_achva(
+    path: str | Path = "data/gold/achva_review_set.csv",
+    *,
+    language: str | None = None,
+) -> list[GoldItem]:
+    """Load the Achva gold review set.
+
+    `language="EN"` or `"HE"` filters to one language; default is both.
+    Returns [] (and never raises) if the file is missing — gold data is gitignored.
+    """
+    p = Path(path)
+    if not p.exists():
+        return []
+    items: list[GoldItem] = []
+    with open(p, encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            lang = row.get("language", "EN")
+            if language and lang != language:
+                continue
+            raw = row.get("expected_label_raw", "")
+            expected_flag = ACHVA_LABEL_TO_FLAG.get(raw)
+            if expected_flag is None:
+                continue
+            items.append(GoldItem(
+                text=row["sentence"],
+                expected_flag=expected_flag,
+                expected_category=ACHVA_LABEL_TO_CATEGORY.get(raw),
+                language=lang,
+            ))
+    return items
 
 
 def score(predictions: list[bool], gold: list[GoldItem]) -> dict[str, float]:

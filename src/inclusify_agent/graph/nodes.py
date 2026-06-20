@@ -143,7 +143,12 @@ def act(state: AgentState, *, llm: Any, store: Any, embedder: Any) -> dict[str, 
         trace.append({"step": step, "node": "act", "tool": "lexicon_lookup",
                       "chunk_id": cur.id, "detail": {"hits": len(hits)}})
         update["last_lexicon_hits"] = hits
-        update["next_action"] = "classify_span" if hits else "retrieve_citation"
+        # Always escalate to classify_span. The lexicon catches obvious cases as a
+        # cheap precision shortcut (high-confidence flags get the canonical
+        # rewrite from the lexicon's alternatives); but the LLM must still judge
+        # every span, because subtle bias has no lexicon trigger and clean text
+        # ABOUT inclusive topics shouldn't be flagged just for the topic.
+        update["next_action"] = "classify_span"
 
     elif action == "classify_span":
         result = classify_span(llm, span=cur.text, context=cur.context_before)

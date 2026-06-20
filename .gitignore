@@ -2,6 +2,8 @@
 data/eric/*
 !data/eric/.gitkeep
 !data/eric/queries.txt
+# Gold sets are course/expert data — never committed (use locally only)
+data/gold/
 .chroma/
 qdrant_storage/
 models/

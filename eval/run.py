@@ -1,21 +1,24 @@
 """Eval entrypoint.
 
 Usage:
-    python -m eval.run --mock           # offline, uses MockLLM + InMemoryStore
-    python -m eval.run                  # uses env-configured providers
+    python -m eval.run --mock                       # synthetic gold + MockLLM (offline)
+    python -m eval.run --mock --gold synthetic      # same as default
+    python -m eval.run --mock --gold achva-en       # Achva EN-only against MockLLM
+    python -m eval.run --gold achva-en              # Achva EN-only against env LLM (live)
+    python -m eval.run --gold achva                 # Achva both languages
 
 Prints:
-- Agent metrics: precision/recall/f1 on the synthetic gold set.
+- Agent metrics: precision/recall/f1 on the gold set.
 - Baseline metrics: same numbers via the fixed pipeline.
-- Control-flow divergence: trace event types present in agent but not in baseline
-  (the offline proof that autonomy changes outcomes — agent emits `ask` and
-  `retract`, baseline does not).
+- Per-label breakdown when --gold achva* (true/false rates split by Achva category).
+- Control-flow divergence: trace event types present in agent but not in baseline.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import sys
+from collections import defaultdict
 from typing import Any
 
 from inclusify_agent.agent import run_audit
@@ -24,7 +27,7 @@ from inclusify_agent.providers.llm import MockLLM
 from inclusify_agent.providers.vectorstore import InMemoryStore
 
 from .baseline import run_baseline
-from .gold import GOLD, score
+from .gold import SYNTHETIC, GoldItem, load_achva, score
 
 
 def _agent_predict(item_text: str, *, llm: Any, store: Any, embedder: Any) -> bool:
@@ -40,7 +43,6 @@ def _baseline_predict(item_text: str, *, llm: Any) -> bool:
 
 def _agent_trace_events(text: str, *, llm: Any, store: Any, embedder: Any) -> list[str]:
     final = run_audit(text, llm=llm, embedder=embedder, store=store, max_iters=50)
-    # Collect event 'kinds': (node, tool) tuples reduced to interesting types.
     events: list[str] = []
     for ev in final["trace"]:
         if ev.get("node") == "reflect" and ev.get("detail", {}).get("retracted_ids"):
@@ -56,47 +58,95 @@ def _baseline_trace_events(text: str, *, llm: Any) -> list[str]:
     for ev in out["trace"]:
         if ev.get("tool") in ("ask_user",):
             events.append("ask")
-    # Baseline has no reflect, no ask_user.
     return events
+
+
+def _per_label_breakdown(
+    gold: list[GoldItem], preds: list[bool],
+) -> dict[str, dict[str, int]]:
+    """Group prediction outcomes by expected_category (the Achva raw label)."""
+    by_cat: dict[str, dict[str, int]] = defaultdict(lambda: {"n": 0, "flagged": 0})
+    for g, p in zip(gold, preds, strict=True):
+        cat = g.expected_category or "Correct"
+        by_cat[cat]["n"] += 1
+        if p:
+            by_cat[cat]["flagged"] += 1
+    return dict(by_cat)
+
+
+def _load_gold(name: str) -> list[GoldItem]:
+    if name == "synthetic":
+        return list(SYNTHETIC)
+    if name == "achva":
+        gold = load_achva()
+        if not gold:
+            print("error: data/gold/achva_review_set.csv not found", file=sys.stderr)
+            sys.exit(2)
+        return gold
+    if name == "achva-en":
+        gold = load_achva(language="EN")
+        if not gold:
+            print("error: data/gold/achva_review_set.csv not found", file=sys.stderr)
+            sys.exit(2)
+        return gold
+    if name == "achva-he":
+        gold = load_achva(language="HE")
+        if not gold:
+            print("error: data/gold/achva_review_set.csv not found", file=sys.stderr)
+            sys.exit(2)
+        return gold
+    print(f"error: unknown --gold value: {name!r}", file=sys.stderr)
+    sys.exit(2)
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="eval.run")
     parser.add_argument("--mock", action="store_true",
-                        help="Force MockLLM + InMemoryStore + HashEmbeddings.")
+                        help="Force MockLLM + InMemoryStore + HashEmbeddings (offline).")
+    parser.add_argument("--gold", default="synthetic",
+                        choices=("synthetic", "achva", "achva-en", "achva-he"),
+                        help="Which gold set to evaluate against.")
     args = parser.parse_args(list(sys.argv[1:] if argv is None else argv))
 
-    if not args.mock:
-        print("note: --mock not set; using env providers (LLM_PROVIDER etc.). "
-              "Offline default is still MockLLM/hash/chroma.", file=sys.stderr)
+    gold = _load_gold(args.gold)
+    if not gold:
+        print("error: empty gold set", file=sys.stderr)
+        return 2
 
-    llm = MockLLM()
-    embedder = HashEmbeddings(dim=32)
-    # Seed the store with one weak grounding doc so agentic-RAG has something
-    # to find (and to fail to ground well — triggering retract).
-    store = InMemoryStore(dim=32)
-    store.add(
-        ids=["g1"],
-        vectors=embedder.embed("inclusive academic writing guidelines"),
-        texts=["Prefer inclusive alternatives in academic writing."],
-    )
+    if args.mock:
+        llm: Any = MockLLM()
+        embedder: Any = HashEmbeddings(dim=32)
+        store: Any = InMemoryStore(dim=32)
+        store.add(
+            ids=["g1"],
+            vectors=embedder.embed("inclusive academic writing guidelines"),
+            texts=["Prefer inclusive alternatives in academic writing."],
+        )
+    else:
+        # Live: use env-configured providers (.env). Falls back to offline defaults
+        # if env is not set — config.build_* enforces.
+        from inclusify_agent import config
+        llm = config.build_llm()
+        embedder = config.build_embeddings()
+        store = config.build_vector_store(dim=embedder.dim)
+        print(f"using live providers: llm={llm.name} emb={embedder.name} "
+              f"store={store.name}", file=sys.stderr)
 
-    # Agent predictions
-    agent_preds = [_agent_predict(g.text, llm=llm, store=store, embedder=embedder) for g in GOLD]
-    agent_metrics = score(agent_preds, GOLD)
+    agent_preds = [_agent_predict(g.text, llm=llm, store=store, embedder=embedder)
+                   for g in gold]
+    agent_metrics = score(agent_preds, gold)
 
-    # Baseline predictions
-    baseline_preds = [_baseline_predict(g.text, llm=llm) for g in GOLD]
-    baseline_metrics = score(baseline_preds, GOLD)
+    baseline_preds = [_baseline_predict(g.text, llm=llm) for g in gold]
+    baseline_metrics = score(baseline_preds, gold)
 
-    # Control-flow divergence (BUILD_PLAN §6 P7): trace event types only the agent emits.
-    sample_text = " ".join(g.text for g in GOLD[:3])
+    sample_text = " ".join(g.text for g in gold[:3])
     agent_events = set(_agent_trace_events(sample_text, llm=llm, store=store, embedder=embedder))
     baseline_events = set(_baseline_trace_events(sample_text, llm=llm))
     only_agent = sorted(agent_events - baseline_events)
 
-    report = {
-        "gold_size": len(GOLD),
+    report: dict[str, Any] = {
+        "gold_set": args.gold,
+        "gold_size": len(gold),
         "agent": agent_metrics,
         "baseline": baseline_metrics,
         "control_flow_divergence": {
@@ -105,6 +155,10 @@ def main(argv: list[str] | None = None) -> int:
             "baseline_only_event_types": sorted(baseline_events - agent_events),
         },
     }
+    if args.gold.startswith("achva"):
+        report["per_label_agent"] = _per_label_breakdown(gold, agent_preds)
+        report["per_label_baseline"] = _per_label_breakdown(gold, baseline_preds)
+
     print(json.dumps(report, indent=2))
 
     # Exit 0 only if the agent's control flow demonstrably differs.
