@@ -35,3 +35,6 @@ build/
 
 # Claude session memory (local context, not a project artifact)
 memory/
+
+# Claude Code per-machine settings (local allowlists, personal preferences)
+.claude/settings.local.json
