@@ -6,17 +6,80 @@ whether to do a cheap lexicon check, escalate to deeper analysis, ground a flag 
 (retracting what it can't ground), or ask a clarifying question, then reflects on its findings before
 finalizing. ReAct + Reflection + Agentic-RAG, built on LangGraph.
 
-> Design: [`docs/PRD.md`](docs/PRD.md) · Build plan: [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md)
+> Design: [`docs/PRD.md`](docs/PRD.md) · Build plan: [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md) ·
+> Needs-keys: [`docs/NEEDS_KEYS.md`](docs/NEEDS_KEYS.md)
 
 ## Run offline (no API keys)
 
+The default config needs no credentials. Two paths:
+
+### Docker (recommended for the demo)
+
 ```bash
-docker compose up        # builds the corpus + runs a demo audit on a bundled fixture
+docker compose up agent
 ```
 
-Or locally: `pytest -q` (unit + contract + e2e, all key-free).
+Runs the audit on `data/fixtures/sample.txt` with MockLLM + hash embedder + in-memory store,
+emits the JSON report to stdout.
 
-## Modes
+### Native (Python 3.11)
 
-Defaults are fully offline: a deterministic `MockLLM`, a `hash` embedder, and a local Chroma store. Set real
-providers in `.env` (see `.env.example`) to switch to gpt-5-mini + Azure embeddings.
+```bash
+py -3.11 -m venv .venv
+.venv/Scripts/python.exe -m pip install ".[dev]"
+.venv/Scripts/python.exe -m inclusify_agent.cli audit data/fixtures/sample.txt \
+    --provider mock --store inmemory
+```
+
+Tests + eval (all key-free):
+
+```bash
+pytest -q                              # 76 tests: imports + contract + unit + e2e
+python -m eval.run --mock              # control-flow divergence report
+python -m inclusify_agent.ingest --sample 50 --embedder hash   # builds .chroma/
+```
+
+## Run with live providers
+
+Two paths supported behind the same interfaces:
+
+1. **Work-VM (Gemma 4 + BGE-M3 + Qdrant)** — already implemented; flip a few `.env` vars. See
+   [`docs/NEEDS_KEYS.md`](docs/NEEDS_KEYS.md) for the exact env.
+2. **Course Azure (gpt-5-mini)** — `AzureOpenAILLM` stub is in place; needs the deployment
+   wiring when keys are issued.
+
+Both swap by editing `.env` (gitignored) — no code change, just re-run ingest if the embedder's
+vector dim changes.
+
+## What you get
+
+- A **JSON report** (schema version 1.0): `version`, `document`, `findings[]`, `stats`, `trace[]`.
+- Each finding carries: span, label (`flag`/`ask`/`skip`), category, reason, confidence, suggested
+  rewrite, citation, and the `grounded`/`asked`/`retracted` flags the reflection node sets.
+- The full **decision trace** is in the report — every routing call, tool execution, and reflection
+  decision. The trace event types `ask` and `retract` are the autonomy markers (see `eval/run.py`).
+- A **Markdown summary** is one flag away: `--format markdown`.
+
+## Layout
+
+```
+src/inclusify_agent/
+  providers/                 # LLM, embeddings, vector store interfaces + impls
+  tools/                     # the 7 agent tools (chunk, lexicon_lookup, classify_span,
+                             #   retrieve_citation, propose_rewrite, ask_user, record_finding)
+  graph/                     # LangGraph state machine (perceive/route/act/reflect/stop)
+  agent.py / cli.py / report.py / ingest.py
+data/lexicon/                # see README; lexicon is bundled in src/inclusify_agent/data/
+data/fixtures/               # tiny demo input
+data/eric/                   # ERIC corpus (gitignored, ~42MB, mounted at runtime)
+tests/{unit,contract,e2e}/   # 76 tests, all offline
+eval/                        # gold harness + fixed-pipeline baseline + ablation runner
+```
+
+## Versioning + safety
+
+- Branch `dev`; per-phase tags `p1`…`p8`, `v0-offline`.
+- No Claude / Anthropic attribution on any commit (CLAUDE.md hard rule #1 + commit-msg hook).
+- `scripts/teardown_vm.sh` deletes ONLY the configured Qdrant collection(s) and gitignored local
+  stores — requires an interactive TTY + typed confirmation (CLAUDE.md hard rule #6); auto/yolo
+  cannot trigger it.

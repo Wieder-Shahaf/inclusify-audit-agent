@@ -16,4 +16,5 @@ RUN pip install --no-cache-dir -e ".[dev]"
 COPY data ./data
 COPY tests ./tests
 
-CMD ["python", "-m", "inclusify_agent.cli", "audit", "data/fixtures/sample.txt", "--provider", "mock"]
+CMD ["python", "-m", "inclusify_agent.cli", "audit", "data/fixtures/sample.txt", \
+     "--provider", "mock", "--store", "inmemory", "--format", "json"]
