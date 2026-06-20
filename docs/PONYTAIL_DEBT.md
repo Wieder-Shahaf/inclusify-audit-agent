@@ -29,7 +29,14 @@ they don't quietly rot into "later means never".
 
 ## Closed
 
-- _(none yet — first cycle.)_
+- **`qdrant-client` version pin.** Server is 1.8.1; pinned client to `1.8.2` in
+  `[live]` extras (2026-06-20).
+- **Live LLMs returned prose, not JSON.** Added explicit JSON-only system prompts to
+  `classify_span` and `propose_rewrite` + `_json_extract.py` helper for fenced/prose-
+  wrapped output. Live audit now produces valid findings (2026-06-20).
+- **Lexicon hints not surfaced to the LLM at rewrite time.** Now passed through —
+  lexicon hits become rewrite instructions ("blacklist" → "denylist") instead of
+  Gemma inventing its own (2026-06-20).
 
 ## Notes
 

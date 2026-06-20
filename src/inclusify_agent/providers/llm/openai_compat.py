@@ -9,7 +9,6 @@ NAME ("openai_compat"), never the URL — leave-no-evidence discipline.
 """
 from __future__ import annotations
 
-import json
 from typing import Any
 
 
@@ -48,15 +47,4 @@ class OpenAICompatLLM:
             max_tokens=kwargs.get("max_tokens", 512),
             temperature=kwargs.get("temperature", 0.0),
         )
-        content = resp.choices[0].message.content or ""
-        # If the caller passed task=, give it JSON-loadable output the graph can consume.
-        # Live model may return prose; wrap it.
-        task = kwargs.get("task", "")
-        if task and not _looks_like_json(content):
-            return json.dumps({"raw": content, "task": task})
-        return content
-
-
-def _looks_like_json(s: str) -> bool:
-    s = s.strip()
-    return s.startswith(("{", "["))
+        return resp.choices[0].message.content or ""

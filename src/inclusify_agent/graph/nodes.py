@@ -150,8 +150,11 @@ def act(state: AgentState, *, llm: Any, store: Any, embedder: Any) -> dict[str, 
         trace.append({"step": step, "node": "act", "tool": "classify_span",
                       "chunk_id": cur.id, "detail": result})
         update["last_classification"] = result
-        if result.get("label") == "flag":
+        label = result.get("label")
+        if label == "flag":
             update["next_action"] = "retrieve_citation"
+        elif label == "ask":
+            update["next_action"] = "ask_user"
         else:
             # Skip this chunk; advance to the next one.
             update["current_chunk_idx"] = idx + 1
@@ -174,7 +177,10 @@ def act(state: AgentState, *, llm: Any, store: Any, embedder: Any) -> dict[str, 
 
     elif action == "propose_rewrite":
         cls = state.get("last_classification") or {"category": None}
-        rewrite_out = propose_rewrite(llm, span=cur.text, category=cls.get("category"))
+        lex_hits = state.get("last_lexicon_hits") or []
+        rewrite_out = propose_rewrite(
+            llm, span=cur.text, category=cls.get("category"), lexicon_hits=lex_hits,
+        )
         trace.append({"step": step, "node": "act", "tool": "propose_rewrite",
                       "chunk_id": cur.id, "detail": rewrite_out})
         update["last_rewrite"] = rewrite_out
@@ -226,13 +232,13 @@ def _build_finding(cur: Any, state: AgentState, rewrite_out: dict[str, Any]) -> 
     cites = state.get("last_citations") or []
     grounded = bool(cites)
     citation_obj: Citation | None = cites[0] if cites else None
-    # Confidence rule: low when citation is weak/missing (reflect will retract); high
-    # when the citation is strong; medium otherwise. The reflect retract event in the
-    # trace depends on at least one finding landing at low.
+    # Confidence rule: high when citation is strong; low when weak/missing (reflect
+    # retracts); medium in between. Thresholds tuned to live BGE-M3 cosine scores
+    # (the hash embedder produces a wider range; both work).
     top_score = cites[0].score if cites else 0.0
-    if top_score >= 0.7:
+    if top_score >= 0.5:
         confidence = "high"
-    elif top_score < 0.4:
+    elif top_score < 0.35:
         confidence = "low"
     else:
         confidence = "medium"
