@@ -1,0 +1,61 @@
+{
+  "_source": "retext-equality (MIT) + Tiny Heap affixed-words; abridged for offline-first defaults. Phase 5 will load the full corpus.",
+  "_format": {
+    "term": "the surface form to flag (case-insensitive, word-boundary matched)",
+    "category": "gendered | exclusionary | culturally-insensitive | ableist | ableist-loaded",
+    "alternatives": "list of inclusive replacements (preserves semantics)",
+    "note": "optional context for the rewrite"
+  },
+  "entries": [
+    {"term": "chairman", "category": "gendered", "alternatives": ["chairperson", "chair"]},
+    {"term": "chairmen", "category": "gendered", "alternatives": ["chairpeople", "chairs"]},
+    {"term": "businessman", "category": "gendered", "alternatives": ["businessperson", "executive"]},
+    {"term": "businessmen", "category": "gendered", "alternatives": ["businesspeople", "executives"]},
+    {"term": "salesman", "category": "gendered", "alternatives": ["salesperson"]},
+    {"term": "spokesman", "category": "gendered", "alternatives": ["spokesperson"]},
+    {"term": "manpower", "category": "gendered", "alternatives": ["workforce", "staffing", "personnel"]},
+    {"term": "mankind", "category": "gendered", "alternatives": ["humanity", "humankind"]},
+    {"term": "manmade", "category": "gendered", "alternatives": ["synthetic", "artificial", "human-made"]},
+    {"term": "man-hours", "category": "gendered", "alternatives": ["person-hours", "work-hours"]},
+    {"term": "freshmen", "category": "gendered", "alternatives": ["first-year students"]},
+    {"term": "freshman", "category": "gendered", "alternatives": ["first-year student"]},
+    {"term": "policeman", "category": "gendered", "alternatives": ["police officer"]},
+    {"term": "policemen", "category": "gendered", "alternatives": ["police officers"]},
+    {"term": "fireman", "category": "gendered", "alternatives": ["firefighter"]},
+    {"term": "firemen", "category": "gendered", "alternatives": ["firefighters"]},
+    {"term": "mailman", "category": "gendered", "alternatives": ["mail carrier", "postal worker"]},
+
+    {"term": "blacklist", "category": "exclusionary", "alternatives": ["blocklist", "denylist"]},
+    {"term": "whitelist", "category": "exclusionary", "alternatives": ["allowlist", "safelist"]},
+    {"term": "master", "category": "exclusionary", "alternatives": ["main", "primary"], "note": "in technical contexts (master/slave)"},
+    {"term": "slave", "category": "exclusionary", "alternatives": ["replica", "secondary", "follower"]},
+    {"term": "grandfather", "category": "exclusionary", "alternatives": ["legacy", "carry-forward"], "note": "as in 'grandfathered in'"},
+    {"term": "sanity check", "category": "ableist", "alternatives": ["confidence check", "consistency check"]},
+    {"term": "dummy", "category": "ableist", "alternatives": ["placeholder", "stub"]},
+
+    {"term": "crazy", "category": "ableist-loaded", "alternatives": ["surprising", "intense", "wild"]},
+    {"term": "insane", "category": "ableist-loaded", "alternatives": ["remarkable", "extreme"]},
+    {"term": "lame", "category": "ableist", "alternatives": ["uninteresting", "weak"]},
+    {"term": "tone-deaf", "category": "ableist", "alternatives": ["insensitive", "unaware"]},
+    {"term": "cripple", "category": "ableist", "alternatives": ["damage", "weaken", "hamper"]},
+    {"term": "handicapped", "category": "ableist", "alternatives": ["disabled", "person with a disability"]},
+
+    {"term": "gypped", "category": "culturally-insensitive", "alternatives": ["cheated", "swindled"]},
+    {"term": "indian giver", "category": "culturally-insensitive", "alternatives": ["someone who reneges on a gift"]},
+    {"term": "low man on the totem pole", "category": "culturally-insensitive", "alternatives": ["junior member", "least senior"]},
+    {"term": "spirit animal", "category": "culturally-insensitive", "alternatives": ["personal mascot", "patronus"]},
+    {"term": "pow-wow", "category": "culturally-insensitive", "alternatives": ["meeting", "huddle"]},
+
+    {"term": "his", "category": "gendered", "alternatives": ["their"], "note": "in generic third-person contexts"},
+    {"term": "he", "category": "gendered", "alternatives": ["they"], "note": "in generic third-person contexts"},
+    {"term": "him", "category": "gendered", "alternatives": ["them"], "note": "in generic third-person contexts"},
+    {"term": "himself", "category": "gendered", "alternatives": ["themself", "themselves"]},
+
+    {"term": "manning", "category": "gendered", "alternatives": ["staffing", "operating"]},
+    {"term": "guys", "category": "gendered", "alternatives": ["everyone", "folks", "team"], "note": "as a group address"},
+    {"term": "ladies and gentlemen", "category": "gendered", "alternatives": ["everyone", "esteemed guests"]},
+
+    {"term": "third-world", "category": "culturally-insensitive", "alternatives": ["developing", "low-income"]},
+    {"term": "exotic", "category": "culturally-insensitive", "alternatives": ["unfamiliar", "non-local"], "note": "applied to people or cultures"}
+  ]
+}
