@@ -8,14 +8,14 @@ Definition of Done). Full design: `docs/PRD.md`; process, guardrails, and per-ph
 
 ## Phases
 
-- [ ] **Phase 1: Scaffold** - repo skeleton, pinned deps, ruff/pytest, Docker, import smoke
-- [ ] **Phase 2: Providers** - LLM/embeddings/vectorstore interfaces + mock/local impls + contract tests
-- [ ] **Phase 3: Tools** - the 7 agent tools + unit tests
-- [ ] **Phase 4: Graph** - LangGraph ReAct + Reflection + Agentic-RAG routing + trace + offline e2e
-- [ ] **Phase 5: Ingest** - ERIC → Chroma (hash embedder gate, no network)
-- [ ] **Phase 6: Report + Entrypoints** - output schema + renderer + CLI/API
-- [ ] **Phase 7: Eval + Ablation** - gold harness + agent-vs-pipeline control-flow divergence
-- [ ] **Phase 8: Package** - end-to-end Docker offline demo, needs-keys checklist, ponytail audit + debt
+- [x] **Phase 1: Scaffold** - repo skeleton, pinned deps, ruff/pytest, Docker, import smoke
+- [x] **Phase 2: Providers** - LLM/embeddings/vectorstore interfaces + mock/local impls + contract tests
+- [x] **Phase 3: Tools** - the 7 agent tools + unit tests
+- [x] **Phase 4: Graph** - LangGraph ReAct + Reflection + Agentic-RAG routing + trace + offline e2e
+- [x] **Phase 5: Ingest** - ERIC → Chroma (hash embedder gate, no network)
+- [x] **Phase 6: Report + Entrypoints** - output schema + renderer + CLI/API
+- [x] **Phase 7: Eval + Ablation** - gold harness + agent-vs-pipeline control-flow divergence
+- [x] **Phase 8: Package** - end-to-end Docker offline demo, needs-keys checklist, ponytail audit + debt
 
 ## Phase Details
 
@@ -127,14 +127,14 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Scaffold | 0/2 | Not started | - |
-| 2. Providers | 0/2 | Not started | - |
-| 3. Tools | 0/2 | Not started | - |
-| 4. Graph | 0/2 | Not started | - |
-| 5. Ingest | 0/1 | Not started | - |
-| 6. Report + Entrypoints | 0/2 | Not started | - |
-| 7. Eval + Ablation | 0/1 | Not started | - |
-| 8. Package | 0/1 | Not started | - |
+| 1. Scaffold | direct | Complete | 2026-06-20 (tag p1) |
+| 2. Providers | direct | Complete | 2026-06-20 (tag p2) |
+| 3. Tools | direct | Complete | 2026-06-20 (tag p3) |
+| 4. Graph | direct | Complete | 2026-06-20 (tag p4) |
+| 5. Ingest | direct | Complete | 2026-06-20 (tag p5) |
+| 6. Report + Entrypoints | direct | Complete | 2026-06-20 (tag p6) |
+| 7. Eval + Ablation | direct | Complete | 2026-06-20 (tag p7) |
+| 8. Package | direct | Complete | 2026-06-20 (tag v0-offline) |
 
 ---
 *Created 2026-06-19. Each phase's Success Criteria are the offline exit-checks from `docs/BUILD_PLAN.md` §6.*
