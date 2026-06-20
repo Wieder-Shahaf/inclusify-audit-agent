@@ -14,6 +14,7 @@ import argparse
 import csv
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -69,8 +70,17 @@ def ingest(
     batch_size: int = 64,
     embedder: Any = None,
     store: Any = None,
+    max_retries: int = 3,
+    text_char_limit: int = 8000,
 ) -> dict[str, Any]:
-    """Stream the CSV, embed in batches, upsert. Returns a small summary dict."""
+    """Stream the CSV, embed in batches, upsert. Returns a small summary dict.
+
+    Resilience for large live ingests:
+    - text_char_limit truncates outlier-long abstracts so BGE-M3 doesn't OOM /
+      hit context limits (8k chars is well below BGE-M3's 8k-token cap).
+    - max_retries: per-batch retry on transient network errors (Qdrant disconnects,
+      embedder timeouts). Exponential backoff.
+    """
     if not corpus_path.exists():
         raise FileNotFoundError(
             f"ERIC corpus not found at {corpus_path}. "
@@ -81,26 +91,50 @@ def ingest(
 
     n_total = 0
     n_batches = 0
+    n_skipped = 0
     batch_ids: list[str] = []
     batch_texts: list[str] = []
     batch_metas: list[dict] = []
 
     def flush() -> None:
-        nonlocal n_batches
+        nonlocal n_batches, n_skipped
         if not batch_ids:
             return
-        vectors = embedder.embed(batch_texts)
-        store.add(batch_ids, vectors, batch_texts, batch_metas)
+        last_err: Exception | None = None
+        for attempt in range(max_retries):
+            try:
+                vectors = embedder.embed(batch_texts)
+                store.add(batch_ids, vectors, batch_texts, batch_metas)
+                n_batches += 1
+                break
+            except Exception as e:  # network / timeout / embedder hiccup
+                last_err = e
+                wait = 2 ** attempt
+                print(
+                    f"  [retry {attempt + 1}/{max_retries}] batch of {len(batch_ids)} "
+                    f"failed ({type(e).__name__}: {str(e)[:80]}); sleeping {wait}s",
+                    file=sys.stderr,
+                )
+                time.sleep(wait)
+        else:
+            # All retries exhausted — skip this batch but keep going.
+            n_skipped += len(batch_ids)
+            print(
+                f"  SKIP batch of {len(batch_ids)} after {max_retries} retries: {last_err}",
+                file=sys.stderr,
+            )
         batch_ids.clear()
         batch_texts.clear()
         batch_metas.clear()
-        n_batches += 1
 
     for row in stream_rows(corpus_path):
         if sample is not None and n_total >= sample:
             break
+        text = row["chunk_text"]
+        if len(text) > text_char_limit:
+            text = text[:text_char_limit]
         batch_ids.append(build_id(row))
-        batch_texts.append(row["chunk_text"])
+        batch_texts.append(text)
         batch_metas.append(build_metadata(row))
         n_total += 1
         if len(batch_ids) >= batch_size:
@@ -109,7 +143,9 @@ def ingest(
 
     return {
         "corpus": str(corpus_path),
-        "ingested": n_total,
+        "ingested": n_total - n_skipped,
+        "attempted": n_total,
+        "skipped": n_skipped,
         "batches": n_batches,
         "store": store.name,
         "embedder": embedder.name,
