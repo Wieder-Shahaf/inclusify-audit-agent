@@ -20,7 +20,6 @@ def test_inclusify_agent_imports() -> None:
 
     assert inclusify_agent.__version__
     assert config.DEFAULT_LLM_PROVIDER == "mock"
-    # Provider protocols are importable; impls land in Phase 2.
     assert LLMProvider is not None
     assert EmbeddingsProvider is not None
     assert VectorStore is not None
