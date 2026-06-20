@@ -67,11 +67,16 @@ def route(state: AgentState, *, llm: Any) -> dict[str, Any]:
     max_iters = state.get("max_iters", 12)
     proposed = state.get("next_action", "lexicon_lookup")
 
-    # Bound: hard stop on max_iters.
+    # Bound: at max_iters, force reflect (once), then stop. This way the trace always
+    # carries a reflect event even for documents that hit the iteration cap.
     if step >= max_iters:
+        already_reflected = any(
+            ev.get("node") == "reflect" for ev in state.get("trace", [])
+        )
+        target = "stop" if already_reflected else "reflect"
         return {
-            "next_action": "stop",
-            "trace": _emit(state, node="route", rationale="max_iters reached", tool="stop"),
+            "next_action": target,
+            "trace": _emit(state, node="route", rationale="max_iters reached", tool=target),
             "step": step + 1,
         }
 
@@ -145,7 +150,12 @@ def act(state: AgentState, *, llm: Any, store: Any, embedder: Any) -> dict[str, 
         trace.append({"step": step, "node": "act", "tool": "classify_span",
                       "chunk_id": cur.id, "detail": result})
         update["last_classification"] = result
-        update["next_action"] = "retrieve_citation" if result.get("label") == "flag" else "stop"
+        if result.get("label") == "flag":
+            update["next_action"] = "retrieve_citation"
+        else:
+            # Skip this chunk; advance to the next one.
+            update["current_chunk_idx"] = idx + 1
+            update["next_action"] = "lexicon_lookup"
 
     elif action == "retrieve_citation":
         hits = state.get("last_lexicon_hits") or []
