@@ -45,8 +45,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: LLMProvider (MockLLM + AzureOpenAILLM stub) + determinism test
-- [ ] 02-02: EmbeddingsProvider (hash/local_st/azure) + VectorStore (chroma/inmemory) + contract suite
+- [ ] 02-01: LLMProvider (MockLLM + OpenAICompatLLM + AzureOpenAILLM stub) + determinism test
+- [ ] 02-02: EmbeddingsProvider (hash/local_st/openai_compat/azure) + VectorStore (chroma/inmemory/qdrant) + contract suite
 
 ### Phase 3: Tools
 **Goal**: The 7 agent tools, each thin and unit-tested.
