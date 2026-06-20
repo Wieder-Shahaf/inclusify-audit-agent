@@ -7,6 +7,10 @@
 # doesn't match our configured name/prefix, refuses to run if neither is set, and
 # is DRY-RUN by default — pass --yes to actually delete.
 #
+# HUMAN-IN-THE-LOOP: --yes alone is NOT enough. The script also requires an
+# interactive 'y' typed at a TTY. If stdin is piped/redirected (i.e., automation,
+# yolo/auto-mode, CI), the script refuses — a human must run this manually.
+#
 # Usage:  scripts/teardown_vm.sh [--yes]
 set -eu
 
@@ -15,6 +19,23 @@ ENV="$ROOT/.env"
 
 CONFIRM=0
 [ "${1:-}" = "--yes" ] && CONFIRM=1
+
+# Human-in-the-loop gate: confirmation mode requires an interactive TTY + typed 'y'.
+# This cannot be satisfied by yolo/auto/agentic invocations — by design.
+if [ "$CONFIRM" -eq 1 ]; then
+  if [ ! -t 0 ] || [ ! -t 1 ]; then
+    echo "[gate] REFUSING: --yes requires an interactive TTY (stdin+stdout)." >&2
+    echo "       Teardown must be approved by a human at the keyboard, even under yolo/auto mode." >&2
+    echo "       Re-run this script directly in your terminal." >&2
+    exit 3
+  fi
+  printf "About to DELETE matching Qdrant collections and wipe local temp dirs.\nType 'y' to confirm: " >&2
+  read -r ans
+  case "$ans" in
+    y|Y|yes|YES) : ;;
+    *) echo "[gate] aborted — no confirmation." >&2; exit 4 ;;
+  esac
+fi
 
 # Load .env (KEY=VALUE lines) without executing it.
 QDRANT_URL=""; QDRANT_API_KEY=""; QDRANT_COLLECTION=""; QDRANT_COLLECTION_PREFIX=""

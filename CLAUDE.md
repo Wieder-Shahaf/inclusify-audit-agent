@@ -18,6 +18,10 @@ Built **offline-first** (no API keys) by a GSD autonomous loop. Full design: `do
 4. **Vendored skills are prompt-only.** Do not run ponytail's Node hooks / MCP / plugin runtime.
 5. **Tests.** Every phase exits on a command that returns 0. Tests assert **structural invariants** (schema
    valid; trace has `ask` + `retract` events; bounded stop), **not** `MockLLM` literals.
+6. **Destructive teardown requires a human.** `scripts/teardown_vm.sh --yes` is the ONLY path that may delete
+   Qdrant collections or wipe local stores, and it self-gates: refuses unless stdin+stdout are an interactive
+   TTY AND a human types `y`. **YOLO / auto mode / GSD agents must never invoke teardown** — the gate is
+   designed to refuse them. If teardown is needed, stop and ask the user to run it themselves in their terminal.
 
 ## Workflow
 
