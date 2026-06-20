@@ -1,6 +1,7 @@
 # Offline-first: large data + local stores never committed
 data/eric/*
 !data/eric/.gitkeep
+!data/eric/queries.txt
 .chroma/
 qdrant_storage/
 models/

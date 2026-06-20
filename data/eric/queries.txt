@@ -1,0 +1,20 @@
+# Queries used by scripts/fetch_eric.py to grow the academic-inclusivity corpus.
+# One query per line. Lines starting with # are ignored.
+# Targeted at the Inclusify domain: inclusive language in higher education,
+# pedagogy, curriculum, syllabi, classroom, and the specific bias types we flag.
+
+inclusive language higher education
+gender inclusive language academic writing
+gendered language curriculum
+inclusive pedagogy syllabus
+inclusive classroom communication
+ableist language education
+culturally inclusive language teaching
+inclusive language guidelines university
+pronoun usage academic
+disability inclusive language
+inclusive terminology pedagogy
+implicit bias language teaching
+sexist language textbook
+non-sexist language education
+inclusive faculty communication

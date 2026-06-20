@@ -34,10 +34,21 @@ py -3.11 -m venv .venv
 Tests + eval (all key-free):
 
 ```bash
-pytest -q                              # 76 tests: imports + contract + unit + e2e
+pytest -q                              # 85 tests: imports + contract + unit + e2e
 python -m eval.run --mock              # control-flow divergence report
 python -m inclusify_agent.ingest --sample 50 --embedder hash   # builds .chroma/
 ```
+
+Grow the ERIC corpus (public api.ies.ed.gov, no key required):
+
+```bash
+python scripts/fetch_eric.py --queries data/eric/queries.txt --rows 100
+# or one-off:
+python scripts/fetch_eric.py --query "inclusive pedagogy" --rows 50
+```
+
+Both append to `data/eric/academic_inclusivity_corpus(in).csv` (gitignored)
+with dedup against existing `doc_id`s.
 
 ## Run with live providers
 
