@@ -59,12 +59,29 @@ class MockLLM:
         return json.dumps({"label": "skip", "category": None, "reason": "no trigger"})
 
     def _route(self, prompt: str, **kwargs: Any) -> str:
-        state_hint = kwargs.get("state_hint", "")
-        # Deterministic scripted loop: chunk → lex → classify → retrieve → rewrite → reflect → stop
-        order = ["chunk", "lexicon_lookup", "classify_span", "retrieve_citation",
-                 "propose_rewrite", "reflect", "stop"]
-        idx = int(kwargs.get("step", 0)) % len(order)
-        return json.dumps({"tool": order[idx], "rationale": f"step {idx}: {state_hint[:60]}"})
+        """Pick next tool given the last action in the state hint.
+
+        Scripted ReAct: lexicon_lookup → classify_span → retrieve_citation
+        → propose_rewrite → (back to lexicon_lookup for next chunk) → ... → reflect.
+        Deterministic; same hint always yields same tool.
+        """
+        hint = kwargs.get("state_hint", "")
+        # state_hint format: "chunk_idx=I/N; last_action=X; findings=K"
+        last_action = "lexicon_lookup"
+        for part in hint.split(";"):
+            part = part.strip()
+            if part.startswith("last_action="):
+                last_action = part.split("=", 1)[1]
+        next_map = {
+            "lexicon_lookup": "classify_span",
+            "classify_span": "retrieve_citation",
+            "retrieve_citation": "propose_rewrite",
+            "propose_rewrite": "lexicon_lookup",   # next chunk's first action
+            "ask_user": "lexicon_lookup",
+            "reflect": "stop",
+        }
+        nxt = next_map.get(last_action, "lexicon_lookup")
+        return json.dumps({"tool": nxt, "rationale": f"after {last_action}: {nxt}"})
 
     def _reflect(self, prompt: str, **kwargs: Any) -> str:
         findings = kwargs.get("findings", [])

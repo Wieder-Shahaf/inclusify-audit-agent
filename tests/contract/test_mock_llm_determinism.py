@@ -54,15 +54,30 @@ def test_rewrite_replaces_known_terms() -> None:
     assert "their" in out["rewrite"]
 
 
-def test_route_produces_scripted_sequence() -> None:
+def test_route_follows_state_hint() -> None:
+    """MockLLM._route picks the next tool based on the last_action in state_hint."""
     llm = MockLLM()
-    tools_seen = []
-    for step in range(7):
-        out = json.loads(llm.complete("", task="route", step=step, state_hint="x"))
-        tools_seen.append(out["tool"])
-    assert "classify_span" in tools_seen
-    assert "retrieve_citation" in tools_seen
-    assert tools_seen[-1] == "stop"
+    sequence_pairs = [
+        ("lexicon_lookup", "classify_span"),
+        ("classify_span", "retrieve_citation"),
+        ("retrieve_citation", "propose_rewrite"),
+        ("propose_rewrite", "lexicon_lookup"),
+        ("ask_user", "lexicon_lookup"),
+        ("reflect", "stop"),
+    ]
+    for last, expected_next in sequence_pairs:
+        hint = f"chunk_idx=0/3; last_action={last}; proposed=x; findings=0"
+        out = json.loads(llm.complete("", task="route", state_hint=hint))
+        actual = out["tool"]
+        assert actual == expected_next, f"after {last}, expected {expected_next}, got {actual}"
+
+
+def test_route_is_deterministic() -> None:
+    llm = MockLLM()
+    hint = "chunk_idx=1/3; last_action=lexicon_lookup; proposed=classify_span; findings=2"
+    a = llm.complete("", task="route", state_hint=hint)
+    b = llm.complete("", task="route", state_hint=hint)
+    assert a == b
 
 
 def test_ground_detects_unverified() -> None:

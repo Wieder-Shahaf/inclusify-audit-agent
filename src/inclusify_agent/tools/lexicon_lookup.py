@@ -4,19 +4,26 @@ from __future__ import annotations
 import json
 import re
 from functools import lru_cache
+from importlib.resources import files
 from pathlib import Path
 
 from .schemas import Chunk, LexiconHit
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_LEXICON = _REPO_ROOT / "data" / "lexicon" / "inclusive_lexicon.json"
-
 
 @lru_cache(maxsize=4)
 def load_lexicon(path: str | None = None) -> list[dict]:
-    p = Path(path) if path else DEFAULT_LEXICON
-    with open(p, encoding="utf-8") as f:
-        data = json.load(f)
+    """Load the lexicon JSON.
+
+    Default: use the package-bundled lexicon (works after pip install or in dev).
+    Pass an absolute path to override (used by tests with custom fixtures).
+    """
+    if path:
+        with open(Path(path), encoding="utf-8") as f:
+            data = json.load(f)
+    else:
+        resource = files("inclusify_agent.data").joinpath("inclusive_lexicon.json")
+        with resource.open("r", encoding="utf-8") as f:
+            data = json.load(f)
     return data["entries"]
 
 
