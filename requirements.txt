@@ -1,0 +1,16 @@
+# Vercel serverless runtime deps (pinned to match pyproject.toml).
+# No chromadb: the deployed API uses the in-memory store, and config imports
+# the heavy/optional providers lazily — keeps the function under Vercel's size cap.
+fastapi==0.115.6
+langgraph==0.2.74
+langchain==0.3.18
+langchain-core==0.3.34
+pydantic==2.10.6
+python-dotenv==1.0.1
+
+# Live providers (LLMod.ai OpenAI-compatible LLM + embeddings, Pinecone, Supabase).
+# Activated by env vars at deploy time; harmless when unset (offline defaults win).
+openai==1.61.1
+requests==2.32.3
+pinecone==5.4.2
+supabase==2.11.0

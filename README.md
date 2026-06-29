@@ -7,16 +7,35 @@ whether to do a cheap lexicon check, escalate to deeper analysis, ground a flag 
 finalizing. ReAct + Reflection + Agentic-RAG, built on LangGraph.
 
 > Design: [`docs/PRD.md`](docs/PRD.md) · Build plan: [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md) ·
-> Needs-keys: [`docs/NEEDS_KEYS.md`](docs/NEEDS_KEYS.md)
+> Needs-keys: [`docs/NEEDS_KEYS.md`](docs/NEEDS_KEYS.md) · Deploy: [`docs/DEPLOY.md`](docs/DEPLOY.md)
+
+## HTTP API + Web GUI
+
+```bash
+docker compose up            # api on :8000, web GUI on http://localhost:3000
+```
+
+The GUI (ElevenLabs-style: textarea → **Run audit** → response + full reasoning trace)
+is at the root URL. The four endpoints (names fixed by the assignment spec):
+
+| Endpoint | Returns |
+|---|---|
+| `GET /api/team_info` | team + students |
+| `GET /api/agent_info` | description, purpose, prompt_template, prompt_examples |
+| `GET /api/model_architecture` | architecture diagram (PNG) |
+| `POST /api/execute` | `{prompt}` → `{status, error, response, steps}` — `steps` traces every LLM call (`module`, `prompt.{System_prompt,User_prompt}`, `response`) |
+
+Run the API alone (no frontend container): `docker compose up api`, or natively
+`uvicorn inclusify_agent.server:app`. Deploy to Vercel: see [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## Run offline (no API keys)
 
 The default config needs no credentials. Two paths:
 
-### Docker (recommended for the demo)
+### Docker (CLI demo)
 
 ```bash
-docker compose up agent
+docker compose --profile cli up agent
 ```
 
 Runs the audit on `data/fixtures/sample.txt` with MockLLM + hash embedder + in-memory store,

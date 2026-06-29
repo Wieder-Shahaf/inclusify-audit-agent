@@ -1,0 +1,18 @@
+# Keep the deployment bundle small + under the function size cap.
+.git
+.venv
+/build
+.planning
+memory
+/tests
+/eval
+/scripts
+/docs
+/data
+.chroma
+*.pdf
+**/__pycache__
+.pytest_cache
+.ruff_cache
+Dockerfile
+docker-compose.yml
