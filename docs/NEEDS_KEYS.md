@@ -14,6 +14,9 @@ behind provider interfaces and left dormant until keys arrive.
 | Azure embeddings | extend `OpenAICompatEmbeddings` for Azure URL shape | not implemented | `AZURE_EMBEDDINGS_DEPLOYMENT`, `EMBEDDINGS_BASE_URL`, `EMBEDDINGS_API_KEY` | TBD |
 | Live embeddings (BGE-M3 on work VM, 1024-dim) | `OpenAICompatEmbeddings` | implemented | `EMBEDDINGS_BASE_URL`, `EMBEDDINGS_API_KEY`, `EMBEDDINGS_MODEL` | smoke |
 | Qdrant vector store (work VM) | `QdrantStore` | implemented | `QDRANT_URL`, `QDRANT_API_KEY`, `QDRANT_COLLECTION` (or `QDRANT_COLLECTION_PREFIX`) | smoke |
+| Course LLM + embeddings (gpt-5.4-mini / text-embedding-3-small via LLMod.ai) | `OpenAICompatLLM` + `OpenAICompatEmbeddings` | implemented (OpenAI-compatible proxy) | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL=MB5R2CF-azure/gpt-5.4-mini`; `EMBEDDINGS_*`, `EMBED_DIM=1536` | TBD when LLMod.ai key issued |
+| Pinecone vector store (course) | `PineconeStore` | implemented | `PINECONE_API_KEY`, `PINECONE_INDEX`, (`PINECONE_CLOUD`, `PINECONE_REGION`) | TBD when key issued |
+| Supabase run logging (course primary DB) | `SupabasePersistence` | implemented | `PERSISTENCE_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_KEY`, (`SUPABASE_TABLE`) | TBD when key issued |
 | Real precision/recall metrics | `eval/run.py` against the Achva gold set | scaffold only — synthetic gold | (none new; once LLM is real) | TBD |
 | Real agent-vs-baseline ablation numbers | same | scaffold only | (none new) | TBD |
 

@@ -86,4 +86,33 @@ def build_vector_store(dim: int) -> Any:
             collection=os.environ.get("QDRANT_COLLECTION", "inclusify_eric"),
             dim=dim,
         )
+    if name == "pinecone":
+        from .providers.vectorstore import PineconeStore
+        return PineconeStore(
+            api_key=os.environ["PINECONE_API_KEY"],
+            index=os.environ.get("PINECONE_INDEX", "inclusify-eric"),
+            dim=dim,
+            cloud=os.environ.get("PINECONE_CLOUD", "aws"),
+            region=os.environ.get("PINECONE_REGION", "us-east-1"),
+        )
     raise ValueError(f"Unknown VECTOR_STORE: {name!r}")
+
+
+def get_persistence_provider_name() -> str:
+    return os.environ.get("PERSISTENCE_PROVIDER", "null")
+
+
+def build_persistence() -> Any:
+    """Run-log sink. Defaults to a no-op so the offline app needs no database."""
+    name = get_persistence_provider_name()
+    if name == "null":
+        from .providers.persistence import NullPersistence
+        return NullPersistence()
+    if name == "supabase":
+        from .providers.persistence import SupabasePersistence
+        return SupabasePersistence(
+            url=os.environ["SUPABASE_URL"],
+            key=os.environ["SUPABASE_KEY"],
+            table=os.environ.get("SUPABASE_TABLE", "audit_runs"),
+        )
+    raise ValueError(f"Unknown PERSISTENCE_PROVIDER: {name!r}")

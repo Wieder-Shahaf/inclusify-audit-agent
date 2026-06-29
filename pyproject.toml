@@ -36,11 +36,14 @@ local-st = [
     "sentence-transformers==3.4.1",
 ]
 live = [
-    # Optional: live providers behind interfaces (work-VM Gemma, BGE-M3, Qdrant).
+    # Optional: live providers behind interfaces (Azure via OpenAI-compat LLMod.ai,
+    # text-embedding-3-small, Pinecone, Supabase, work-VM Gemma/BGE-M3/Qdrant).
     # qdrant-client pinned to 1.8.x to match the work-VM server version 1.8.1.
     "openai==1.61.1",
     "qdrant-client==1.8.2",
     "requests==2.32.3",
+    "pinecone==5.4.2",
+    "supabase==2.11.0",
 ]
 
 [project.scripts]
