@@ -45,6 +45,21 @@ app.add_middleware(
 )
 
 
+def _build_persistence() -> Any:
+    """Run-log sink (Supabase when configured, else no-op). Never crash startup."""
+    try:
+        return config.build_persistence()
+    except Exception as e:  # misconfig / missing client -> degrade to no-op
+        import sys
+
+        from ..providers.persistence import NullPersistence
+        print(f"[persistence] falling back to null: {type(e).__name__}: {e}", file=sys.stderr)
+        return NullPersistence()
+
+
+_persistence = _build_persistence()
+
+
 # ----------------------------------------------------------------------------- agent
 def execute_prompt(prompt: str) -> dict[str, Any]:
     """Run one audit and shape it into the required {status,error,response,steps}."""
@@ -74,7 +89,12 @@ class ExecuteIn(BaseModel):
 
 @app.post("/api/execute")
 def api_execute(body: ExecuteIn) -> dict[str, Any]:
-    return execute_prompt(body.prompt)
+    result = execute_prompt(body.prompt)
+    _persistence.log_run(
+        prompt=body.prompt, status=result["status"],
+        response=result["response"], steps=result["steps"],
+    )
+    return result
 
 
 @app.get("/api/team_info")
