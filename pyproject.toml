@@ -19,12 +19,17 @@ dependencies = [
     "chromadb==0.5.23",
     "pydantic==2.10.6",
     "python-dotenv==1.0.1",
+    # HTTP API + GUI (assignment-required endpoints). ASGI app deploys on Vercel.
+    "fastapi==0.115.6",
+    "uvicorn==0.34.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest==8.3.4",
     "ruff==0.9.6",
+    "httpx==0.28.1",      # fastapi.testclient transport
+    "pillow==11.1.0",     # architecture-diagram generation (scripts/gen_architecture.py)
 ]
 local-st = [
     # Optional: sentence-transformers for richer offline embeddings (one-time download).
