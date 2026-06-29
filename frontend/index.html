@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Inclusify — Curriculum Inclusivity Auditor</title>
+<style>
+  :root{
+    --bg:#ffffff; --panel:#f6f6f3; --panel-2:#efeeea;
+    --ink:#0b0b0c; --muted:#6c6c72; --hair:#e7e6e1;
+    --indigo:#5b4ef0; --mint:#0f9d76;
+    --grad:linear-gradient(120deg,#6d5ef8 0%,#b45cff 48%,#ff7ac6 100%);
+    --code-bg:#0d0d12; --code-ink:#e9e9f2;
+    --radius:18px; --maxw:920px;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--sans); color:var(--ink); background:var(--bg);
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+    background-image:radial-gradient(60% 40% at 80% -5%,rgba(180,92,255,.10),transparent 60%),
+                     radial-gradient(50% 35% at 0% 0%,rgba(109,94,248,.10),transparent 55%);
+  }
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:28px 24px 96px}
+
+  header.top{display:flex; align-items:center; justify-content:space-between; padding:6px 0 8px}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:650; letter-spacing:-.01em}
+  .brand .dot{width:22px; height:22px; border-radius:7px; background:var(--grad)}
+  .top nav{font-size:13.5px; color:var(--muted)}
+  .top nav a{color:var(--muted); text-decoration:none; margin-left:18px}
+  .top nav a:hover{color:var(--ink)}
+
+  .hero{padding:52px 0 30px; max-width:760px}
+  .eyebrow{font-size:12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+           color:var(--indigo)}
+  h1{font-size:clamp(34px,6vw,58px); line-height:1.02; letter-spacing:-.03em;
+     margin:16px 0 14px; font-weight:680}
+  .hero p{font-size:18px; color:var(--muted); margin:0; max-width:600px}
+
+  /* Composer */
+  .composer{background:var(--panel); border:1px solid var(--hair); border-radius:var(--radius);
+            padding:8px; box-shadow:0 1px 0 rgba(0,0,0,.02)}
+  textarea{
+    width:100%; border:0; background:transparent; resize:vertical; min-height:138px;
+    font-family:var(--sans); font-size:17px; color:var(--ink); padding:16px 16px 4px;
+    outline:none; line-height:1.55;
+  }
+  textarea::placeholder{color:#a6a6ad}
+  .composer .bar{display:flex; align-items:center; gap:12px; padding:8px 8px 8px 12px;
+                 flex-wrap:wrap}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; flex:1; min-width:0}
+  .chip{font-size:12.5px; color:var(--muted); background:#fff; border:1px solid var(--hair);
+        border-radius:999px; padding:6px 12px; cursor:pointer; white-space:nowrap;
+        max-width:100%; overflow:hidden; text-overflow:ellipsis}
+  .chip:hover{border-color:#d8d7d1; color:var(--ink)}
+  .run{border:0; cursor:pointer; color:#fff; font-weight:600; font-size:15px;
+       padding:12px 22px; border-radius:999px; background:var(--grad);
+       box-shadow:0 6px 20px rgba(124,82,232,.28); transition:transform .12s ease, filter .12s ease}
+  .run:hover{filter:brightness(1.05)} .run:active{transform:translateY(1px)}
+  .run[disabled]{opacity:.6; cursor:progress; box-shadow:none}
+  .spin{display:inline-block; width:14px; height:14px; margin-right:8px; vertical-align:-2px;
+        border:2px solid rgba(255,255,255,.5); border-top-color:#fff; border-radius:50%;
+        animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Results */
+  .results{margin-top:34px; display:none}
+  .results.show{display:block; animation:rise .4s ease both}
+  @keyframes rise{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+
+  .banner{border-radius:14px; padding:14px 16px; font-size:14.5px; margin-bottom:18px}
+  .banner.err{background:#fff1f0; border:1px solid #ffd6d2; color:#9b1c14}
+
+  .sec-label{display:flex; align-items:baseline; gap:12px; margin:30px 0 14px}
+  .sec-label h2{font-size:14px; letter-spacing:.04em; text-transform:uppercase;
+                margin:0; color:var(--ink)}
+  .sec-label span{font-size:13px; color:var(--muted)}
+
+  .card{background:#fff; border:1px solid var(--hair); border-radius:var(--radius); padding:22px 24px}
+  .report h3{font-size:15px; margin:0 0 6px; letter-spacing:-.01em}
+  .report .meta{font-size:14px; color:var(--muted); margin:0 0 14px}
+  .finding{border-top:1px solid var(--hair); padding:14px 0}
+  .finding:first-of-type{border-top:0; padding-top:0}
+  .tag{display:inline-block; font-size:11px; font-weight:700; letter-spacing:.06em;
+       padding:3px 8px; border-radius:6px; margin-right:8px; vertical-align:1px}
+  .tag.flag{background:#fdeede; color:#9a5b00} .tag.ask{background:#e7eefe; color:#274bb5}
+  .tag.skip{background:#eafaf1; color:#0f7a4d} .tag.retr{background:#f1f1f1; color:#888}
+  .finding .span{font-size:15.5px}
+  .finding .span s{color:var(--muted)}
+  .kv{font-size:14px; color:var(--muted); margin:6px 0 0}
+  .kv b{color:var(--ink); font-weight:600}
+  .rw{margin-top:6px; font-size:14.5px}
+  .rw b{color:var(--mint)}
+  .empty{color:var(--muted); font-size:14.5px}
+
+  /* Reasoning trace — the signature: every LLM call, in order */
+  .trace{counter-reset:step}
+  .step{position:relative; border-left:2px solid var(--hair); margin-left:8px;
+        padding:0 0 8px 26px}
+  .step::before{counter-increment:step; content:counter(step);
+        position:absolute; left:-13px; top:0; width:24px; height:24px; border-radius:50%;
+        background:var(--indigo); color:#fff; font-size:12px; font-weight:700;
+        display:flex; align-items:center; justify-content:center;
+        box-shadow:0 0 0 4px var(--bg)}
+  .step:last-child{border-left-color:transparent}
+  .step .mod{font-weight:650; font-size:15px; margin-bottom:8px; display:flex;
+             align-items:center; gap:9px}
+  .step .mod .badge{font-size:11px; font-weight:600; color:var(--indigo);
+        background:#efeefe; border:1px solid #e0ddfb; border-radius:999px; padding:2px 9px}
+  details{background:var(--panel); border:1px solid var(--hair); border-radius:12px;
+          margin-bottom:8px; overflow:hidden}
+  summary{cursor:pointer; list-style:none; padding:10px 14px; font-size:13px; font-weight:600;
+          color:var(--muted); display:flex; justify-content:space-between; align-items:center}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+"; color:#b3b3b8; font-weight:700}
+  details[open] summary::after{content:"–"}
+  details[open] summary{color:var(--ink); border-bottom:1px solid var(--hair)}
+  pre{margin:0; padding:14px 16px; font-family:var(--mono); font-size:12.5px; line-height:1.6;
+      white-space:pre-wrap; word-break:break-word; max-height:340px; overflow:auto}
+  pre.sys{background:#fff; color:#3a3a40} pre.usr{background:#fff; color:#3a3a40}
+  pre.resp{background:var(--code-bg); color:var(--code-ink)}
+
+  footer{margin-top:60px; padding-top:22px; border-top:1px solid var(--hair);
+          font-size:12.5px; color:var(--muted); display:flex; gap:18px; flex-wrap:wrap}
+  footer a{color:var(--muted)}
+  @media (max-width:560px){ .run{width:100%} .composer .bar{flex-direction:column; align-items:stretch} .chips{order:2} }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="dot"></span>Inclusify</div>
+    <nav>
+      <a href="/api/agent_info" target="_blank">Agent info</a>
+      <a href="/api/model_architecture" target="_blank">Architecture</a>
+      <a href="/api/docs" target="_blank">API</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">Curriculum inclusivity auditor</div>
+    <h1>See how every line of your material reads to everyone.</h1>
+    <p>Paste a sentence, syllabus excerpt, or slide. Inclusify flags gendered,
+       exclusionary, and outdated phrasing — and shows its full reasoning, step by step.</p>
+  </section>
+
+  <section class="composer">
+    <textarea id="prompt" placeholder="The chairman told the freshmen that manpower was short this semester."></textarea>
+    <div class="bar">
+      <div class="chips" id="chips"></div>
+      <button class="run" id="run">Run audit</button>
+    </div>
+  </section>
+
+  <section class="results" id="results">
+    <div id="banner"></div>
+
+    <div class="sec-label"><h2>Audit</h2><span>final agent response</span></div>
+    <div class="card report" id="report"></div>
+
+    <div class="sec-label"><h2>Reasoning trace</h2><span id="trace-count"></span></div>
+    <div class="trace" id="trace"></div>
+  </section>
+
+  <footer>
+    <span>Inclusify · Technion AI Agent Systems</span>
+    <a href="/api/team_info" target="_blank">Team</a>
+    <span>Offline-first · LangGraph ReAct + Reflection + Agentic-RAG</span>
+  </footer>
+</div>
+
+<script>
+const EXAMPLES = [
+  "The chairman told the freshmen that manpower was short this semester.",
+  "Whitelist the trusted hosts and blacklist the rest.",
+  "The Stonewall Uprising marked a critical juncture in LGBTQ+ rights.",
+];
+const $ = (id) => document.getElementById(id);
+
+// Example chips
+const chips = $("chips");
+EXAMPLES.forEach(t => {
+  const c = document.createElement("button");
+  c.className = "chip"; c.textContent = t; c.title = t;
+  c.onclick = () => { $("prompt").value = t; $("prompt").focus(); };
+  chips.appendChild(c);
+});
+
+const esc = s => String(s).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+
+// Minimal markdown -> HTML for the audit report (headings, bold, lists).
+function renderReport(md){
+  const lines = md.split("\n"); let html = ""; let inList = false;
+  const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
+                            .replace(/`(.+?)`/g,"<code>$1</code>");
+  for (let raw of lines){
+    const line = raw.replace(/\s+$/,"");
+    if (!line){ if(inList){html+="</ul>";inList=false;} continue; }
+    if (line.startsWith("# ")){ html += `<h3>${inline(line.slice(2))}</h3>`; continue; }
+    if (/^\s*-\s/.test(line)){
+      if(!inList){html+="<ul style='margin:6px 0;padding-left:18px'>";inList=true;}
+      html += `<li>${inline(line.replace(/^\s*-\s/,""))}</li>`; continue;
+    }
+    if(inList){html+="</ul>";inList=false;}
+    html += `<p class="meta">${inline(line)}</p>`;
+  }
+  if(inList) html+="</ul>";
+  return html;
+}
+
+function fmt(v){ return typeof v === "string" ? v : JSON.stringify(v, null, 2); }
+
+function renderTrace(steps){
+  $("trace-count").textContent = `${steps.length} LLM call${steps.length===1?"":"s"}, in order`;
+  return steps.map(s => `
+    <div class="step">
+      <div class="mod">${esc(s.module)} <span class="badge">LLM call</span></div>
+      <details><summary>System prompt</summary><pre class="sys">${esc(s.prompt.System_prompt) || "(none)"}</pre></details>
+      <details open><summary>User prompt</summary><pre class="usr">${esc(s.prompt.User_prompt)}</pre></details>
+      <details open><summary>Response</summary><pre class="resp">${esc(fmt(s.response))}</pre></details>
+    </div>`).join("");
+}
+
+async function runAgent(){
+  const prompt = $("prompt").value;
+  const btn = $("run"), results = $("results"), banner = $("banner");
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Auditing';
+  banner.innerHTML = "";
+  try{
+    const res = await fetch("/api/execute", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({prompt})
+    });
+    const data = await res.json();
+    results.classList.add("show");
+    if (data.status !== "ok"){
+      banner.innerHTML = `<div class="banner err">${esc(data.error || "Something went wrong.")}</div>`;
+      $("report").innerHTML = `<p class="empty">No audit produced.</p>`;
+      $("trace").innerHTML = ""; $("trace-count").textContent = "";
+      return;
+    }
+    $("report").innerHTML = renderReport(data.response);
+    $("trace").innerHTML = renderTrace(data.steps);
+  } catch(e){
+    results.classList.add("show");
+    banner.innerHTML = `<div class="banner err">Could not reach the agent: ${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Run audit";
+  }
+}
+$("run").addEventListener("click", runAgent);
+$("prompt").addEventListener("keydown", e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") runAgent();
+});
+
+// Deep-link: /?q=<text> prefills and runs (shareable audit links).
+const q = new URLSearchParams(location.search).get("q");
+if (q){ $("prompt").value = q; runAgent(); }
+</script>
+</body>
+</html>
