@@ -1,4 +1,39 @@
 services:
+  # FastAPI agent — the four required endpoints + GUI (offline-first defaults).
+  api:
+    build: .
+    command: ["uvicorn", "inclusify_agent.server:app", "--host", "0.0.0.0", "--port", "8000"]
+    # Offline-first by design: literal values, NOT ${...}, so a local .env pointing at
+    # live providers can't hijack `docker compose up`. To run against Azure/Pinecone in
+    # dev, use a compose override or `docker compose run -e LLM_PROVIDER=azure ...`.
+    environment:
+      LLM_PROVIDER: mock
+      EMBEDDINGS_PROVIDER: hash
+      VECTOR_STORE: inmemory
+      GROUP_BATCH_ORDER: ${GROUP_BATCH_ORDER:-TBD_TBD}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Frontend container — nginx serves the GUI and proxies /api to the agent.
+  web:
+    image: nginx:1.27-alpine
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend/index.html:/usr/share/nginx/html/index.html:ro
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # One-shot corpus ingest into the persistent chroma volume (opt-in).
   ingest:
     build: .
     command: ["python", "-m", "inclusify_agent.ingest", "--sample", "50", "--embedder", "hash"]
@@ -7,12 +42,13 @@ services:
       - ./data:/app/data:ro
     profiles: ["ingest"]
 
+  # CLI demo audit on a bundled fixture (opt-in).
   agent:
     build: .
-    depends_on: []
     volumes:
       - chroma:/app/.chroma
       - ./data:/app/data:ro
+    profiles: ["cli"]
 
 volumes:
   chroma:
