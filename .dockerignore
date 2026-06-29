@@ -1,0 +1,11 @@
+.git
+.venv
+build
+.planning
+memory
+docs/*.pdf
+**/__pycache__
+*.pyc
+.chroma
+.pytest_cache
+.ruff_cache

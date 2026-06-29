@@ -15,6 +15,9 @@ RUN pip install --no-cache-dir -e ".[dev]"
 
 COPY data ./data
 COPY tests ./tests
+COPY frontend ./frontend
 
-CMD ["python", "-m", "inclusify_agent.cli", "audit", "data/fixtures/sample.txt", \
-     "--provider", "mock", "--store", "inmemory", "--format", "json"]
+EXPOSE 8000
+
+# Default: serve the API + GUI. Compose overrides command per service.
+CMD ["uvicorn", "inclusify_agent.server:app", "--host", "0.0.0.0", "--port", "8000"]
