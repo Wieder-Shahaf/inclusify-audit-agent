@@ -78,6 +78,34 @@ def test_execute_empty_prompt_errors():
     assert body["steps"] == []
 
 
+def test_why_ok_contract():
+    r = client.post("/api/why", json={
+        "span": "The chairman told the freshmen manpower was short.",
+        "category": "gendered",
+    })
+    assert r.status_code == 200
+    body = r.json()
+    assert {"status", "error", "explanation", "citations",
+            "augmented_prompt", "steps"} <= set(body)
+    assert body["status"] == "ok"
+    assert isinstance(body["explanation"], str) and body["explanation"]
+    assert isinstance(body["citations"], list)
+    for c in body["citations"]:
+        assert {"id", "text", "score", "metadata"} <= set(c)
+    for step in body["steps"]:
+        _assert_step_schema(step)
+    # The generation call is the GroundingChecker module in the trace.
+    assert any(s["module"] == "GroundingChecker" for s in body["steps"])
+
+
+def test_why_empty_span_errors():
+    r = client.post("/api/why", json={"span": "   "})
+    body = r.json()
+    assert body["status"] == "error"
+    assert body["error"]
+    assert body["steps"] == []
+
+
 def test_model_architecture_is_png():
     r = client.get("/api/model_architecture")
     assert r.status_code == 200

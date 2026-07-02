@@ -22,13 +22,37 @@ from ..tools import (
     ask_user,
     chunk,
     classify_span,
+    eric_live_enabled,
+    eric_live_search,
     lexicon_lookup,
     propose_rewrite,
     record_finding,
     retrieve_citation,
 )
+from ..tools._json_extract import extract_json
 from ..tools.schemas import Citation, Finding
 from .state import AgentState, TraceEvent
+
+# Real prompts for the route/reflect call-sites. MockLLM keys on the task=
+# kwarg and ignores prompt text; a live LLM sees ONLY the prompt+system, so
+# the state must be in the text too (kwargs are dropped by real providers).
+_ROUTE_SYSTEM = (
+    "You are the control-flow router of an inclusivity audit agent. "
+    "Pick the next tool from: lexicon_lookup, classify_span, retrieve_citation, "
+    "eric_live_search, propose_rewrite, ask_user, reflect, stop. The normal "
+    "sequence per chunk is lexicon_lookup -> classify_span -> retrieve_citation "
+    "-> propose_rewrite, then lexicon_lookup on the next chunk; reflect once all "
+    "chunks are done. eric_live_search fetches fresh ERIC abstracts when local "
+    "citation grounding is weak. "
+    'Reply with ONLY JSON: {"tool": "<name>", "rationale": "<one short sentence>"}'
+)
+
+_REFLECT_SYSTEM = (
+    "You are the reflection stage of an inclusivity audit agent. Review the "
+    "findings and retract only likely false positives (low confidence means the "
+    "citation grounding was weak or missing). Keep everything else. "
+    'Reply with ONLY JSON: {"kept": [<ids>], "retracted": [<ids>]}'
+)
 
 
 def _emit(state: AgentState, **event: Any) -> list[TraceEvent]:
@@ -106,16 +130,23 @@ def route(state: AgentState, *, llm: Any) -> dict[str, Any]:
         f"proposed={proposed}; "
         f"findings={len(state.get('findings', []))}"
     )
-    raw = llm.complete("route?", task="route", step=step, state_hint=hint)
+    prompt = (
+        f"State: {hint}\n"
+        f"The pipeline proposes '{proposed}' next. Confirm or override.\n"
+        'JSON only: {"tool": ..., "rationale": ...}'
+    )
+    raw = llm.complete(prompt, system=_ROUTE_SYSTEM, task="route", step=step, state_hint=hint)
     try:
-        decision = json.loads(raw)
+        decision = extract_json(raw)
     except json.JSONDecodeError:
+        decision = None
+    if not isinstance(decision, dict):
         decision = {"tool": proposed, "rationale": "default (parse fail)"}
     tool = decision.get("tool", proposed)
     rationale = decision.get("rationale", "")
     # Safety: if the LLM picks an unknown action, fall back to the proposal.
     valid = {"lexicon_lookup", "classify_span", "retrieve_citation",
-             "propose_rewrite", "ask_user", "reflect", "stop"}
+             "eric_live_search", "propose_rewrite", "ask_user", "reflect", "stop"}
     if tool not in valid:
         tool = proposed
         rationale = f"fallback to proposed (LLM picked unknown: {decision.get('tool')})"
@@ -166,16 +197,40 @@ def act(state: AgentState, *, llm: Any, store: Any, embedder: Any) -> dict[str, 
             update["next_action"] = "lexicon_lookup"
 
     elif action == "retrieve_citation":
+        cls = state.get("last_classification") or {}
         hits = state.get("last_lexicon_hits") or []
-        query = hits[0].term if hits else cur.text[:80]
+        term = hits[0].term if hits else ""
+        # Same query shape as the Why?-chain: category + trigger term + span
+        # context retrieves topical guidance, not mere term co-occurrence.
+        query = f"{cls.get('category') or 'inclusive language'}: {term} {cur.text[:80]}".strip()
         cites = retrieve_citation(store, embedder, query=query, k=3)
         trace.append({"step": step, "node": "act", "tool": "retrieve_citation",
                       "chunk_id": cur.id, "detail": {"k": len(cites)}})
         update["last_citations"] = cites
+        update["_last_retrieval_query"] = query
         # Agentic-RAG: when retrieval is weak (top score below threshold), the
-        # flag is unverified — route to ask_user instead of finalizing a rewrite.
+        # flag is unverified. With live search enabled, try fetching fresh ERIC
+        # context first; otherwise route to ask_user instead of finalizing.
         # MockLLM emits cosine-like scores; 0.3 is a generous floor.
         if cites and cites[0].score >= 0.3:
+            update["next_action"] = "propose_rewrite"
+        elif eric_live_enabled():
+            update["next_action"] = "eric_live_search"
+        else:
+            update["next_action"] = "ask_user"
+
+    elif action == "eric_live_search":
+        # Grounding fallback: merge fresh ERIC abstracts into the citation pool.
+        query = state.get("_last_retrieval_query") or cur.text[:80]
+        live = eric_live_search(embedder, query=query, k=3)
+        merged = sorted(
+            list(state.get("last_citations") or []) + live,
+            key=lambda c: c.score, reverse=True,
+        )[:3]
+        trace.append({"step": step, "node": "act", "tool": "eric_live_search",
+                      "chunk_id": cur.id, "detail": {"fetched": len(live)}})
+        update["last_citations"] = merged
+        if merged and merged[0].score >= 0.3:
             update["next_action"] = "propose_rewrite"
         else:
             update["next_action"] = "ask_user"
@@ -269,10 +324,16 @@ def reflect(state: AgentState, *, llm: Any) -> dict[str, Any]:
         {"id": f.id, "confidence": f.confidence, "label": f.label}
         for f in findings
     ]
-    raw = llm.complete("reflect", task="reflect", findings=serialized)
+    prompt = (
+        f"Findings: {json.dumps(serialized)}\n"
+        'JSON only: {"kept": [...], "retracted": [...]}'
+    )
+    raw = llm.complete(prompt, system=_REFLECT_SYSTEM, task="reflect", findings=serialized)
     try:
-        decision = json.loads(raw)
+        decision = extract_json(raw)
     except json.JSONDecodeError:
+        decision = None
+    if not isinstance(decision, dict):
         decision = {"kept": serialized, "retracted": []}
     retracted_ids = set(decision.get("retracted", []))
     for f in findings:

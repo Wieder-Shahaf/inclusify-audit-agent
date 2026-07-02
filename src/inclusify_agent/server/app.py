@@ -26,6 +26,7 @@ from .. import config
 from ..agent import run_audit
 from ..providers.vectorstore import InMemoryStore
 from ..report import render, to_markdown, validate
+from ..tools import explain_why
 from .recording_llm import RecordingLLM
 from .seed import seed_store
 
@@ -60,6 +61,28 @@ def _build_persistence() -> Any:
 _persistence = _build_persistence()
 
 
+@lru_cache(maxsize=1)
+def _shared_rag() -> tuple[Any, Any]:
+    """(embedder, vector store) built once from config — the RAG serving the agent.
+
+    Live: the configured store (e.g. Pinecone with the ingested ERIC corpus).
+    Offline / keyless / Vercel: falls back to a seeded in-memory demo store so
+    every endpoint still works with no keys. Lazy (first request), so importing
+    the app never touches the network.
+    """
+    embedder = config.build_embeddings()
+    try:
+        store = config.build_vector_store(dim=embedder.dim)
+    except Exception as e:  # missing key/client -> keyless demo store
+        import sys
+        print(f"[store] falling back to seeded in-memory: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        store = InMemoryStore(dim=embedder.dim)
+    if isinstance(store, InMemoryStore):
+        seed_store(store, embedder)  # empty per-process store needs the demo seeds
+    return embedder, store
+
+
 # ----------------------------------------------------------------------------- agent
 def execute_prompt(prompt: str) -> dict[str, Any]:
     """Run one audit and shape it into the required {status,error,response,steps}."""
@@ -69,9 +92,7 @@ def execute_prompt(prompt: str) -> dict[str, Any]:
     try:
         steps: list[dict[str, Any]] = []
         llm = RecordingLLM(config.build_llm(), steps)
-        embedder = config.build_embeddings()
-        store = InMemoryStore(dim=embedder.dim)
-        seed_store(store, embedder)
+        embedder, store = _shared_rag()
         final = run_audit(prompt, llm=llm, embedder=embedder, store=store)
         report = render(final)
         validate(report)
@@ -93,6 +114,37 @@ def api_execute(body: ExecuteIn) -> dict[str, Any]:
     _persistence.log_run(
         prompt=body.prompt, status=result["status"],
         response=result["response"], steps=result["steps"],
+    )
+    return result
+
+
+class WhyIn(BaseModel):
+    span: str
+    category: str | None = None
+    reason: str | None = None
+
+
+@app.post("/api/why")
+def api_why(body: WhyIn) -> dict[str, Any]:
+    """On-demand "Why?" — RAG-grounded explanation for a flagged span (PRD interactive stage)."""
+    if not body.span.strip():
+        return {"status": "error", "error": "span is required and must be non-empty",
+                "explanation": None, "citations": [], "steps": []}
+    try:
+        steps: list[dict[str, Any]] = []
+        llm = RecordingLLM(config.build_llm(), steps)
+        embedder, store = _shared_rag()
+        out = explain_why(
+            llm, store, embedder,
+            span=body.span, category=body.category, reason=body.reason,
+        )
+        result = {"status": "ok", "error": None, "steps": steps, **out}
+    except Exception as e:  # same contract as /api/execute: never 500 the agent
+        result = {"status": "error", "error": f"{type(e).__name__}: {e}",
+                  "explanation": None, "citations": [], "steps": []}
+    _persistence.log_run(
+        prompt=f"[why] {body.span}", status=result["status"],
+        response=result.get("explanation"), steps=result["steps"],
     )
     return result
 

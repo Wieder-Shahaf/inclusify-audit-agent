@@ -14,6 +14,8 @@ from inclusify_agent.tools import (
     ask_user,
     chunk,
     classify_span,
+    eric_live_search,
+    explain_why,
     lexicon_lookup,
     load_lexicon,
     propose_rewrite,
@@ -132,6 +134,119 @@ def test_retrieve_citation_empty_query_returns_empty() -> None:
     store = InMemoryStore(dim=32)
     store.add(["d1"], emb.embed("x"), ["x"])
     assert retrieve_citation(store, emb, query="") == []
+
+
+class _StubStore:
+    """Fixed score-ordered hits; records the k the tool actually requested."""
+
+    def __init__(self) -> None:
+        self.requested_k = 0
+
+    def search(self, vec, k):  # noqa: ANN001
+        self.requested_k = k
+        hits = [
+            ("c1", 0.9, "t1", {"doc_id": "A"}),
+            ("c2", 0.8, "t2", {"doc_id": "A"}),   # same doc as c1 -> deduped
+            ("c3", 0.7, "t3", {"doc_id": "B"}),
+            ("c4", 0.6, "t4", {}),                # no doc_id -> keyed by own id
+        ]
+        return hits[:k]
+
+
+def test_retrieve_citation_dedups_by_doc_and_over_fetches() -> None:
+    store = _StubStore()
+    cites = retrieve_citation(store, HashEmbeddings(dim=16), query="chairman", k=2)
+    assert store.requested_k > 2, "must over-fetch beyond k before dedup"
+    assert [c.id for c in cites] == ["c1", "c3"], "one best chunk per doc_id"
+
+
+# ---- eric_live_search (env-gated live fallback) --------------------------------
+
+def test_eric_live_search_dormant_by_default(monkeypatch) -> None:
+    """Offline-first: flag unset -> no network attempted at all."""
+    import urllib.request
+
+    monkeypatch.delenv("ERIC_LIVE_SEARCH", raising=False)
+
+    def _boom(*a, **kw):  # noqa: ANN002, ANN003
+        raise AssertionError("network must not be touched when the flag is off")
+
+    monkeypatch.setattr(urllib.request, "urlopen", _boom)
+    assert eric_live_search(HashEmbeddings(dim=16), query="chairman") == []
+
+
+def test_eric_live_search_scores_and_shapes(monkeypatch) -> None:
+    import io
+
+    monkeypatch.setenv("ERIC_LIVE_SEARCH", "1")
+    payload = {"response": {"docs": [
+        {"id": "EJ1", "title": "Gendered language", "description": "chairman bias",
+         "publicationdateyear": 2019},
+        {"id": "EJ2", "title": "Unrelated", "description": ""},  # dropped: empty
+        {"id": "EJ3", "title": "Inclusive style", "description": ["a", "b"]},
+    ]}}
+
+    class _Resp(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):  # noqa: ANN002
+            return False
+
+    import json as _json
+    import urllib.request
+
+    monkeypatch.setattr(
+        urllib.request, "urlopen",
+        lambda req, timeout=0: _Resp(_json.dumps(payload).encode()),
+    )
+    cites = eric_live_search(HashEmbeddings(dim=16), query="chairman bias", k=2)
+    assert len(cites) == 2
+    assert all(isinstance(c, Citation) for c in cites)
+    assert all(c.id.startswith("eric_live_") for c in cites)
+    assert all(-1.0 <= c.score <= 1.0 for c in cites)  # cosine range
+    assert cites[0].score >= cites[1].score, "must be score-ordered"
+    assert cites[0].metadata["url"].startswith("https://eric.ed.gov/?id=")
+
+
+def test_eric_live_search_network_failure_returns_empty(monkeypatch) -> None:
+    import urllib.request
+
+    monkeypatch.setenv("ERIC_LIVE_SEARCH", "1")
+
+    def _down(*a, **kw):  # noqa: ANN002, ANN003
+        raise OSError("network down")
+
+    monkeypatch.setattr(urllib.request, "urlopen", _down)
+    assert eric_live_search(HashEmbeddings(dim=16), query="chairman") == []
+
+
+# ---- explain_why (Why?-RAG chain) ----------------------------------------------
+
+def test_explain_why_returns_grounded_shape() -> None:
+    emb = HashEmbeddings(dim=32)
+    store = InMemoryStore(dim=32)
+    store.add(
+        ids=["d1"],
+        vectors=emb.embed(["gendered job titles like chairman"]),
+        texts=["Gendered job titles such as 'chairman' exclude non-male readers."],
+        metadatas=[{"title": "Style guide", "doc_id": "g1"}],
+    )
+    out = explain_why(MockLLM(), store, emb, span="the chairman", category="gendered")
+    assert set(out.keys()) == {"explanation", "citations", "augmented_prompt"}
+    assert isinstance(out["explanation"], str) and out["explanation"]
+    assert out["citations"], "seeded store must yield at least one citation"
+    assert {"id", "text", "score", "metadata"} <= set(out["citations"][0])
+    assert "[1]" in out["augmented_prompt"], "context blocks must be numbered"
+    assert "the chairman" in out["augmented_prompt"], "question must embed the span"
+
+
+def test_explain_why_empty_store_still_answers() -> None:
+    emb = HashEmbeddings(dim=32)
+    out = explain_why(MockLLM(), InMemoryStore(dim=32), emb, span="the chairman")
+    assert out["citations"] == []
+    assert "(no passages retrieved)" in out["augmented_prompt"]
+    assert isinstance(out["explanation"], str) and out["explanation"]
 
 
 # ---- propose_rewrite ---------------------------------------------------------
