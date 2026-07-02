@@ -17,7 +17,7 @@ dependencies = [
     "langchain==0.3.18",
     "langchain-core==0.3.34",
     "chromadb==0.5.23",
-    "pydantic==2.10.6",
+    "pydantic==2.11.7",
     "python-dotenv==1.0.1",
     # HTTP API + GUI (assignment-required endpoints). ASGI app deploys on Vercel.
     "fastapi==0.115.6",
@@ -43,7 +43,7 @@ live = [
     "qdrant-client==1.8.2",
     "requests==2.32.3",
     "pinecone==5.4.2",
-    "supabase==2.11.0",
+    "supabase==2.31.0",
 ]
 
 [project.scripts]
