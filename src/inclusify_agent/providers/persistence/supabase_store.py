@@ -9,6 +9,10 @@ Expected table (SQL):
         created_at timestamptz default now(),
         prompt text, status text, response text, step_count int, steps jsonb
     );
+    -- Supabase enables RLS by default; with the publishable (anon) key the
+    -- insert needs a policy (insert-only is enough — we write returning=minimal):
+    --   create policy "anon_insert_audit_runs" on audit_runs
+    --       for insert to anon with check (true);
 """
 from __future__ import annotations
 
@@ -36,12 +40,14 @@ class SupabasePersistence:
         steps: list[dict[str, Any]],
     ) -> None:
         try:
+            # returning="minimal": fire-and-forget write — also lets an
+            # insert-only RLS policy suffice (no select needed on the row).
             self._client.table(self._table).insert({
                 "prompt": prompt,
                 "status": status,
                 "response": response,
                 "step_count": len(steps),
                 "steps": steps,
-            }).execute()
+            }, returning="minimal").execute()
         except Exception as e:  # best-effort; never break the response
             print(f"[supabase] log_run failed: {type(e).__name__}: {e}", file=sys.stderr)

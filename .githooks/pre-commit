@@ -17,7 +17,10 @@ secrets=$(grep -vE '^[[:space:]]*#' "$ENV" \
 
 [ -z "$secrets" ] && exit 0
 
-staged=$(git diff --cached)
+# Only ADDED lines: a commit that removes a leaked value from a tracked file
+# must pass — that's the cleanup this hook exists to encourage. New leaks
+# (the value on a '+' line) still block.
+staged=$(git diff --cached | grep '^+' | grep -v '^+++')
 printf '%s\n' "$secrets" | while IFS= read -r val; do
   [ -z "$val" ] && continue
   if printf '%s' "$staged" | grep -qF -- "$val"; then

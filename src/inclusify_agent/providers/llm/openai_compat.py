@@ -41,10 +41,15 @@ class OpenAICompatLLM:
         messages.append({"role": "user", "content": prompt})
 
         client = self._get_client()
+        # Only send temperature when a caller asks for it: gpt-5.x endpoints
+        # (LLMod.ai/LiteLLM) reject any value other than the server default.
+        extra: dict[str, Any] = {}
+        if "temperature" in kwargs:
+            extra["temperature"] = kwargs["temperature"]
         resp = client.chat.completions.create(
             model=self._model,
             messages=messages,
             max_tokens=kwargs.get("max_tokens", 512),
-            temperature=kwargs.get("temperature", 0.0),
+            **extra,
         )
         return resp.choices[0].message.content or ""

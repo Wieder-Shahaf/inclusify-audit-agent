@@ -25,6 +25,14 @@ is at the root URL. The four endpoints (names fixed by the assignment spec):
 | `GET /api/model_architecture` | architecture diagram (PNG) |
 | `POST /api/execute` | `{prompt}` → `{status, error, response, steps}` — `steps` traces every LLM call (`module`, `prompt.{System_prompt,User_prompt}`, `response`) |
 
+Plus one extra endpoint — the PRD's on-demand "Why?" stage (RAG over the ERIC corpus,
+Medium-Article-RAG shape: over-fetch ×5 → dedup by document → strict-grounding prompt
+with refusal):
+
+| Endpoint | Returns |
+|---|---|
+| `POST /api/why` | `{span, category?, reason?}` → `{status, error, explanation, citations, augmented_prompt, steps}` — corpus-grounded explanation of why the span was flagged, with the retrieved passages and the exact augmented prompt |
+
 Run the API alone (no frontend container): `docker compose up api`, or natively
 `uvicorn inclusify_agent.server:app`. Deploy to Vercel: see [`docs/DEPLOY.md`](docs/DEPLOY.md).
 

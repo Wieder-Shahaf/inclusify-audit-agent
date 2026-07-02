@@ -161,6 +161,12 @@
     <div class="sec-label"><h2>Audit</h2><span>final agent response</span></div>
     <div class="card report" id="report"></div>
 
+    <div class="sec-label"><h2>Why?</h2><span>RAG-grounded explanation from the corpus, on demand</span></div>
+    <div class="card" id="why">
+      <div class="chips" id="why-chips"></div>
+      <div id="why-out"><p class="empty">Run an audit, then pick a flagged phrase.</p></div>
+    </div>
+
     <div class="sec-label"><h2>Reasoning trace</h2><span id="trace-count"></span></div>
     <div class="trace" id="trace"></div>
   </section>
@@ -244,6 +250,7 @@ async function runAgent(){
     }
     $("report").innerHTML = renderReport(data.response);
     $("trace").innerHTML = renderTrace(data.steps);
+    buildWhyChips(data.response);
   } catch(e){
     results.classList.add("show");
     banner.innerHTML = `<div class="banner err">Could not reach the agent: ${esc(e.message)}</div>`;
@@ -251,6 +258,70 @@ async function runAgent(){
     btn.disabled = false; btn.textContent = "Run audit";
   }
 }
+// "Why?" — per flagged span, ask /api/why for a corpus-grounded explanation.
+function extractFindings(md){
+  const out = [];
+  const lines = md.split("\n");
+  for (let i = 0; i < lines.length; i++){
+    // Span is Python-repr'd: single quotes normally, double when it contains an
+    // apostrophe. Skip retracted findings (they carry a "(RETRACTED)" suffix).
+    const m = lines[i].match(/^- \*\*(FLAG|ASK)\s*\*\* \[\w+\] (?:'(.+)'|"(.+)")$/);
+    if (!m) continue;
+    const cat = (lines[i+1] || "").match(/category:\s*(\w+)/);
+    out.push({span: m[2] || m[3], category: cat ? cat[1] : null});
+  }
+  return out;
+}
+
+function buildWhyChips(reportMd){
+  const box = $("why-chips"), outEl = $("why-out");
+  box.innerHTML = "";
+  outEl.innerHTML = '<p class="empty">Pick a flagged phrase.</p>';
+  const findings = extractFindings(reportMd);
+  if (!findings.length){
+    outEl.innerHTML = '<p class="empty">No flagged phrases in this audit.</p>';
+    return;
+  }
+  findings.forEach(f => {
+    const c = document.createElement("button");
+    c.className = "chip"; c.title = f.span;
+    c.textContent = "Why? — " + (f.span.length > 60 ? f.span.slice(0, 57) + "…" : f.span);
+    c.onclick = () => askWhy(f, c);
+    box.appendChild(c);
+  });
+}
+
+async function askWhy(f, chip){
+  const outEl = $("why-out");
+  chip.disabled = true;
+  outEl.innerHTML = '<p class="empty"><span class="spin"></span>Retrieving from the corpus…</p>';
+  try{
+    const res = await fetch("/api/why", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({span: f.span, category: f.category})
+    });
+    const data = await res.json();
+    if (data.status !== "ok"){
+      outEl.innerHTML = `<p class="empty">${esc(data.error || "Could not explain.")}</p>`;
+      return;
+    }
+    const cites = (data.citations || []).map((c, i) => {
+      const meta = c.metadata || {};
+      const title = meta.title || c.id;
+      const link = meta.url ? `<a href="${esc(meta.url)}" target="_blank">${esc(title)}</a>` : esc(title);
+      return `<li>[${i+1}] ${link} <span class="meta">(score ${Number(c.score).toFixed(2)})</span></li>`;
+    }).join("");
+    outEl.innerHTML = `
+      <p>${esc(data.explanation)}</p>
+      <ul style="margin:6px 0;padding-left:18px">${cites}</ul>
+      <details><summary>Augmented prompt</summary><pre class="usr">${esc(data.augmented_prompt || "")}</pre></details>`;
+  } catch(e){
+    outEl.innerHTML = `<p class="empty">Could not reach the agent: ${esc(e.message)}</p>`;
+  } finally {
+    chip.disabled = false;
+  }
+}
+
 $("run").addEventListener("click", runAgent);
 $("prompt").addEventListener("keydown", e => {
   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") runAgent();
