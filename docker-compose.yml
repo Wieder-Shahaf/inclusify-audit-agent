@@ -10,7 +10,7 @@ services:
       LLM_PROVIDER: mock
       EMBEDDINGS_PROVIDER: hash
       VECTOR_STORE: inmemory
-      GROUP_BATCH_ORDER: ${GROUP_BATCH_ORDER:-TBD_TBD}
+      GROUP_BATCH_ORDER: ${GROUP_BATCH_ORDER:-batch1_3}
     ports:
       - "8000:8000"
     volumes:

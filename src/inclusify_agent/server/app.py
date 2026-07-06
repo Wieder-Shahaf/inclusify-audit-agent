@@ -152,8 +152,8 @@ def api_why(body: WhyIn) -> dict[str, Any]:
 @app.get("/api/team_info")
 def api_team_info() -> dict[str, Any]:
     return {
-        # From the presentation list; override via env when assigned.
-        "group_batch_order_number": os.environ.get("GROUP_BATCH_ORDER", "TBD_TBD"),
+        # Assigned by the course presentation list; env can still override.
+        "group_batch_order_number": os.environ.get("GROUP_BATCH_ORDER", "batch1_3"),
         "team_name": "Inclusify",
         "students": [
             {"name": "Shahaf Wieder", "email": "shahafwieder@campus.technion.ac.il"},
