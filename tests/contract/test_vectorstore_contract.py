@@ -1,6 +1,6 @@
 """VectorStore contract: every impl must satisfy add/search semantics.
 
-Runs against InMemoryStore + ChromaStore (offline). QdrantStore needs a live endpoint
+Runs against InMemoryStore + ChromaStore (offline). PineconeStore needs a live endpoint
 and is tested separately under the 'live' marker.
 """
 from __future__ import annotations
@@ -13,7 +13,7 @@ from inclusify_agent.providers.embeddings import HashEmbeddings
 from inclusify_agent.providers.vectorstore import (
     ChromaStore,
     InMemoryStore,
-    QdrantStore,
+    PineconeStore,
     VectorStore,
 )
 
@@ -65,11 +65,11 @@ def test_chroma_satisfies_contract(tmp_path) -> None:
         gc.collect()
 
 
-def test_qdrant_class_satisfies_protocol() -> None:
+def test_pinecone_class_satisfies_protocol() -> None:
     # Don't instantiate (would hit live server); just check the class shape.
-    assert QdrantStore.name == "qdrant"
-    assert hasattr(QdrantStore, "add")
-    assert hasattr(QdrantStore, "search")
+    assert PineconeStore.name == "pinecone"
+    assert hasattr(PineconeStore, "add")
+    assert hasattr(PineconeStore, "search")
 
 
 def test_inmemory_rejects_wrong_dim() -> None:

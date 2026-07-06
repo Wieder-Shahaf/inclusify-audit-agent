@@ -1,11 +1,8 @@
-"""OpenAI-compatible embeddings (BGE-M3 on work VM, Azure later).
+"""OpenAI-compatible embeddings (course LLMod.ai text-embedding-3-small).
 
-The work-VM BGE-M3 endpoint returns 1024-dim vectors and accepts a list at
-/v1/embeddings (no separate batch path needed — verified at smoke time, see
-memory/work-vm-live-providers.md).
-
-Uses raw HTTP (requests) not the openai SDK — the endpoint omits the model
-metadata the SDK expects.
+Accepts a list at /v1/embeddings (base_url must NOT already include /v1 — this
+provider appends the path). Uses raw HTTP (requests) not the openai SDK — some
+endpoints omit the model metadata the SDK expects.
 """
 from __future__ import annotations
 
@@ -19,8 +16,8 @@ class OpenAICompatEmbeddings:
         self,
         base_url: str,
         api_key: str = "",
-        model: str = "bge-m3",
-        dim: int = 1024,
+        model: str = "text-embedding-3-small",
+        dim: int = 1536,
     ) -> None:
         if not base_url:
             raise ValueError("OpenAICompatEmbeddings requires base_url")

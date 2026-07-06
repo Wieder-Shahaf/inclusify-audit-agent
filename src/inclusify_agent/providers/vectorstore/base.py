@@ -1,4 +1,4 @@
-"""VectorStore interface. Phase 2 wires chroma + inmemory + qdrant."""
+"""VectorStore interface. Impls: chroma + inmemory (offline) + pinecone (live)."""
 from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
@@ -10,7 +10,7 @@ class VectorStore(Protocol):
 
     Records carry an id, vector, text, and arbitrary metadata. Search returns the top-K
     matches as (id, score, text, metadata) tuples — score semantics depend on the impl
-    (cosine for Chroma/Qdrant by default).
+    (cosine for Chroma/Pinecone by default).
     """
 
     name: str

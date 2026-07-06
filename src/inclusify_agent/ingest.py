@@ -5,8 +5,8 @@ Usage (offline default):
 
 Reads data/eric/academic_inclusivity_corpus.csv row-by-row (the file is ~42MB
 so we never load it whole), embeds each chunk's chunk_text, and upserts to the
-configured vector store. The default chroma path is .chroma/; pass --store qdrant
-to push to Qdrant (uses .env config).
+configured vector store. The default chroma path is .chroma/; pass --store pinecone
+to push to Pinecone (uses .env config).
 """
 from __future__ import annotations
 
@@ -76,9 +76,9 @@ def ingest(
     """Stream the CSV, embed in batches, upsert. Returns a small summary dict.
 
     Resilience for large live ingests:
-    - text_char_limit truncates outlier-long abstracts so BGE-M3 doesn't OOM /
-      hit context limits (8k chars is well below BGE-M3's 8k-token cap).
-    - max_retries: per-batch retry on transient network errors (Qdrant disconnects,
+    - text_char_limit truncates outlier-long abstracts so the live embedder doesn't
+      hit context limits.
+    - max_retries: per-batch retry on transient network errors (store disconnects,
       embedder timeouts). Exponential backoff.
     """
     if not corpus_path.exists():
@@ -161,7 +161,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     p.add_argument("--batch-size", type=int, default=64)
     p.add_argument("--embedder", choices=("hash", "local_st", "openai_compat"), default=None,
                    help="Override EMBEDDINGS_PROVIDER env.")
-    p.add_argument("--store", choices=("chroma", "inmemory", "qdrant"), default=None,
+    p.add_argument("--store", choices=("chroma", "inmemory", "pinecone"), default=None,
                    help="Override VECTOR_STORE env.")
     return p.parse_args(argv)
 
