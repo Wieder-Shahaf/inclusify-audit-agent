@@ -5,20 +5,10 @@ they don't quietly rot into "later means never".
 
 ## Open
 
-- **`AzureOpenAILLM` is a stub.** Raises `NotImplementedError` until the course issues
-  gpt-5-mini keys. Wiring is straightforward (OpenAI SDK with the Azure endpoint shape) —
-  finish in a follow-up phase once keys arrive. (See `src/inclusify_agent/providers/llm/azure.py`.)
-- **No Azure-shaped embeddings impl.** `OpenAICompatEmbeddings` works for vLLM-style
-  endpoints; Azure has a slightly different URL path (`/openai/deployments/...`). Extend
-  the same class with a deployment-aware base_url path when the course Azure embedding
-  deployment is known.
 - **Lexicon is abridged.** 43 entries in `src/inclusify_agent/data/inclusive_lexicon.json`,
   drawn from retext-equality + Tiny Heap. The full retext-equality set is ~907 categorized
   terms — load via a `--lexicon-path` override or expand the bundled JSON if Phase 5 ingest
   proves we want broader coverage.
-- **Reranker (`/rerank/cross-encoder`) not wired.** Available on the work VM; noted in
-  memory as YAGNI for v0. Reconsider if the RAG "Why?" path quality is poor under the
-  course Azure embeddings.
 - **`local_st` embeddings tested as a class only.** `LocalSTEmbeddings` is implemented but
   the contract test doesn't load the model (would need an 80MB sentence-transformers
   download). Add a smoke test under the `live` marker if/when the model is downloaded.
@@ -27,6 +17,10 @@ they don't quietly rot into "later means never".
 
 ## Closed
 
+- **Work-VM + Azure POC stacks removed.** `AzureOpenAILLM` (never left stub),
+  `QdrantStore`, `scripts/teardown_vm.sh`, and the Gemma/BGE-M3 wiring are deleted —
+  the verified LLMod.ai course proxy + Pinecone superseded both POC paths, and the
+  work-VM reranker idea went with them (2026-07-06).
 - **Synthetic gold set, not Achva.** `eval/achva.py` now measures classify_span agreement
   against the expert review set in `data/gold/achva/` (gitignored — expert data stays
   local; the script is committed, the data is not). `eval/gold.py`'s 8 synthetic items

@@ -4,8 +4,8 @@ services:
     build: .
     command: ["uvicorn", "inclusify_agent.server:app", "--host", "0.0.0.0", "--port", "8000"]
     # Offline-first by design: literal values, NOT ${...}, so a local .env pointing at
-    # live providers can't hijack `docker compose up`. To run against Azure/Pinecone in
-    # dev, use a compose override or `docker compose run -e LLM_PROVIDER=azure ...`.
+    # live providers can't hijack `docker compose up`. To run against live providers in
+    # dev, use a compose override or `docker compose run -e LLM_PROVIDER=openai_compat ...`.
     environment:
       LLM_PROVIDER: mock
       EMBEDDINGS_PROVIDER: hash

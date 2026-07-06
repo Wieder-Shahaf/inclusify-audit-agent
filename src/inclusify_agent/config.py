@@ -37,13 +37,6 @@ def build_llm() -> Any:
             api_key=os.environ.get("LLM_API_KEY", "fake"),
             model=os.environ["LLM_MODEL"],
         )
-    if name == "azure":
-        from .providers.llm import AzureOpenAILLM
-        return AzureOpenAILLM(
-            endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT", ""),
-            api_key=os.environ.get("AZURE_OPENAI_API_KEY", ""),
-            deployment=os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-5-mini"),
-        )
     raise ValueError(f"Unknown LLM_PROVIDER: {name!r}")
 
 
@@ -60,8 +53,8 @@ def build_embeddings() -> Any:
         return OpenAICompatEmbeddings(
             base_url=os.environ["EMBEDDINGS_BASE_URL"],
             api_key=os.environ.get("EMBEDDINGS_API_KEY", ""),
-            model=os.environ.get("EMBEDDINGS_MODEL", "bge-m3"),
-            dim=int(os.environ.get("EMBED_DIM", "1024")),
+            model=os.environ["EMBEDDINGS_MODEL"],
+            dim=int(os.environ.get("EMBED_DIM", "1536")),
         )
     raise ValueError(f"Unknown EMBEDDINGS_PROVIDER: {name!r}")
 
@@ -72,20 +65,12 @@ def build_vector_store(dim: int) -> Any:
         from .providers.vectorstore import ChromaStore
         return ChromaStore(
             path=os.environ.get("CHROMA_PATH", ".chroma"),
-            collection=os.environ.get("QDRANT_COLLECTION", "inclusify_eric"),
+            collection=os.environ.get("CHROMA_COLLECTION", "inclusify_eric"),
             dim=dim,
         )
     if name == "inmemory":
         from .providers.vectorstore import InMemoryStore
         return InMemoryStore(dim=dim)
-    if name == "qdrant":
-        from .providers.vectorstore import QdrantStore
-        return QdrantStore(
-            url=os.environ["QDRANT_URL"],
-            api_key=os.environ.get("QDRANT_API_KEY", ""),
-            collection=os.environ.get("QDRANT_COLLECTION", "inclusify_eric"),
-            dim=dim,
-        )
     if name == "pinecone":
         from .providers.vectorstore import PineconeStore
         return PineconeStore(

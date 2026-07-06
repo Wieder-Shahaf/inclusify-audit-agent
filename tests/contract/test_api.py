@@ -1,7 +1,7 @@
 """Contract tests for the assignment-required HTTP endpoints.
 
 Asserts the response *shapes* the spec mandates — not MockLLM literals — so the
-contract holds when providers are swapped for live Azure/Pinecone.
+contract holds when providers are swapped for the live course stack.
 """
 from __future__ import annotations
 

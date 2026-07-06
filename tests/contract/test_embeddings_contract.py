@@ -47,4 +47,4 @@ def test_openai_compat_class_satisfies_protocol() -> None:
     impl = OpenAICompatEmbeddings(base_url="http://localhost")
     assert isinstance(impl, EmbeddingsProvider)
     assert impl.name == "openai_compat"
-    assert impl.dim == 1024
+    assert impl.dim == 1536  # default matches course text-embedding-3-small

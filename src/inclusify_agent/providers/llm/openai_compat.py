@@ -1,7 +1,6 @@
-"""OpenAI-compatible LLM (vLLM / Azure / any OpenAI-shaped endpoint).
+"""OpenAI-compatible LLM (any OpenAI-shaped endpoint; used with the course LLMod.ai proxy).
 
-Serves the work-VM Gemma endpoint now and the course-issued Azure key later via the
-same shape (only base_url + api_key + model change). Lazy-imports the openai SDK so
+Only base_url + api_key + model change between endpoints. Lazy-imports the openai SDK so
 the offline default never pulls it in.
 
 The base_url and api_key live in .env (gitignored). Trace/log records the provider

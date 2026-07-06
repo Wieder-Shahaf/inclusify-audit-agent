@@ -79,16 +79,12 @@ with dedup against existing `doc_id`s.
 
 ## Run with live providers
 
-Three paths supported behind the same interfaces (see [`docs/NEEDS_KEYS.md`](docs/NEEDS_KEYS.md)
-for the exact env vars and verification status):
+One live stack, behind the same interfaces (see [`docs/NEEDS_KEYS.md`](docs/NEEDS_KEYS.md)
+for the exact env vars): the **course stack** — LLMod.ai proxy (gpt-5.4-mini +
+text-embedding-3-small) + Pinecone + Supabase run logging. **Verified live**; this is
+what the Vercel deployment uses. Any other OpenAI-compatible endpoint works the same way.
 
-1. **Course stack** — LLMod.ai proxy (gpt-5.4-mini + text-embedding-3-small) + Pinecone +
-   Supabase run logging. **Verified live**; this is what the Vercel deployment uses.
-2. **Work-VM (Gemma 4 + BGE-M3 + Qdrant)** — implemented and smoke-tested.
-3. **Course Azure (`AzureOpenAILLM`)** — stub; superseded in practice by the OpenAI-compat
-   course proxy (path 1).
-
-All swap by editing `.env` (gitignored) — no code change, just re-run ingest if the embedder's
+Swap by editing `.env` (gitignored) — no code change, just re-run ingest if the embedder's
 vector dim changes.
 
 ## What you get
@@ -104,9 +100,9 @@ vector dim changes.
 
 ```
 src/inclusify_agent/
-  providers/                 # interfaces + impls: llm/ (mock, openai_compat, azure),
+  providers/                 # interfaces + impls: llm/ (mock, openai_compat),
                              #   embeddings/ (hash, local_st, openai_compat),
-                             #   vectorstore/ (inmemory, chroma, qdrant, pinecone),
+                             #   vectorstore/ (inmemory, chroma, pinecone),
                              #   persistence/ (null, supabase)
   tools/                     # the 9 agent tools (chunk, lexicon_lookup, classify_span,
                              #   retrieve_citation, propose_rewrite, ask_user, record_finding,
@@ -122,7 +118,7 @@ data/eric/                   # ERIC corpus (gitignored, ~42MB, mounted at runtim
 data/gold/                   # Achva expert review set (gitignored — expert data stays local)
 tests/{unit,contract,e2e}/   # all offline; `live`-marked tests are opt-in
 eval/                        # gold harness + baseline ablation + Achva classifier eval
-scripts/                     # fetch_eric.py, gen_architecture.py, teardown_vm.sh
+scripts/                     # fetch_eric.py, gen_architecture.py
 docs/course/                 # submitted course deliverables (slides, project brief)
 ```
 
@@ -131,6 +127,5 @@ docs/course/                 # submitted course deliverables (slides, project br
 - Branch `dev` (feature work merges back via short-lived `feat/*` branches); per-phase tags
   `p0-bootstrap`…`p7`, milestone tags `v0-offline`, `v1-course-api`.
 - No Claude / Anthropic attribution on any commit (CLAUDE.md hard rule #1 + commit-msg hook).
-- `scripts/teardown_vm.sh` deletes ONLY the configured Qdrant collection(s) and gitignored local
-  stores — requires an interactive TTY + typed confirmation (CLAUDE.md hard rule #6); auto/yolo
-  cannot trigger it.
+- Destructive teardown of live resources (Pinecone indexes, Supabase tables) is human-only —
+  never from an agent session (CLAUDE.md hard rule #6).

@@ -35,7 +35,7 @@ def test_inmemory_selection(monkeypatch) -> None:
 def test_openai_compat_llm_selection_needs_env(monkeypatch) -> None:
     monkeypatch.setenv("LLM_PROVIDER", "openai_compat")
     monkeypatch.setenv("LLM_BASE_URL", "http://localhost:8222/v1")
-    monkeypatch.setenv("LLM_MODEL", "gemma-test")
+    monkeypatch.setenv("LLM_MODEL", "test-model")
     impl = config.build_llm()
     assert impl.name == "openai_compat"
 

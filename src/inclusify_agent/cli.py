@@ -1,9 +1,9 @@
 """Inclusify audit CLI.
 
 Usage:
-    python -m inclusify_agent.cli audit <input.txt> [--provider mock|openai_compat|azure]
+    python -m inclusify_agent.cli audit <input.txt> [--provider mock|openai_compat]
                                           [--format json|markdown]
-                                          [--store chroma|inmemory|qdrant]
+                                          [--store chroma|inmemory|pinecone]
                                           [--max-iters N]
                                           [--output PATH]
 """
@@ -65,8 +65,8 @@ def main(argv: list[str] | None = None) -> int:
 
     p_audit = sub.add_parser("audit", help="Audit a document for non-inclusive language.")
     p_audit.add_argument("input", help="Path to the input .txt file.")
-    p_audit.add_argument("--provider", choices=("mock", "openai_compat", "azure"), default=None)
-    p_audit.add_argument("--store", choices=("chroma", "inmemory", "qdrant"), default=None)
+    p_audit.add_argument("--provider", choices=("mock", "openai_compat"), default=None)
+    p_audit.add_argument("--store", choices=("chroma", "inmemory", "pinecone"), default=None)
     p_audit.add_argument("--format", choices=("json", "markdown"), default="json")
     p_audit.add_argument("--output", "-o", default=None,
                          help="Write to a file instead of stdout.")

@@ -293,7 +293,7 @@ def _build_finding(cur: Any, state: AgentState, rewrite_out: dict[str, Any]) -> 
     grounded = bool(cites)
     citation_obj: Citation | None = cites[0] if cites else None
     # Confidence rule: high when citation is strong; low when weak/missing (reflect
-    # retracts); medium in between. Thresholds tuned to live BGE-M3 cosine scores
+    # retracts); medium in between. Thresholds tuned to live embedding cosine scores
     # (the hash embedder produces a wider range; both work).
     top_score = cites[0].score if cites else 0.0
     if top_score >= 0.5:

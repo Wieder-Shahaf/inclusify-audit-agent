@@ -42,7 +42,7 @@ def propose_rewrite(
 
     `lexicon_hits` is optional but recommended when known: the system prompt tells the
     LLM to prefer the lexicon's suggested replacements over inventing its own. This
-    closes the "Gemma missed blacklist" gap from the first live run.
+    closes the missed-"blacklist" gap seen on the first live run.
     """
     hint_block = _format_hints(lexicon_hits)
     prompt = (
