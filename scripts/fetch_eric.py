@@ -1,6 +1,6 @@
 """Fetch additional ERIC documents via the public api.ies.ed.gov endpoint.
 
-Appends to data/eric/academic_inclusivity_corpus(in).csv using the same schema:
+Appends to data/eric/academic_inclusivity_corpus.csv using the same schema:
 chunk_id,source,doc_id,title,content_type,chunk_text,subject,year,peerreviewed,url,license
 
 No key required. Offline-default stays — this script is a developer tool, run on
@@ -23,7 +23,7 @@ from pathlib import Path
 
 API = "https://api.ies.ed.gov/eric/"
 _REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUT = _REPO_ROOT / "data" / "eric" / "academic_inclusivity_corpus(in).csv"
+DEFAULT_OUT = _REPO_ROOT / "data" / "eric" / "academic_inclusivity_corpus.csv"
 HEADER = [
     "chunk_id", "source", "doc_id", "title", "content_type", "chunk_text",
     "subject", "year", "peerreviewed", "url", "license",
