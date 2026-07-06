@@ -1,0 +1,12 @@
+# Normalize all text to LF in the repo and on checkout (the repo syncs between
+# macOS and Windows via OneDrive; CRLF churn previously faked whole-file diffs).
+* text=auto eol=lf
+
+# Binaries — never normalize
+*.png binary
+*.pdf binary
+*.pptx binary
+*.mp4 binary
+*.mp3 binary
+*.wav binary
+*.woff2 binary
