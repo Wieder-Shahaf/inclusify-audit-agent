@@ -12,8 +12,6 @@ they don't quietly rot into "later means never".
   endpoints; Azure has a slightly different URL path (`/openai/deployments/...`). Extend
   the same class with a deployment-aware base_url path when the course Azure embedding
   deployment is known.
-- **Synthetic gold set, not Achva.** `eval/gold.py` holds 8 hand-crafted items so the
-  ablation harness has shape; the real Achva gold set + numbers ship needs-keys.
 - **Lexicon is abridged.** 43 entries in `src/inclusify_agent/data/inclusive_lexicon.json`,
   drawn from retext-equality + Tiny Heap. The full retext-equality set is ~907 categorized
   terms — load via a `--lexicon-path` override or expand the bundled JSON if Phase 5 ingest
@@ -29,6 +27,10 @@ they don't quietly rot into "later means never".
 
 ## Closed
 
+- **Synthetic gold set, not Achva.** `eval/achva.py` now measures classify_span agreement
+  against the expert review set in `data/gold/achva/` (gitignored — expert data stays
+  local; the script is committed, the data is not). `eval/gold.py`'s 8 synthetic items
+  remain only as the offline ablation-harness shape (2026-07-06).
 - **`qdrant-client` version pin.** Server is 1.8.1; pinned client to `1.8.2` in
   `[live]` extras (2026-06-20).
 - **Live LLMs returned prose, not JSON.** Added explicit JSON-only system prompts to
