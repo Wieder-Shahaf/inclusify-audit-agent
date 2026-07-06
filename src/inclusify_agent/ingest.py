@@ -3,7 +3,7 @@
 Usage (offline default):
     python -m inclusify_agent.ingest --sample 50 --embedder hash
 
-Reads data/eric/academic_inclusivity_corpus(in).csv row-by-row (the file is ~42MB
+Reads data/eric/academic_inclusivity_corpus.csv row-by-row (the file is ~42MB
 so we never load it whole), embeds each chunk's chunk_text, and upserts to the
 configured vector store. The default chroma path is .chroma/; pass --store qdrant
 to push to Qdrant (uses .env config).
@@ -20,7 +20,7 @@ from typing import Any, Iterator
 
 from . import config
 
-_CORPUS_NAME = "academic_inclusivity_corpus(in).csv"
+_CORPUS_NAME = "academic_inclusivity_corpus.csv"
 
 
 def default_corpus_path() -> Path:
@@ -84,7 +84,7 @@ def ingest(
     if not corpus_path.exists():
         raise FileNotFoundError(
             f"ERIC corpus not found at {corpus_path}. "
-            "Place academic_inclusivity_corpus(in).csv in data/eric/."
+            "Place academic_inclusivity_corpus.csv in data/eric/."
         )
     embedder = embedder or config.build_embeddings()
     store = store or config.build_vector_store(dim=embedder.dim)

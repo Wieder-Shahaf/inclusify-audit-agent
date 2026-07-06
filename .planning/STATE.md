@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v0
 milestone_name: v0 Offline
 status: complete
-last_updated: "2026-06-20T20:00:00.000Z"
+last_updated: "2026-07-06T00:00:00.000Z"
 progress:
   total_phases: 8
   completed_phases: 8
@@ -20,9 +20,12 @@ See: .planning/PROJECT.md · Full design: docs/PRD.md · Build plan: docs/BUILD_
 
 **Core value:** An autonomous agent that owns its control flow to audit academic text for non-inclusive
 language and produce a citation-grounded, self-reviewed report.
-**Current focus:** v0-offline milestone complete (all 8 phases green; tag `v0-offline`).
-**Next:** wire course Azure when keys land (see docs/NEEDS_KEYS.md), or refine live-providers
-quality against the work-VM.
+**Current focus:** v0-offline complete (tag `v0-offline`); course live stack complete and
+verified (tag `v1-course-api`): HTTP API + GUI, Docker dev env, LLMod.ai LLM/embeddings,
+Pinecone, Supabase client, Vercel scaffold, Why?-RAG, Achva gold-set eval.
+**Next:** Supabase RLS insert policy (logging blocked until added — see
+`supabase_store.py` docstring), Vercel production deploy, real precision/recall numbers
+via `eval/achva.py` against live providers.
 
 ## Accumulated Context
 

@@ -65,7 +65,7 @@ Deliver a buildable Python 3.11 repo skeleton that lints, tests, and has a valid
 
 ### Integration Points
 - Phase 2 will fill in `providers/` impls — Phase 1's base.py files define the seams.
-- `data/eric/academic_inclusivity_corpus(in).csv` is already in place; Phase 5 will use it.
+- `data/eric/academic_inclusivity_corpus.csv` is already in place; Phase 5 will use it.
 
 </code_context>
 

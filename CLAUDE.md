@@ -25,7 +25,9 @@ Built **offline-first** (no API keys) by a GSD autonomous loop. Full design: `do
 
 ## Workflow
 
-- Branch **`dev`**; atomic commit + `git tag` per phase (`p1`…`v0-offline`) for rollback.
+- Branch **`dev`**; feature work on short-lived `feat/*` branches merged back promptly (don't
+  let stacks accumulate). Atomic commit + `git tag` per phase/milestone (`p0-bootstrap`…`p7`,
+  `v0-offline`, `v1-course-api`) for rollback.
 - Models (profile `balanced`): planning → Opus, **coding → Sonnet**; the main Opus session owns
   `ponytail-review` + strategy. Per phase: after tests green, run `/ponytail-review` and apply the delete-list.
 

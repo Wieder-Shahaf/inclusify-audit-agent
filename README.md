@@ -52,16 +52,16 @@ emits the JSON report to stdout.
 ### Native (Python 3.11)
 
 ```bash
-py -3.11 -m venv .venv
-.venv/Scripts/python.exe -m pip install ".[dev]"
-.venv/Scripts/python.exe -m inclusify_agent.cli audit data/fixtures/sample.txt \
+python3.11 -m venv .venv && .venv/bin/pip install ".[dev]"
+# Windows: py -3.11 -m venv .venv ; .venv\Scripts\pip install ".[dev]"
+.venv/bin/python -m inclusify_agent.cli audit data/fixtures/sample.txt \
     --provider mock --store inmemory
 ```
 
 Tests + eval (all key-free):
 
 ```bash
-pytest -q                              # 85 tests: imports + contract + unit + e2e
+pytest -q                              # imports + contract + unit + e2e, all offline
 python -m eval.run --mock              # control-flow divergence report
 python -m inclusify_agent.ingest --sample 50 --embedder hash   # builds .chroma/
 ```
@@ -74,19 +74,21 @@ python scripts/fetch_eric.py --queries data/eric/queries.txt --rows 100
 python scripts/fetch_eric.py --query "inclusive pedagogy" --rows 50
 ```
 
-Both append to `data/eric/academic_inclusivity_corpus(in).csv` (gitignored)
+Both append to `data/eric/academic_inclusivity_corpus.csv` (gitignored)
 with dedup against existing `doc_id`s.
 
 ## Run with live providers
 
-Two paths supported behind the same interfaces:
+Three paths supported behind the same interfaces (see [`docs/NEEDS_KEYS.md`](docs/NEEDS_KEYS.md)
+for the exact env vars and verification status):
 
-1. **Work-VM (Gemma 4 + BGE-M3 + Qdrant)** — already implemented; flip a few `.env` vars. See
-   [`docs/NEEDS_KEYS.md`](docs/NEEDS_KEYS.md) for the exact env.
-2. **Course Azure (gpt-5-mini)** — `AzureOpenAILLM` stub is in place; needs the deployment
-   wiring when keys are issued.
+1. **Course stack** — LLMod.ai proxy (gpt-5.4-mini + text-embedding-3-small) + Pinecone +
+   Supabase run logging. **Verified live**; this is what the Vercel deployment uses.
+2. **Work-VM (Gemma 4 + BGE-M3 + Qdrant)** — implemented and smoke-tested.
+3. **Course Azure (`AzureOpenAILLM`)** — stub; superseded in practice by the OpenAI-compat
+   course proxy (path 1).
 
-Both swap by editing `.env` (gitignored) — no code change, just re-run ingest if the embedder's
+All swap by editing `.env` (gitignored) — no code change, just re-run ingest if the embedder's
 vector dim changes.
 
 ## What you get
@@ -102,21 +104,32 @@ vector dim changes.
 
 ```
 src/inclusify_agent/
-  providers/                 # LLM, embeddings, vector store interfaces + impls
-  tools/                     # the 7 agent tools (chunk, lexicon_lookup, classify_span,
-                             #   retrieve_citation, propose_rewrite, ask_user, record_finding)
+  providers/                 # interfaces + impls: llm/ (mock, openai_compat, azure),
+                             #   embeddings/ (hash, local_st, openai_compat),
+                             #   vectorstore/ (inmemory, chroma, qdrant, pinecone),
+                             #   persistence/ (null, supabase)
+  tools/                     # the 9 agent tools (chunk, lexicon_lookup, classify_span,
+                             #   retrieve_citation, propose_rewrite, ask_user, record_finding,
+                             #   explain_why, eric_live_search)
   graph/                     # LangGraph state machine (perceive/route/act/reflect/stop)
+  server/                    # FastAPI app: GUI + /api/* endpoints (+ recording LLM for steps[])
   agent.py / cli.py / report.py / ingest.py
+api/index.py                 # Vercel ASGI entrypoint (path is fixed by Vercel)
+frontend/                    # web GUI (served by nginx container in docker compose)
 data/lexicon/                # see README; lexicon is bundled in src/inclusify_agent/data/
 data/fixtures/               # tiny demo input
 data/eric/                   # ERIC corpus (gitignored, ~42MB, mounted at runtime)
-tests/{unit,contract,e2e}/   # 76 tests, all offline
-eval/                        # gold harness + fixed-pipeline baseline + ablation runner
+data/gold/                   # Achva expert review set (gitignored — expert data stays local)
+tests/{unit,contract,e2e}/   # all offline; `live`-marked tests are opt-in
+eval/                        # gold harness + baseline ablation + Achva classifier eval
+scripts/                     # fetch_eric.py, gen_architecture.py, teardown_vm.sh
+docs/course/                 # submitted course deliverables (slides, project brief)
 ```
 
 ## Versioning + safety
 
-- Branch `dev`; per-phase tags `p1`…`p8`, `v0-offline`.
+- Branch `dev` (feature work merges back via short-lived `feat/*` branches); per-phase tags
+  `p0-bootstrap`…`p7`, milestone tags `v0-offline`, `v1-course-api`.
 - No Claude / Anthropic attribution on any commit (CLAUDE.md hard rule #1 + commit-msg hook).
 - `scripts/teardown_vm.sh` deletes ONLY the configured Qdrant collection(s) and gitignored local
   stores — requires an interactive TTY + typed confirmation (CLAUDE.md hard rule #6); auto/yolo
