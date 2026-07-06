@@ -16,3 +16,8 @@ memory
 .ruff_cache
 Dockerfile
 docker-compose.yml
+# Force the Python builder to install from requirements.txt (the lean serverless
+# dep set). With pyproject.toml present, uv installs its base deps instead —
+# which pulls chromadb (size cap) and MISSES the [live] extras (openai, requests,
+# pinecone, supabase) the deployed function needs.
+pyproject.toml

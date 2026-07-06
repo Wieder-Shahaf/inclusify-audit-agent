@@ -8,11 +8,20 @@ API (`/api/*`). On Vercel that's one Python serverless function — same-origin,
 | File | Role |
 |---|---|
 | `api/index.py` | ASGI entrypoint — exposes `app`; adds `src/` to the path |
-| `vercel.json` | routes every path to the function; `includeFiles` bundles `src/**` + `frontend/**`; `maxDuration` 60s (< the 300s API limit) |
+| `vercel.json` | routes every path to the function; `includeFiles` bundles `src/**` + `frontend/**`; `maxDuration` 60s (< the 300s API limit); `buildCommand: ""` — there is NO build step |
 | `requirements.txt` | runtime deps (no chromadb — the deployed API uses the in-memory store) |
-| `.vercelignore` | trims the bundle (corpus, tests, docs, venv) to stay under the size cap |
+| `.vercelignore` | trims the bundle (corpus, tests, docs, venv) to stay under the size cap. Also excludes `pyproject.toml` — otherwise Vercel's uv builder installs its base deps (pulls chromadb, misses the `[live]` extras) instead of `requirements.txt` |
+
+## Project settings (dashboard)
+
+- **Framework Preset:** Other. **Build Command / Output Directory / Install Command:** leave
+  empty — the function needs no build step (`vercel.json` pins `buildCommand: ""`, which
+  overrides the dashboard; do NOT put `docker compose up` or anything else there).
+- **Root Directory:** repo root.
 
 ## Deploy
+
+Connect the GitHub repo in the Vercel dashboard (every push to `main` deploys), or use the CLI:
 
 ```bash
 npm i -g vercel
@@ -33,13 +42,14 @@ Offline by default (no vars needed). To run the **course live stack**:
 | `LLM_API_KEY` | group LLMod.ai key |
 | `LLM_MODEL` | `MB5R2CF-azure/gpt-5.4-mini` |
 | `EMBEDDINGS_PROVIDER` | `openai_compat` |
-| `EMBEDDINGS_BASE_URL` | LLMod.ai base URL |
+| `EMBEDDINGS_BASE_URL` | LLMod.ai host **without** `/v1` — the provider appends `/v1/embeddings` itself |
 | `EMBEDDINGS_API_KEY` | group LLMod.ai key |
 | `EMBEDDINGS_MODEL` | `MB5R2CF-azure/text-embedding-3-small` |
 | `EMBED_DIM` | `1536` |
 | `PINECONE_API_KEY` / `PINECONE_INDEX` | Pinecone (if grounding against a Pinecone-ingested corpus) |
 | `PERSISTENCE_PROVIDER` / `SUPABASE_URL` / `SUPABASE_KEY` | `supabase` run logging |
 | `GROUP_BATCH_ORDER` | `<batch>_<order>` from the presentation list |
+| `ERIC_LIVE_SEARCH` | `1` to let weak local grounding fall back to the live (keyless) ERIC API |
 
 ## Verify after deploy
 
