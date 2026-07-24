@@ -12,6 +12,7 @@ so every endpoint works with no API keys. Swap providers via env (see config.py)
 """
 from __future__ import annotations
 
+import json
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -23,16 +24,17 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
 from .. import config
-from ..agent import run_audit
+from ..pipeline import run_v2
 from ..providers.vectorstore import InMemoryStore
-from ..report import render, to_markdown, validate
-from ..tools import explain_why
+from ..report import validate_v2
+from ..tools import eric_live_enabled, investigate, live_search_ladder, retrieve_citation
 from .recording_llm import RecordingLLM
 from .seed import seed_store
 
 _PKG_ROOT = Path(__file__).resolve().parents[1]   # src/inclusify_agent
 _REPO_ROOT = Path(__file__).resolve().parents[3]   # repo root
 _ARCH_PNG = _PKG_ROOT / "static" / "architecture.png"
+_EXAMPLES_PATH = _PKG_ROOT / "data" / "agent_info_examples.json"
 
 app = FastAPI(title="Inclusify Audit Agent", docs_url="/api/docs", redoc_url=None)
 
@@ -85,7 +87,8 @@ def _shared_rag() -> tuple[Any, Any]:
 
 # ----------------------------------------------------------------------------- agent
 def execute_prompt(prompt: str) -> dict[str, Any]:
-    """Run one audit and shape it into the required {status,error,response,steps}."""
+    """Run one v2 audit (DocumentAuditor -> EvidenceInvestigator -> ReportConsolidator)
+    and shape it into the required {status,error,response,steps}."""
     if not prompt or not prompt.strip():
         return {"status": "error", "error": "prompt is required and must be non-empty",
                 "response": None, "steps": []}
@@ -93,11 +96,12 @@ def execute_prompt(prompt: str) -> dict[str, Any]:
         steps: list[dict[str, Any]] = []
         llm = RecordingLLM(config.build_llm(), steps)
         embedder, store = _shared_rag()
-        final = run_audit(prompt, llm=llm, embedder=embedder, store=store)
-        report = render(final)
-        validate(report)
+        result = run_v2(prompt, llm=llm, store=store, embedder=embedder)
+        validate_v2(result["report"])
         return {"status": "ok", "error": None,
-                "response": to_markdown(report), "steps": steps}
+                "response": result["markdown"], "steps": steps}
+    except ValueError as e:  # guards (empty / non-English / too-large) -> a clean message
+        return {"status": "error", "error": str(e), "response": None, "steps": []}
     except Exception as e:  # surface a human-readable error, never 500 the agent
         return {"status": "error", "error": f"{type(e).__name__}: {e}",
                 "response": None, "steps": []}
@@ -126,7 +130,9 @@ class WhyIn(BaseModel):
 
 @app.post("/api/why")
 def api_why(body: WhyIn) -> dict[str, Any]:
-    """On-demand "Why?" — RAG-grounded explanation for a flagged span (PRD interactive stage)."""
+    """On-demand "Why?" — a single-finding EvidenceInvestigator run (PRD §4's module
+    map: `/api/why` = one EvidenceInvestigator over a user-supplied span, not a
+    whole-document audit). Response contract unchanged from v1's RAG-only version."""
     if not body.span.strip():
         return {"status": "error", "error": "span is required and must be non-empty",
                 "explanation": None, "citations": [], "steps": []}
@@ -134,11 +140,39 @@ def api_why(body: WhyIn) -> dict[str, Any]:
         steps: list[dict[str, Any]] = []
         llm = RecordingLLM(config.build_llm(), steps)
         embedder, store = _shared_rag()
-        out = explain_why(
-            llm, store, embedder,
-            span=body.span, category=body.category, reason=body.reason,
+
+        def corpus_search_fn(query: str) -> list[Any]:
+            return retrieve_citation(store, embedder, query=query, k=3)
+
+        live_search_fn = None
+        if eric_live_enabled():
+            def live_search_fn(*, phrases, any_of=(), min_year=None) -> list[Any]:
+                return live_search_ladder(
+                    embedder, phrases=phrases, any_of=any_of, min_year=min_year, k=3,
+                )
+
+        candidate_ctx = {
+            "quote": body.span,
+            "category": body.category or "potentially-offensive",
+            "reason": body.reason or "",
+            "sentence_text": body.span,
+            "paragraph_text": "",
+            "alternatives": [],
+            "occurrences_count": 1,
+        }
+        out = investigate(
+            llm, candidate_ctx, corpus_search=corpus_search_fn, live_search=live_search_fn,
         )
-        result = {"status": "ok", "error": None, "steps": steps, **out}
+        result = {
+            "status": "ok", "error": None,
+            "explanation": out["explanation"],
+            "citations": out["evidence"],
+            # Backward-compat field (test_api.py pins it): the final turn's user
+            # prompt, straight from the RecordingLLM trace rather than threaded
+            # through investigate()'s own return contract.
+            "augmented_prompt": steps[-1]["prompt"]["User_prompt"] if steps else "",
+            "steps": steps,
+        }
     except Exception as e:  # same contract as /api/execute: never 500 the agent
         result = {"status": "error", "error": f"{type(e).__name__}: {e}",
                   "explanation": None, "citations": [], "steps": []}
@@ -178,6 +212,11 @@ _EXAMPLE_PROMPTS = [
 
 @lru_cache(maxsize=1)
 def _examples() -> list[dict[str, Any]]:
+    """Precomputed on disk by `scripts/gen_examples.py` (PRD §8: a Vercel cold
+    start shouldn't re-run the audit pipeline on every request). Falls back to
+    computing them on first request when the file isn't there yet."""
+    if _EXAMPLES_PATH.exists():
+        return json.loads(_EXAMPLES_PATH.read_text(encoding="utf-8"))
     out = []
     for p in _EXAMPLE_PROMPTS:
         r = execute_prompt(p)
@@ -190,12 +229,17 @@ def api_agent_info() -> dict[str, Any]:
     return {
         "description": (
             "Inclusify is an autonomous curriculum-inclusivity auditor for higher "
-            "education. It reads human-written course material and flags gendered, "
-            "exclusionary, ableist, or culturally-insensitive phrasing, then proposes "
-            "inclusive rewrites grounded in a citable corpus. It audits text — it never "
-            "generates course content. Pipeline: Chunker -> LexiconScanner -> "
-            "SpanClassifier -> CitationRetriever -> RewriteComposer, with a Router "
-            "(ReAct control flow) and a Reflector that retracts low-confidence findings."
+            "education. It reads human-written English academic text -- papers, "
+            "syllabi, slides -- and audits it end to end: a DocumentAuditor reads "
+            "the whole document window by window and proposes candidate spans, "
+            "including implied bias with no trigger word; parallel "
+            "EvidenceInvestigators then research each candidate against a "
+            "retrieval corpus (CorpusSearch) and, when local evidence is weak, the "
+            "live ERIC API (LiveSearch), confirming or rejecting it with a "
+            "grounded explanation and an inclusive rewrite; a final "
+            "ReportConsolidator retracts contradicted or duplicate findings, "
+            "groups recurring patterns, and orders findings by severity. It "
+            "audits text — it never generates course content."
         ),
         "purpose": (
             "Help educators make papers, syllabi, and slides more inclusive without "

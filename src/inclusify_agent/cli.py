@@ -16,9 +16,9 @@ import sys
 from pathlib import Path
 
 from . import config
-from .agent import run_audit
+from .pipeline import run_v2
 from .providers.vectorstore import InMemoryStore
-from .report import render, to_markdown, validate
+from .report import validate_v2
 
 
 def _cmd_audit(args: argparse.Namespace) -> int:
@@ -37,14 +37,12 @@ def _cmd_audit(args: argparse.Namespace) -> int:
         store = config.build_vector_store(dim=embedder.dim)
 
     llm = config.build_llm()
-    final = run_audit(
-        text, llm=llm, embedder=embedder, store=store, max_iters=args.max_iters,
-    )
-    report = render(final)
-    validate(report)
+    result = run_v2(text, llm=llm, store=store, embedder=embedder)
+    report = result["report"]
+    validate_v2(report)
 
     if args.format == "markdown":
-        out = to_markdown(report)
+        out = result["markdown"]
     else:
         out = json.dumps(report, indent=2, default=str)
 
@@ -70,7 +68,8 @@ def main(argv: list[str] | None = None) -> int:
     p_audit.add_argument("--format", choices=("json", "markdown"), default="json")
     p_audit.add_argument("--output", "-o", default=None,
                          help="Write to a file instead of stdout.")
-    p_audit.add_argument("--max-iters", type=int, default=None)
+    p_audit.add_argument("--max-iters", type=int, default=None,
+                         help="Unused by the v2 pipeline; kept for CLI compatibility.")
     p_audit.set_defaults(func=_cmd_audit)
 
     args = parser.parse_args(argv)
