@@ -27,9 +27,10 @@ Built **offline-first** (no API keys). Full design: `docs/PRD.md`; build/process
 
 ## Workflow
 
-- Branch **`dev`**; feature work on short-lived `feat/*` branches merged back promptly (don't
-  let stacks accumulate). Atomic commit + `git tag` per phase/milestone (`p0-bootstrap`…`p7`,
-  `v0-offline`, `v1-course-api`) for rollback.
+- Feature work on short-lived `feat/*` branches, **PRs target `main`** (decided 2026-07-24;
+  `dev` retired as integration target — synced into main via PR #16). **Every push to `main`
+  auto-deploys to Vercel production** — merges must be deploy-safe. Atomic commit + `git tag`
+  per milestone (`p0-bootstrap`…`p7`, `v0-offline`, `v1-course-api`) for rollback.
 - Models (profile `balanced`): planning → Opus, **coding → Sonnet**; the main Opus session owns
   `ponytail-review` + strategy. Per phase: after tests green, run `/ponytail-review` and apply the delete-list.
 
