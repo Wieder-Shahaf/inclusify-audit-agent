@@ -265,6 +265,7 @@ def investigate(
             "category": candidate_ctx.get("category", ""),
             "top_score": top_score,
             "live_available": live_available,
+            "max_tokens": 1200,
         }
 
         raw = llm.complete(prompt, **call_kwargs)

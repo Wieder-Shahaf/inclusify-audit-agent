@@ -23,6 +23,7 @@ class OpenAICompatLLM:
         self._client = None  # lazy
         self.usage_in = 0
         self.usage_out = 0
+        self.last_finish_reason: str | None = None
 
     def _get_client(self) -> Any:
         if self._client is None:
@@ -47,6 +48,11 @@ class OpenAICompatLLM:
         extra: dict[str, Any] = {}
         if "temperature" in kwargs:
             extra["temperature"] = kwargs["temperature"]
+        # 512 is a bare-minimum fallback, not a sizing decision -- every real
+        # call-site passes its own max_tokens (audit_window/investigate/consolidate
+        # size for their own response shape); a caller that omits it gets a small
+        # response on purpose; don't quietly bump this default instead of fixing
+        # the call-site.
         resp = client.chat.completions.create(
             model=self._model,
             messages=messages,
@@ -57,7 +63,13 @@ class OpenAICompatLLM:
         if usage is not None:
             self.usage_in += getattr(usage, "prompt_tokens", 0) or 0
             self.usage_out += getattr(usage, "completion_tokens", 0) or 0
-        return resp.choices[0].message.content or ""
+        choice = resp.choices[0]
+        # Debug breadcrumb, no behavior change: a "length" finish_reason means the
+        # completion was cut off mid-output -- exactly the silent-truncation bug
+        # this max_tokens fix addresses. Not surfaced anywhere yet; inspect
+        # `llm.last_finish_reason` if a JSON-parse failure recurs.
+        self.last_finish_reason = getattr(choice, "finish_reason", None)
+        return choice.message.content or ""
 
     def usage(self) -> dict[str, int]:
         """Cumulative token usage across every `complete()` call on this instance

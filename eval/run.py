@@ -16,7 +16,10 @@ Prints:
 - Control-flow divergence: trace event types present in agent but not in baseline --
   informational only (v1-era P7 check); does not affect the exit code.
 - --gold doc instead prints span-level P/R/F1 + fp-on-correct + label-agnostic
-  span-detection P/R/F1 (eval.doc_gold.score), plus wall-clock and total LLM calls.
+  span-detection P/R/F1 (eval.doc_gold.score), plus wall-clock and total LLM calls,
+  plus windows_parse_failed (no-silent-caps: a window whose audit call never parsed,
+  even after the repair retry, degrades to zero candidates -- a "warning" field
+  appears when this is nonzero, since results are then a lower bound).
 
 Exit code: 0 whenever metrics were computed and printed (both --gold doc and the
 achva*/synthetic modes). Only argument errors / a missing gold file exit non-zero.
@@ -183,6 +186,7 @@ def _run_doc_gold(args: argparse.Namespace) -> int:
             predicted.append({"char_start": start, "char_end": end, "category": inv.category})
 
     metrics = score_doc(predicted, gold["spans"], min_overlap=0.5)
+    windows_parse_failed = result["stats"].get("windows_parse_failed", 0)
     report = {
         "gold_set": "doc",
         "gold_path": str(gold_path),
@@ -191,7 +195,13 @@ def _run_doc_gold(args: argparse.Namespace) -> int:
         "metrics": metrics,
         "wall_clock_s": round(wall_clock_s, 2),
         "llm_calls": len(steps),
+        "windows_parse_failed": windows_parse_failed,
     }
+    if windows_parse_failed:
+        report["warning"] = (
+            f"{windows_parse_failed} windows returned unparseable output — "
+            "results are a lower bound."
+        )
     print(json.dumps(report, indent=2))
     return 0
 

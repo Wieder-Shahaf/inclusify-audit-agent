@@ -240,8 +240,12 @@ def audit_window(llm: Any, window: Window, hints: list[dict[str, Any]]) -> dict[
     """
     hint_terms = [h["term"] for h in hints]
     prompt = _user_prompt(window, hints)
+    # 4000: a dense window's response can carry 20 hint_verdicts plus several
+    # candidates each quoting a full sentence verbatim -- the 512 provider default
+    # truncates that mid-JSON, which then "fails" the exact same way on the retry
+    # (same cap) and silently degrades to empty candidates (see parse_failed below).
     call_kwargs = {"system": _SYSTEM, "task": "audit", "window_text": window.text,
-                    "hint_terms": hint_terms}
+                    "hint_terms": hint_terms, "max_tokens": 4000}
 
     raw = llm.complete(prompt, **call_kwargs)
     parsed = _try_parse(raw)
