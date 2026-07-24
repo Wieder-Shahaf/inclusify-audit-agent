@@ -27,11 +27,15 @@ retext-equality file -> lexicon category map (per BUILD_PLAN R2 / project spec):
     ablist.yml        -> ableist
     lgbtq.yml         -> outdated
     race.yml          -> potentially-offensive
-    condescending.yml -> potentially-offensive
     suicide.yml       -> potentially-offensive
     misc.yml          -> exclusionary
-    press.yml         -> biased
-    slogans.yml       -> biased
+
+``condescending.yml``, ``press.yml``, and ``slogans.yml`` are deliberately EXCLUDED:
+they're general writing-style lists (hedge words like "easily"/"obvious"/"simple",
+political-slogan/press-jargon phrasing), not inclusive-language terms -- out of the
+inclusivity domain. Measured on the gold paper: "easily" alone fired 8x as a
+potentially-offensive hint, and "easy"/"simple"/"obvious" appear in virtually every
+syllabus, polluting the Auditor's sensor channel with non-inclusivity noise.
 
 Merge precedence on term collision (case-insensitive; first-listed source wins
 category + alternatives, notes/conditions concatenate)::
@@ -83,16 +87,16 @@ Entry = dict[str, Any]
 
 RETEXT_REPO_API = "https://api.github.com/repos/retextjs/retext-equality"
 RETEXT_RAW_TMPL = "https://raw.githubusercontent.com/retextjs/retext-equality/{sha}/data/en/{name}.yml"
+# condescending.yml/press.yml/slogans.yml excluded on purpose -- see module docstring
+# (writing-style/press-jargon lists, not inclusive-language terms; measured hint
+# pollution on the gold paper, e.g. "easily" firing 8x as potentially-offensive).
 RETEXT_FILE_CATEGORY = {
     "gender": "gendered",
     "ablist": "ableist",
     "lgbtq": "outdated",
     "race": "potentially-offensive",
-    "condescending": "potentially-offensive",
     "suicide": "potentially-offensive",
     "misc": "exclusionary",
-    "press": "biased",
-    "slogans": "biased",
 }
 
 
