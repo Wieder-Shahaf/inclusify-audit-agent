@@ -8,18 +8,23 @@ concurrent (BUILD_PLAN R4 exit check + ponytail: don't build fan-out until it's 
 from __future__ import annotations
 
 import re
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from .tools import (
     audit_window,
     build_hints,
+    eric_live_enabled,
     find_quote,
+    investigate,
     is_probably_english,
+    live_search_ladder,
     max_windows,
     parse,
+    retrieve_citation,
     scan_document,
 )
-from .tools.schemas import Candidate, Sentence
+from .tools.schemas import Block, Candidate, Investigation, LexiconHit, Sentence
 
 _WS_RE = re.compile(r"\s+")
 # PRD §4 [2] quote-verification acceptance slack: a verified quote's start must fall
@@ -168,4 +173,213 @@ def audit_document(
         "candidates": candidates,
         "trace": trace,
         "stats": stats,
+    }
+
+
+# ==== v2 evidence investigation (PRD §4 [3] / BUILD_PLAN R5) ==================================
+# `audit_document` above is unchanged. Everything below is additive: `investigate_all`
+# runs the EvidenceInvestigator tool loop over every candidate it produced, and
+# `run_v2` chains the two stages into one call.
+
+_WORD_RE = re.compile(r"\S+")
+
+
+def _lookup_sentence(sentence_by_id: dict[str, Sentence], candidate: Candidate) -> Sentence | None:
+    return sentence_by_id.get(candidate.sentence_id) if candidate.sentence_id else None
+
+
+def _paragraph_text(blocks: list[Block], sentence: Sentence | None, candidate: Candidate) -> str:
+    if sentence is not None:
+        return blocks[sentence.block_idx].text
+    for b in blocks:
+        if b.char_start <= candidate.char_start < b.char_end:
+            return b.text
+    return candidate.quote
+
+
+def _alternatives_for(candidate: Candidate, lexicon_hits: list[LexiconHit]) -> list[str]:
+    """Lexicon alternatives for hits landing inside any occurrence of this candidate's
+    span, deduped in first-seen order."""
+    alts: list[str] = []
+    seen: set[str] = set()
+    for h in lexicon_hits:
+        if not any(start <= h.char_start < end for start, end in candidate.occurrences):
+            continue
+        for a in h.alternatives:
+            if a not in seen:
+                seen.add(a)
+                alts.append(a)
+    return alts
+
+
+def _candidate_ctx(
+    candidate: Candidate,
+    sentence_by_id: dict[str, Sentence],
+    blocks: list[Block],
+    lexicon_hits: list[LexiconHit],
+) -> dict[str, Any]:
+    sentence = _lookup_sentence(sentence_by_id, candidate)
+    return {
+        "quote": candidate.quote,
+        "category": candidate.category,
+        "reason": candidate.reason,
+        "sentence_text": sentence.text if sentence is not None else candidate.quote,
+        "paragraph_text": _paragraph_text(blocks, sentence, candidate),
+        "alternatives": _alternatives_for(candidate, lexicon_hits),
+        "occurrences_count": len(candidate.occurrences),
+    }
+
+
+def _expand_occurrences(text: str, quote: str) -> list[tuple[int, int]]:
+    """Every raw-text occurrence of `quote`, whitespace- and case-normalized (PRD §4
+    [3]'s "investigate once, apply everywhere" -- closes an R4 gap): a per-window
+    Auditor call names a repeated framing once, and `audit_document`'s own
+    `find_quote` anchors only its first hit in that window, so a term repeated within
+    ONE window under-counts. Word-boundary-agnostic on purpose (exact phrase match
+    after normalization, no `\\b` guards) -- this only ever runs against a candidate's
+    own already-confirmed quote, not an arbitrary user pattern.
+    """
+    words = _WORD_RE.findall(quote)
+    if not words:
+        return []
+    pattern = re.compile(r"\s+".join(re.escape(w) for w in words), re.IGNORECASE)
+    return [(m.start(), m.end()) for m in pattern.finditer(text)]
+
+
+def investigate_all(
+    text: str,
+    audit_result: dict[str, Any],
+    *,
+    llm: Any,
+    store: Any,
+    embedder: Any,
+    concurrency: int = 5,
+) -> dict[str, Any]:
+    """Run the [3] EvidenceInvestigator stage over every candidate (PRD §4, BUILD_PLAN R5).
+
+    One investigation per `Candidate` -- `audit_document` already grouped recurring
+    framings, so this is "once per distinct framing" by construction. Investigations
+    are independent, so they run in parallel over a plain stdlib `ThreadPoolExecutor`;
+    wiring this into the LangGraph `Send` fan-out is R6's graph-assembly job, this
+    phase only needs the concurrency to actually exist and stay bounded. Confirmed
+    verdicts trigger occurrence expansion (`_expand_occurrences`) so a rewrite/verdict
+    decided once really does apply everywhere the phrase occurs.
+    """
+    candidates: list[Candidate] = audit_result.get("candidates", [])
+    if not candidates:
+        empty_stats = {
+            "confirmed": 0, "rejected": 0, "needs_human_review": 0, "total_llm_calls": 0,
+            "investigations": 0,
+        }
+        return {
+            "investigations": [],
+            "trace": [{"node": "investigate_summary", "detail": empty_stats}],
+            "stats": empty_stats,
+        }
+
+    sentence_by_id = {s.id: s for s in audit_result.get("sentences", [])}
+    blocks: list[Block] = audit_result.get("blocks", [])
+    lexicon_hits: list[LexiconHit] = audit_result.get("lexicon_hits", [])
+
+    def corpus_search_fn(query: str) -> list[Any]:
+        return retrieve_citation(store, embedder, query=query, k=3)
+
+    live_search_fn = None
+    if eric_live_enabled():
+        def live_search_fn(*, phrases, any_of=(), min_year=None) -> list[Any]:
+            return live_search_ladder(
+                embedder, phrases=phrases, any_of=any_of, min_year=min_year, k=3,
+            )
+
+    def run_one(candidate: Candidate) -> dict[str, Any]:
+        ctx = _candidate_ctx(candidate, sentence_by_id, blocks, lexicon_hits)
+        return investigate(llm, ctx, corpus_search=corpus_search_fn, live_search=live_search_fn)
+
+    results_by_id: dict[str, dict[str, Any]] = {}
+    with ThreadPoolExecutor(max_workers=concurrency) as pool:
+        futures = {pool.submit(run_one, c): c.id for c in candidates}
+        for future, cid in futures.items():
+            results_by_id[cid] = future.result()
+
+    investigations: list[Investigation] = []
+    trace: list[dict[str, Any]] = []
+    confirmed = rejected = needs_review = total_llm_calls = 0
+
+    for candidate in candidates:
+        result = results_by_id[candidate.id]
+        if result["verdict"] == "confirmed":
+            confirmed += 1
+            expanded = _expand_occurrences(text, candidate.quote)
+            if expanded:
+                candidate.occurrences = expanded
+        else:
+            rejected += 1
+        if result["needs_human_review"]:
+            needs_review += 1
+        total_llm_calls += result["turns"]
+
+        investigations.append(Investigation(
+            candidate=candidate,
+            verdict=result["verdict"],
+            category=result["category"],
+            secondary_category=result["secondary_category"],
+            explanation=result["explanation"],
+            rewrite=result["rewrite"],
+            confidence=result["confidence"],
+            needs_human_review=result["needs_human_review"],
+            evidence=result["evidence"],
+            turns=result["turns"],
+            forced=result["forced"],
+        ))
+        trace.append({
+            "node": "investigate",
+            "candidate_id": candidate.id,
+            "detail": {
+                "turns": result["turns"],
+                "actions": result["actions"],
+                "verdict": result["verdict"],
+                "confidence": result["confidence"],
+                "evidence_count": len(result["evidence"]),
+                "forced": result["forced"],
+                "occurrences": len(candidate.occurrences),
+            },
+        })
+
+    stats = {
+        "confirmed": confirmed,
+        "rejected": rejected,
+        "needs_human_review": needs_review,
+        "total_llm_calls": total_llm_calls,
+        "investigations": len(investigations),
+    }
+    trace.append({"node": "investigate_summary", "detail": stats})
+
+    return {"investigations": investigations, "trace": trace, "stats": stats}
+
+
+def run_v2(
+    text: str,
+    *,
+    llm: Any,
+    store: Any,
+    embedder: Any,
+    lexicon_path: str | None = None,
+    window_tokens: int = 1800,
+    concurrency: int = 5,
+) -> dict[str, Any]:
+    """[0]-[3] end to end: guards/parse/DocumentAuditor candidates, then
+    EvidenceInvestigator verdicts on each (PRD §4). [4] ReportConsolidator is R6's
+    job; callers get one merged dict meanwhile -- a single trace and combined stats.
+    """
+    audit_result = audit_document(
+        text, llm=llm, lexicon_path=lexicon_path, window_tokens=window_tokens,
+    )
+    invest_result = investigate_all(
+        text, audit_result, llm=llm, store=store, embedder=embedder, concurrency=concurrency,
+    )
+    return {
+        **audit_result,
+        "investigations": invest_result["investigations"],
+        "trace": audit_result["trace"] + invest_result["trace"],
+        "stats": {**audit_result["stats"], **invest_result["stats"]},
     }
