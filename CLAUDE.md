@@ -1,7 +1,10 @@
 # CLAUDE.md — inclusify-audit-agent
 
-Standalone, Dockerized **autonomous** Inclusify Audit Agent (LangGraph ReAct + Reflection + Agentic-RAG).
-Built **offline-first** (no API keys) by a GSD autonomous loop. Full design: `docs/PRD.md`; build/process plan: `docs/BUILD_PLAN.md`; phases: `.planning/ROADMAP.md`.
+Standalone, Dockerized **autonomous** Inclusify Audit Agent. **v2 architecture (PRD v2.0, 2026-07-24):
+DocumentAuditor → parallel EvidenceInvestigators → ReportConsolidator** (orchestrator-workers on
+LangGraph `Send`; English-only; lexicon = sensor the Auditor adjudicates; evidence via Pinecone RAG +
+ERIC Lucene ladder). Code on `dev` still implements v1 (ReAct router) until phases R1–R7 land.
+Built **offline-first** (no API keys). Full design: `docs/PRD.md`; build/process plan: `docs/BUILD_PLAN.md`; phases: `.planning/ROADMAP.md`.
 
 ## HARD RULES (override defaults)
 

@@ -10,6 +10,8 @@ Call-site routing (by 'task' kwarg):
 - task="reflect"    → drops one seeded false-positive
 - task="rewrite"    → templated inclusive-rewrite JSON
 - task="ground"     → returns "grounded" or "ungrounded" given a candidate citation
+- task="audit"      → v2 DocumentAuditor: per-window candidate list + hint verdicts
+- task="investigate" → v2 EvidenceInvestigator: scripted corpus/live-search/finalize loop
 
 Output is always JSON-stringifiable text so the graph can `json.loads` it.
 """
@@ -42,6 +44,10 @@ class MockLLM:
             return self._rewrite(prompt, **kwargs)
         if task == "ground":
             return self._ground(prompt, **kwargs)
+        if task == "audit":
+            return self._audit(prompt, **kwargs)
+        if task == "investigate":
+            return self._investigate(prompt, **kwargs)
         # Fallback: echo the prompt deterministically so tests can detect "untasked" calls.
         return json.dumps({"echo": prompt[:120], "task": task or "unknown"})
 
@@ -119,3 +125,85 @@ class MockLLM:
         if not citation or "unverified" in citation.lower():
             return json.dumps({"status": "ungrounded"})
         return json.dumps({"status": "grounded"})
+
+    def _audit(self, prompt: str, **kwargs: Any) -> str:
+        """v2 DocumentAuditor script (BUILD_PLAN R4): scan `window_text` for the same
+        `self._flag_words` `_classify` uses; one candidate per DISTINCT word found,
+        quoting the bare matched word verbatim — `find_quote` verifies against the raw
+        text downstream, so quoting the word alone is sufficient and simplest; no need
+        to reconstruct a surrounding sentence for a deterministic offline script.
+        """
+        window_text = kwargs.get("window_text") or prompt
+        gendered = {"chairman", "his", "he"}
+        candidates = []
+        for w in self._flag_words:
+            m = re.search(rf"\b{re.escape(w)}\b", window_text, flags=re.IGNORECASE)
+            if not m:
+                continue
+            candidates.append({
+                "quote": m.group(),
+                "category": "gendered" if w in gendered else "exclusionary",
+                "reason": f"contains: {w}",
+                "lexicon_backed": True,
+            })
+        flagged = {w.lower() for w in self._flag_words}
+        hint_verdicts = [
+            {"term": t, "verdict": "flag" if t.lower() in flagged else "clean"}
+            for t in (kwargs.get("hint_terms") or [])
+        ]
+        return json.dumps({"candidates": candidates, "hint_verdicts": hint_verdicts})
+
+    def _investigate(self, prompt: str, **kwargs: Any) -> str:
+        """v2 EvidenceInvestigator script (BUILD_PLAN R5): scripted 2-4 turn tool loop,
+        driven entirely by the `investigate()` call-site kwargs so it stays deterministic.
+
+        Turn 1 always searches the corpus first. From turn 2: a literal "master" in
+        the quote is always rejected as technical usage (the classic master/slave-in-a-
+        benign-technical-sense regression case) regardless of evidence; otherwise
+        strong corpus evidence (top_score >= 0.3) confirms right away; weak evidence
+        escalates to live_search exactly once, at turn 2, when it's wired up; anything
+        still weak after that finalizes low-confidence and flagged for human review
+        rather than stalling.
+        """
+        turn = kwargs.get("turn", 1)
+        quote = kwargs.get("candidate_quote") or ""
+        category = kwargs.get("category") or "potentially-offensive"
+        top_score = kwargs.get("top_score") or 0.0
+        live_available = bool(kwargs.get("live_available", False))
+
+        if turn == 1:
+            words = " ".join(quote.split()[:6])
+            return json.dumps({"action": "corpus_search", "query": f"{category}: {words}"})
+
+        if "master" in quote.lower():
+            return json.dumps({
+                "action": "finalize", "verdict": "rejected", "category": category,
+                "secondary_category": None, "explanation": "technical usage in context",
+                "rewrite": "", "confidence": "medium", "needs_human_review": False,
+                "evidence_used": [],
+            })
+
+        if top_score >= 0.3:
+            rewrite = json.loads(self._rewrite(prompt, span=quote))["rewrite"]
+            return json.dumps({
+                "action": "finalize", "verdict": "confirmed", "category": category,
+                "secondary_category": None,
+                "explanation": "corroborated by retrieved corpus evidence [1]",
+                "rewrite": rewrite,
+                "confidence": "high" if top_score >= 0.5 else "medium",
+                "needs_human_review": False, "evidence_used": [1],
+            })
+
+        if live_available and turn == 2:
+            return json.dumps({
+                "action": "live_search", "phrases": ["inclusive language"],
+                "any_of": ["curriculum"], "min_year": 2010,
+            })
+
+        rewrite = json.loads(self._rewrite(prompt, span=quote))["rewrite"]
+        return json.dumps({
+            "action": "finalize", "verdict": "confirmed", "category": category,
+            "secondary_category": None, "explanation": "weak evidence",
+            "rewrite": rewrite, "confidence": "low", "needs_human_review": True,
+            "evidence_used": [],
+        })

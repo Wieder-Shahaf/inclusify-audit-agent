@@ -1,193 +1,74 @@
-# Build & Autonomy Plan — `inclusify-audit-agent` (v0.2)
+# Build Plan — `inclusify-audit-agent` (v0.3, governs the v2 redesign)
 
-**Companion to:** `AI_Agent_Technical_PRD_draft.md` (the *what*). This is the *how we build it*: repo
-architecture, offline-first provider design, GSD autonomous-loop setup, Opus/Sonnet routing, and a roadmap
-with **runnable, key-free exit conditions** so the loop terminates cleanly without a live-LLM quality signal.
+**Companion to:** `docs/PRD.md` v2.0 (the *what*). This is the *how*: phase plan with offline exit
+checks, what survives from v1, testing strategy, and standing process rules.
 
-**Locked:** repo `inclusify-audit-agent/` (inside the course Project folder) · GSD `new-project → autonomous` (yolo + auto-chain) ·
-model split (plan/review → Opus 4.8 max, code → Sonnet medium) · offline-first (no LLM/vector keys) ·
-**ponytail** (prompt-only) as the coding-leanness ruleset + per-phase review gate.
+**History:** v0-offline (8 GSD phases, tag `v0-offline`) and v1-course-api (live stack + endpoints,
+tag `v1-course-api`) are **complete**; their detailed plan is this file @ `v1-course-api` in git.
+Standing rules from that era still govern (§4).
 
 ---
 
-## 1. Objective & terminal condition
+## 1. Objective
 
-Build the standalone **Inclusify Audit Agent** (ReAct + Reflection + Agentic-RAG, PRD §3–9) as an
-independently Dockerized repo, developed by a **GSD autonomous loop**. With **no API keys**, the loop's
-terminal condition is the **offline DoD** (§9): everything buildable/testable against **mock/local providers**
-is complete and green; anything needing live gpt-5-mini/Azure is implemented behind an interface, left
-dormant, and listed in the **needs-keys checklist**.
+Rebuild the agent core to the v2 architecture — **DocumentAuditor → parallel EvidenceInvestigators
+→ ReportConsolidator** on LangGraph (`Send` fan-out) — while keeping the endpoint contract, provider
+abstraction, offline-first guarantee, and eval harness. Every phase exits on a command returning 0
+with **zero API keys**; live checks are isolated in R7.
 
-> GSD executes a roadmap to *completion*; it does not "improve until it plateaus." With no real-LLM quality
-> signal, the roadmap DoD **is** the plateau. Every phase below therefore exits on a command that returns 0.
+## 2. What survives v1 untouched vs. what changes
 
-## 2. Repo architecture
-
-```
-inclusify-audit-agent/
-├── .planning/                 # GSD: PROJECT.md, ROADMAP.md, STATE.md, config.json
-├── .claude/
-│   ├── agents/                # per-agent model frontmatter (Opus vs Sonnet)
-│   ├── skills/                # vendored ponytail*/SKILL.md (prompt-only, pinned commit)
-│   └── settings.local.json    # permission allowlist (§5.3) so yolo runs unattended
-├── pyproject.toml             # PINNED deps; ruff + pytest config
-├── README.md                  # offline run in 1 command + with-keys mode
-├── .env.example               # ALL keys optional; offline defaults documented
-├── .gitignore                 # data/eric/*, .chroma/, models/, .env, __pycache__
-├── .githooks/commit-msg       # strips any Claude/Anthropic author/co-author trailer (§5.6)
-├── Dockerfile                 # CPU-only, multi-stage (dev/runtime)
-├── docker-compose.yml         # services: ingest (one-shot) · agent   (chroma = embedded, no service)
-├── data/
-│   ├── lexicon/               # retext-equality + Tiny Heap (bundled ~0.1 MB)
-│   ├── fixtures/              # tiny sample docs + seeded citations for offline e2e
-│   └── eric/                  # ERIC corpus (gitignored, NOT in image)
-├── src/inclusify_agent/
-│   ├── config.py              # env-driven provider selection; offline defaults
-│   ├── providers/
-│   │   ├── llm/               # base.py · mock_llm.py · azure_openai_llm.py
-│   │   ├── embeddings/        # base.py · hash.py · local_st.py · azure.py
-│   │   └── vectorstore/       # base.py · chroma_store.py · inmemory.py
-│   ├── tools/                 # chunk · lexicon_lookup · classify_span · retrieve_citation
-│   │   │                      #        · propose_rewrite · ask_user · record_finding
-│   ├── graph/                 # LangGraph: state.py · nodes.py · routing.py · reflection.py · build.py
-│   ├── agent.py · report.py · ingest.py · cli.py · api.py
-├── tests/  unit/ · contract/ · e2e/
-└── eval/   gold-set harness + agent-vs-pipeline ablation (structure offline)
-```
-
-## 3. Offline-first provider design (keystone)
-
-`config.py` selects each provider from env; **dev defaults need no key**.
-
-| Interface | Dev default (no key) | Prod (key) | Notes |
-|---|---|---|---|
-| `LLMProvider` | **`MockLLM`** | `AzureOpenAILLM` (gpt-5-mini) | see determinism note ↓ |
-| `EmbeddingsProvider` | **`hash`** (tests/CI, fully offline) · `local_st` MiniLM (richer ingest, one-time *download*, no key) | Azure `text-embedding-3-small` | `hash` guarantees no-network runs |
-| `VectorStore` | **`Chroma`** embedded (local file) · `inmemory` (tests) | same Chroma | **no hosted DB, no key** |
-
-**`MockLLM` must drive the *whole* graph, not just classification.** It returns deterministic, schema-valid
-outputs for **every** LLM call site: `classify_span` (fixed issues for fixture spans), the **reason/route**
-node (a scripted tool-choice sequence so the ReAct loop is fully exercised), `reflect` (drops one seeded
-false-positive), and `propose_rewrite` (templated). Determinism → reproducible e2e + a **stable decision-trace**
-that tests assert on. **Contract tests** (`tests/contract/`) prove `MockLLM`/`AzureOpenAILLM` are interchangeable.
-
-## 4. PRD → phase traceability (nothing dropped)
-
-| PRD element | Built in |
+| Survives (do not rewrite) | Changes |
 |---|---|
-| 7 tools (chunk, lexicon, classify, retrieve_citation, rewrite, ask_user, record) | P3 |
-| ReAct loop + tool election + self-owned stop | P4 |
-| Reflection node | P4 |
-| Agentic-RAG grounding + retract-if-ungrounded | P4 (logic) + P5 (corpus) |
-| Clarifying-question (`ask_user` dual-mode) | P3 (tool) + P4 (routing) |
-| Adaptive scrutiny (cheap→escalate→skip) | P4 routing |
-| Output schema + decision-trace | P6 |
-| Eval + agent-vs-pipeline ablation | P7 |
-| Docker standalone | P0 skeleton + P8 |
+| `providers/` — llm (mock, openai_compat) · embeddings (hash, local_st, openai_compat) · vectorstore (inmemory, chroma, pinecone) · persistence (null, supabase) | `graph/` — nodes/edges replaced (perceive → audit → Send fan-out → consolidate → report); route node deleted |
+| `server/app.py` endpoint contract + GUI + `RecordingLLM` mechanism | `MODULE_BY_TASK` → `{audit, investigate, consolidate}`; agent_info examples precomputed |
+| `tools/retrieve_citation.py` (over-fetch ×5 + dedup) | `tools/chunk.py` → `parse()` (blocks/sentences/windows, offset-exact); `classify_span`/`propose_rewrite` folded into Auditor/Investigator prompts |
+| `tools/eric_live_search.py` env-gate + never-raise | gains the compiled Lucene query ladder + `{phrases, any_of, min_year}` contract |
+| eval harness structure (`eval/run.py`, `gold.py`, `achva.py`) | gains the document-level gold + overlap scorer |
+| CLI / Docker / Vercel entrypoints | report schema → v2.0 (5-field contract per finding) |
+| MockLLM keystone pattern | new scripted tasks: `audit`, `investigate`, `consolidate` |
 
-## 5. GSD setup & model routing
+## 3. V2 phase plan (each exit runs offline unless marked LIVE)
 
-**5.1 Bootstrap (P0, done by Opus before the loop):** `mkdir inclusify-audit-agent && git init` (in the course Project folder) →
-`git checkout -b dev` → write base files (§2) + seed `.planning/` from the PRD → write `config.json`,
-`.claude/agents/*` model frontmatter, `.claude/settings.local.json` → **vendor ponytail prompt-only skills (§5.5)** → **install the git-attribution hook + `CLAUDE.md` rule (§5.6)** →
-`git tag p0-bootstrap` → launch `gsd-autonomous` at **standard granularity**.
-
-**5.2 Model routing (custom):**
-
-| Role | Model | Effort |
+| Phase | Deliverable | Exit check (returns 0) |
 |---|---|---|
-| main session (strategy/decisions, this loop) | **Opus 4.8** | max |
-| planner / researcher / plan-check / verifier / code-reviewer | **Opus 4.8** | max where settable |
-| **executor (coding)** | **Sonnet** | medium |
+| **R1 Chunker + guards** | `parse(text) → (blocks, sentences, windows)` with char offsets; abbreviation-guarded sentence split; window packing (~1.8k tok, heading path, last-¶ overlap); quote-verification helper (exact + whitespace-normalized offset map); guards (empty / non-Latin / >40 windows) | `pytest tests/unit/test_parse.py -q` — offsets round-trip on fixtures incl. the gold paper's fulltext; guard cases covered |
+| **R2 Lexicon expansion** | `scripts/build_lexicon.py`: retext-equality YAML (MIT) + INI + Tiny Heap occupations + curated APA/NCDJ/GLAAD CSVs → bundled JSON `{term, category, alternatives, note, condition, source}`; provenance table in README | `python scripts/build_lexicon.py && pytest tests/unit/test_lexicon.py -q` — ≥1,500 entries, schema-valid, `condition` carried, whole-doc scan < 100 ms on gold fulltext |
+| **R3 Gold assets + scorer** | `data/gold/achva/doc_gold.json` (fulltext + 97 deduped spans, char offsets, label sets) built from the annotated PDF; overlap scorer (≥50 % char overlap; label ∈ gold set); review_set loader | `python -m eval.run --gold doc --mock` exits 0 and prints span P/R/F1 + FP-rate-on-correct (mock numbers are placeholders; the *harness* is the deliverable) |
+| **R4 DocumentAuditor** | auditor prompt (doctrine + fixed English Achva exemplars, identical across calls); per-window call; candidate JSON parsing + repair retry; verbatim quote verification; overlap dedupe; recurrence grouping; MockLLM `audit` task | `pytest tests/e2e/test_audit_v2.py -q` — fixture doc yields verified-offset candidates; every lexicon hint adjudicated; bounded windows |
+| **R5 EvidenceInvestigator** | tool loop (≤4 turns; native tool-calls, JSON-action fallback); `corpus_search` + `live_search` ladder; parallel `Send` fan-out (≤5); confirm/reject verdicts; MockLLM `investigate` script (incl. one scripted reject + one escalation) | `pytest tests/e2e -q` — trace shows ≥1 model-written query, ≥1 reject, escalation path exercised, all loops within bounds, zero network (live_search gated off) |
+| **R6 Consolidator + report** | consolidation prompt (retract-with-rationale, patterns, severity); report v2.0 renderer (markdown + JSON); `steps[]` modules wired; architecture PNG regenerated; agent_info precomputed; `/api/why` rerouted to single-finding Investigator | `pytest -q` (full suite) + `python -m inclusify_agent.cli audit data/fixtures/sample.txt --provider mock` emits schema-valid v2.0 report; diagram module names == `MODULE_BY_TASK` values |
+| **R7 Calibration + live (LIVE)** | Achva P/R on both gold layers with live providers; threshold/prompt tuning; budget ledger in Supabase + GUI; latency check on the gold paper (<300 s); Vercel deploy; README metrics table; v1-tag ablation row | `python -m eval.run --gold all --live` prints the metrics table; `/api/execute` on Vercel with the gold paper < 300 s; tag `v2-redesign` |
 
-Via `gsd-set-profile`/`gsd-settings` + per-agent frontmatter if stock profiles don't split cleanly. **Caveat
-(verified at P0):** model is reliably per-agent; *effort* is largely session-level — I'll report the exact
-knobs and, worst case, accept a model-only split with the main session at Opus-max.
+Rollback: atomic commit + tag per phase (`r1`…`r7`), same convention as v0/v1.
 
-**5.3 Permission allowlist** (enumerated, scoped to the repo so yolo never stalls):
-`Bash(python:* )`, `Bash(python3:*)`, `Bash(pip:*)`, `Bash(pip3:*)`, `Bash(pytest:*)`, `Bash(ruff:*)`,
-`Bash(git:*)`, `Bash(docker:*)`, `Bash(docker compose:*)`, `Bash(ls/find/grep/cat/echo/mkdir/wc:*)`,
-`Write`/`Edit` under the repo, `Skill(gsd-*)`. **No** prod creds, **no** network-required step at runtime.
+## 4. Standing process rules (unchanged, still binding)
 
-**5.4 Runtime specifics:** Python **3.11**; base image `python:3.11-slim`; Chroma persisted to a named Docker
-volume mounted into both `ingest` and `agent`; `eval/` is an importable package (`eval/__init__.py`).
-Per-phase rollback tags: `p1`, `p2`, …, `v0-offline`.
+- **Offline-first is a hard rule:** MockLLM + `hash` embedder + seeded in-memory store must drive
+  the *entire* v2 graph; the full suite stays green with zero keys. Anything needing keys lives in
+  R7 + `docs/NEEDS_KEYS.md`.
+- **Git:** branch `dev`, short-lived `feat/*` merged promptly; **no Claude/Anthropic attribution**
+  anywhere in commits/PRs (CLAUDE.md hard rule #1 + `.githooks/commit-msg`).
+- **Leanness:** ponytail `full`; provider interfaces remain YAGNI-exempt; per-phase
+  `ponytail-review` before closing.
+- **Destructive teardown is human-only** (CLAUDE.md hard rule #6).
 
-**5.5 Ponytail integration (prompt-only).** Vendor `skills/ponytail*/SKILL.md` from `DietrichGebert/ponytail`
-(MIT, **pinned at commit `0403c4d`**, reviewed 2026-06-19) into `.claude/skills/` — **only the `SKILL.md`
-prompt files**. We do **not** install its Node lifecycle hooks, MCP server, statusline, or plugin runtime —
-**no third-party code executes in the yolo loop**. Mapping onto the model split: the **Sonnet executor** writes
-under the ponytail ladder at mode **`full`** (YAGNI → stdlib → native → dep → one line → minimum; never cuts
-validation / security / a11y / tests); the **Opus reviewer** runs **`ponytail-review`** per phase and
-**`ponytail-audit`** + **`ponytail-debt`** at P8. Aligns with the PRD's own less-is-more ethos.
+## 5. Testing strategy (v2 invariants)
 
-**5.6 Git attribution rule (HARD — overrides defaults).** No commit, PR, or push may credit **Claude / Claude
-Code / Anthropic** as author or co-author. **Forbidden anywhere in a commit message or PR title/body:** any
-`Co-Authored-By: Claude…` trailer, and any `Generated with Claude Code` / `🤖 Generated…` line. Enforced two
-ways: (1) the repo **`CLAUDE.md`** states the rule for every executor/reviewer agent; (2) a versioned
-**`commit-msg` hook** (`.githooks/commit-msg`, set via `git config core.hooksPath .githooks`) **strips** those
-lines automatically — so a slip never reaches history and the loop never stalls. The GSD `ship`/PR step carries
-the same rule for PR bodies.
+unit (parse offsets, lexicon schema/speed, ladder compilation, quote verification) ·
+contract (providers unchanged; MockLLM determinism for the three new tasks) ·
+e2e (offline full-graph run) · eval (gold harness).
 
-## 6. ROADMAP — phases for `gsd-autonomous` (every exit = a command returning 0)
+**Anti-tautology — e2e asserts structural invariants, never MockLLM literals:**
+report schema-valid; every finding's quote verbatim-verifiable at its offsets; trace contains
+≥1 investigator **reject** and ≥1 consolidator **retract** (seeded by the mock script);
+≥1 model-written query string in the trace; every investigation ≤4 turns; windows ≤ cap;
+lexicon hints all adjudicated (hint count == adjudication count); clean-doc run makes
+0 investigator/consolidator calls.
 
-| Phase | Depends | Deliverable | Exit check (runs offline) |
-|---|---|---|---|
-| **P0 Bootstrap** | — | repo, branch `dev`, GSD seeded, config/permissions/models set | `git tag p0-bootstrap`; model split confirmed |
-| **P1 Scaffold** | P0 | `pyproject` (pinned), ruff/pytest, Dockerfile+compose, README stub, **import smoke** | `ruff check . ` =0; `pytest -q` =0; `python -c "import langgraph,langchain,chromadb"` =0; `docker compose config` =0 |
-| **P2 Providers** | P1 | LLM/embeddings/vectorstore interfaces + `MockLLM` + `hash`/`local_st` + Chroma/inmemory | `pytest tests/contract -q` =0 (all impls conform); MockLLM determinism test =0 |
-| **P3 Tools** | P2 | all 7 tools + unit tests | `pytest tests/unit -q` =0 |
-| **P4 Graph** | P3 | LangGraph state machine + routing + reflection + stop + trace; uses **`inmemory` store seeded from `data/fixtures`** | `pytest tests/e2e -q` =0: audit of fixture yields ≥1 finding, ≥1 *retracted/asked* span, non-empty trace |
-| **P5 Ingest** | P2 | ERIC→Chroma + `--sample N`; embedder `hash` (gate, offline) / `local_st` (optional, one-time download) | `python -m inclusify_agent.ingest --sample 50 --embedder hash` builds a store; `retrieve_citation` returns ≥1 hit (test) =0 — **no network** |
-| **P6 Report + entrypoints** | P4,P5 | output schema + renderer + CLI (+API) | `python -m inclusify_agent.cli audit data/fixtures/sample.txt --provider mock` emits valid JSON (schema-checked) with findings + trace; exit 0 |
-| **P7 Eval/ablation** | P6 | gold-set harness (structure) + agent-vs-pipeline ablation | `python -m eval.run --mock` =0 and prints **control-flow divergence** — the agent emits `ask`/`retract` trace events where the fixed-order baseline does not. Proves *capability*, not quality; real metrics are needs-keys (§9). |
-| **P8 Package** | P6,P7 | end-to-end Docker, offline demo, README, **needs-keys checklist**, **`ponytail-audit` + `ponytail-debt` ledger** | `docker compose up` runs a demo audit on a fixture and writes a report; `ponytail-audit` prints `net: -N lines/-M deps`; `ponytail-debt` ledger written; `git tag v0-offline` |
+## 6. Definition of Done (v2)
 
-**Per-phase leanness gate:** after a coding phase's tests go green and before it closes, the Opus reviewer runs
-**`ponytail-review`** on the phase diff and the executor applies the delete-list — folded into the phase's
-`code-reviewer` gate, so over-engineering can block phase closure just like a failing test.
-
-## 7. Testing strategy
-
-unit (tools/providers) · contract (provider conformance — same suite for mock & real) · e2e (full offline
-audit). **All green with zero keys** is the bar GSD's `verifier`/`nyquist` gates enforce per phase. Optional
-GitHub Actions CI runs the same, key-free (uses `hash` embedder for no-network).
-
-**Anti-tautology:** e2e/contract tests assert **structural invariants** — valid output schema; the trace
-contains an `ask` and a `retract` event; ≥1 *grounded* finding; the loop stops within `max_iters` — **not** the
-exact `MockLLM` strings, so a test can't pass merely because the same executor authored both the mock and the
-assertion. The Opus `code-reviewer`/`verifier` owns the *intent* of these invariants.
-
-## 8. Risks & guardrails (yolo autonomous coding)
-
-| Risk | Concrete guardrail |
-|---|---|
-| Destructive command | allowlist scoped to repo (§5.3); no prod creds present; work on branch `dev`, never `main` |
-| Unrecoverable bad state | **atomic commit + `git tag` per phase** → `git reset --hard <tag>` rolls back any phase |
-| Sonnet coding drift / **over-building** | Opus `plan-check`+`verifier`+`code-reviewer` gates; **ponytail ladder always-on for the executor** + per-phase **`ponytail-review`**; phase can't close until its exit check returns 0 |
-| **Phase fails repeatedly** | policy: executor retries ≤2; still failing → **pause and checkpoint to human** (even under yolo) instead of thrashing |
-| Loop spins w/o quality signal | runnable per-phase exits (§6) + global offline DoD (§9) |
-| Secret hygiene | `.env` gitignored; only `.env.example`; no keys exist yet; CI key-free |
-| Cost runaway | bulk coding on Sonnet; cap loop at the 8 phases; Opus only on plan/review/verify |
-| Version churn (LangGraph/LangChain/Chroma) | **pin versions** in `pyproject`; P1 import-smoke catches breakage immediately |
-| `local_st` needs a download | `hash` embedder is the no-network default for tests/CI; `local_st` only for richer local ingest |
-| ERIC bloats repo/image | gitignored, streamed at ingest, excluded from image; only a fixture is bundled |
-| **Vacuous/tautological tests** (executor writes the mock *and* its assertions) | tests assert structural invariants, not mock literals (§7); Opus reviewer owns invariant intent; ablation checks *trace events*, not mock values |
-| **Third-party skill supply chain** (ponytail) | **vendor prompt-only** `SKILL.md`; **no** Node hooks / MCP / plugin runtime executed in the loop; pinned at reviewed commit `0403c4d` (MIT) |
-| **Ponytail over-deletes load-bearing structure** | always-on mode **`full`** (not `ultra`); **provider interfaces are exempt** (each has ≥2 impls + are the offline-first keystone → they pass YAGNI); ponytail never cuts tests/validation/security by design |
-| **Claude attribution leaks into git** | repo `CLAUDE.md` rule + versioned `commit-msg` hook auto-strips any `Co-Authored-By: Claude…` / `Generated with Claude Code` line (§5.6); covers commits, PRs, pushes |
-
-## 9. Definition of Done (offline) + needs-keys checklist
-
-**Done (loop stops):** P0–P8 complete; `pytest -q` (unit+contract+e2e) =0 with **no keys**; `docker compose up`
-runs a demo audit on a fixture (MockLLM + `hash`/`local_st`); README documents offline + with-keys modes;
-decision-trace renders; `git tag v0-offline` exists.
-
-**Deferred (documented, non-blocking):** swap `MockLLM`→`AzureOpenAILLM` (gpt-5-mini) and `hash/local`→Azure
-embeddings; real precision/recall on the Achva gold set; real ablation numbers; (integration track) point
-`classify_span` at the Qwen LoRA endpoint and write citations into `guideline_sources`/`suggestions`.
-
-## 10. Checkpoints to the human (me/you)
-
-The loop surfaces a checkpoint at: P0 (model-split confirmation), any phase that fails its exit check twice,
-and P8 (final offline DoD + needs-keys handoff). Otherwise it runs P1→P8 unattended.
+`pytest -q` green with no keys; `python -m eval.run --gold doc --mock` green;
+live metrics table (both gold layers) in README; gold-paper audit on Vercel < 300 s with the
+budget ledger visible; architecture PNG / `steps[]` / descriptions using the same three LLM module
+names; tag `v2-redesign` pushed.
