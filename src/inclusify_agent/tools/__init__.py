@@ -2,6 +2,7 @@ from .ask_user import ask_user
 from .audit_window import audit_window, build_hints
 from .chunk import chunk, find_quote, parse
 from .classify_span import classify_span
+from .consolidate import consolidate
 from .eric_live_search import eric_live_enabled, eric_live_search, live_search_ladder
 from .explain_why import explain_why
 from .guards import is_probably_english, max_windows
@@ -47,6 +48,8 @@ __all__ = [
     "audit_window",
     # v2 EvidenceInvestigator (PRD §4 [3] / BUILD_PLAN R5) — JSON-action tool loop
     "investigate",
+    # v2 ReportConsolidator (PRD §4 [4] / BUILD_PLAN R6) — retract/patterns/severity
+    "consolidate",
     # Schemas
     "Chunk",
     "Citation",
