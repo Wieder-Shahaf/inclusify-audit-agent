@@ -11,6 +11,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
+from .report import render_v2, to_markdown_v2
 from .tools import (
     audit_window,
     build_hints,
@@ -24,6 +25,7 @@ from .tools import (
     retrieve_citation,
     scan_document,
 )
+from .tools import consolidate as consolidate_findings
 from .tools.schemas import Block, Candidate, Investigation, LexiconHit, Sentence
 
 _WS_RE = re.compile(r"\s+")
@@ -366,10 +368,16 @@ def run_v2(
     lexicon_path: str | None = None,
     window_tokens: int = 1800,
     concurrency: int = 5,
+    consolidate: bool = True,
 ) -> dict[str, Any]:
-    """[0]-[3] end to end: guards/parse/DocumentAuditor candidates, then
-    EvidenceInvestigator verdicts on each (PRD §4). [4] ReportConsolidator is R6's
-    job; callers get one merged dict meanwhile -- a single trace and combined stats.
+    """[0]-[4] end to end (PRD §4): guards/parse/DocumentAuditor candidates,
+    EvidenceInvestigator verdicts on each, then ReportConsolidator over the
+    confirmed ones -- rendered straight into `report`/`markdown` on the returned
+    dict, plus a single merged trace and combined stats.
+
+    `consolidate=False` skips [4] entirely (no LLM call, no `report`/`markdown`
+    keys) -- callers that only need the raw candidates/investigations (e.g. eval
+    harnesses scoring spans directly) don't pay for a call they'd throw away.
     """
     audit_result = audit_document(
         text, llm=llm, lexicon_path=lexicon_path, window_tokens=window_tokens,
@@ -377,9 +385,33 @@ def run_v2(
     invest_result = investigate_all(
         text, audit_result, llm=llm, store=store, embedder=embedder, concurrency=concurrency,
     )
-    return {
+    result = {
         **audit_result,
         "investigations": invest_result["investigations"],
         "trace": audit_result["trace"] + invest_result["trace"],
         "stats": {**audit_result["stats"], **invest_result["stats"]},
     }
+    if not consolidate:
+        return result
+
+    consolidation = consolidate_findings(llm, invest_result["investigations"])
+    consolidate_trace: list[dict[str, Any]] = [{
+        "node": "consolidate",
+        "detail": {
+            "kept": len(consolidation["kept"]),
+            "retracted": len(consolidation["retracted"]),
+            "patterns": len(consolidation["patterns"]),
+            "skipped": consolidation.get("skipped", False),
+        },
+    }]
+    for r in consolidation["retracted"]:
+        consolidate_trace.append({
+            "node": "retract", "finding_id": r["id"], "rationale": r["rationale"],
+        })
+
+    result["trace"] = result["trace"] + consolidate_trace
+    result["consolidation"] = consolidation
+    report = render_v2(result, consolidation)
+    result["report"] = report
+    result["markdown"] = to_markdown_v2(report)
+    return result
