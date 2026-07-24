@@ -3,7 +3,7 @@ from .chunk import chunk
 from .classify_span import classify_span
 from .eric_live_search import eric_live_enabled, eric_live_search
 from .explain_why import explain_why
-from .lexicon_lookup import lexicon_lookup, load_lexicon
+from .lexicon_lookup import lexicon_lookup, load_lexicon, scan_document
 from .propose_rewrite import propose_rewrite
 from .record_finding import record_finding
 from .retrieve_citation import retrieve_citation
@@ -30,4 +30,6 @@ __all__ = [
     "LexiconHit",
     # Lexicon loader (re-exported for tests)
     "load_lexicon",
+    # Whole-document lexicon scan (BUILD_PLAN R2)
+    "scan_document",
 ]
