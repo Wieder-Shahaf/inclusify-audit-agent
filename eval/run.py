@@ -6,12 +6,15 @@ Usage:
     python -m eval.run --mock --gold achva-en       # Achva EN-only against MockLLM
     python -m eval.run --gold achva-en              # Achva EN-only against env LLM (live)
     python -m eval.run --gold achva                 # Achva both languages
+    python -m eval.run --mock --gold doc            # document-level Achva gold (mock; plumbing)
+    python -m eval.run --gold doc --gold-path <p>   # ditto, live providers / a custom gold file
 
 Prints:
 - Agent metrics: precision/recall/f1 on the gold set.
 - Baseline metrics: same numbers via the fixed pipeline.
 - Per-label breakdown when --gold achva* (true/false rates split by Achva category).
 - Control-flow divergence: trace event types present in agent but not in baseline.
+- --gold doc instead prints span-level P/R/F1 + fp-on-correct via eval.doc_gold.score.
 """
 from __future__ import annotations
 
@@ -19,6 +22,7 @@ import argparse
 import json
 import sys
 from collections import defaultdict
+from pathlib import Path
 from typing import Any
 
 from inclusify_agent.agent import run_audit
@@ -27,6 +31,8 @@ from inclusify_agent.providers.llm import MockLLM
 from inclusify_agent.providers.vectorstore import InMemoryStore
 
 from .baseline import run_baseline
+from .doc_gold import load_doc_gold
+from .doc_gold import score as score_doc
 from .gold import SYNTHETIC, GoldItem, load_achva, score
 
 
@@ -99,14 +105,91 @@ def _load_gold(name: str) -> list[GoldItem]:
     sys.exit(2)
 
 
+def _build_providers(*, mock: bool) -> tuple[Any, Any, Any]:
+    """The same mock-vs-live provider bootstrap every gold mode uses."""
+    if mock:
+        llm: Any = MockLLM()
+        embedder: Any = HashEmbeddings(dim=32)
+        store: Any = InMemoryStore(dim=32)
+        store.add(
+            ids=["g1"],
+            vectors=embedder.embed("inclusive academic writing guidelines"),
+            texts=["Prefer inclusive alternatives in academic writing."],
+        )
+    else:
+        # Live: use env-configured providers (.env). Falls back to offline defaults
+        # if env is not set — config.build_* enforces.
+        from inclusify_agent import config
+        llm = config.build_llm()
+        embedder = config.build_embeddings()
+        store = config.build_vector_store(dim=embedder.dim)
+        print(f"using live providers: llm={llm.name} emb={embedder.name} "
+              f"store={store.name}", file=sys.stderr)
+    return llm, embedder, store
+
+
+# Document is scanned in a single run_audit call, one route+act pair per tool call
+# (~2-4 tool calls per chunk); a 4k-char window is ~30-40 sentence chunks, so this
+# leaves generous headroom for the loop to reach every chunk before forcing reflect.
+_DOC_MODE_MAX_ITERS = 400
+
+
+def _run_doc_gold(args: argparse.Namespace) -> int:
+    """`--gold doc`: span-level P/R/F1 on the single annotated Achva paper."""
+    gold_path = Path(args.gold_path)
+    if not gold_path.exists():
+        print(f"error: {gold_path} not found — run scripts/extract_gold_pdf.py first "
+              "(expert data is local-only; see the data/gold/ .gitignore policy)",
+              file=sys.stderr)
+        return 2
+    gold = load_doc_gold(gold_path)
+    text = gold["fulltext"][:4000]
+
+    if args.mock:
+        print("=== MOCK MODE — metrics are plumbing-only (real numbers land with live "
+              "providers in R7) ===", file=sys.stderr)
+    llm, embedder, store = _build_providers(mock=args.mock)
+
+    final = run_audit(text, llm=llm, embedder=embedder, store=store,
+                       max_iters=_DOC_MODE_MAX_ITERS)
+
+    predicted: list[dict[str, Any]] = []
+    for f in final["findings"]:
+        if f.label != "flag" or f.retracted:
+            continue
+        start = text.find(f.span)
+        if start == -1:
+            continue  # best-effort offset lookup; unlocatable spans can't be scored
+        predicted.append({
+            "char_start": start, "char_end": start + len(f.span),
+            "category": f.category or "unlabeled",
+        })
+
+    metrics = score_doc(predicted, gold["spans"], min_overlap=0.5)
+    report = {
+        "gold_set": "doc",
+        "gold_path": str(gold_path),
+        "gold_spans": len(gold["spans"]),
+        "predicted_spans": len(predicted),
+        "metrics": metrics,
+    }
+    print(json.dumps(report, indent=2))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="eval.run")
     parser.add_argument("--mock", action="store_true",
                         help="Force MockLLM + InMemoryStore + HashEmbeddings (offline).")
     parser.add_argument("--gold", default="synthetic",
-                        choices=("synthetic", "achva", "achva-en", "achva-he"),
+                        choices=("synthetic", "achva", "achva-en", "achva-he", "doc"),
                         help="Which gold set to evaluate against.")
+    parser.add_argument("--gold-path", default="data/gold/achva/doc_gold.json",
+                        help="Path to doc_gold.json (only used by --gold doc).")
     args = parser.parse_args(list(sys.argv[1:] if argv is None else argv))
+
+    if args.gold == "doc":
+        return _run_doc_gold(args)
 
     gold = _load_gold(args.gold)
     if not gold:
