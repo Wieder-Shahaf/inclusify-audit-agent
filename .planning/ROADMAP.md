@@ -10,13 +10,13 @@ v0-offline and v1-course-api are complete below (tags `v0-offline`, `v1-course-a
 
 ## Milestone v2-redesign — Phases
 
-- [ ] **R1: Chunker + guards** — `parse()` → blocks/sentences/windows, offset-exact; quote verification; input guards
-- [ ] **R2: Lexicon expansion** — `build_lexicon.py`, 44 → ≥1,500 sourced entries with `condition` + provenance
-- [ ] **R3: Gold assets + scorer** — `doc_gold.json` from the annotated PDF (97 spans) + overlap-based P/R scorer
-- [ ] **R4: DocumentAuditor** — per-window detection, fixed exemplars, verbatim quote verification, recurrence grouping
-- [ ] **R5: EvidenceInvestigator** — bounded tool loop (corpus_search + ERIC ladder), parallel fan-out, confirm/reject
-- [ ] **R6: Consolidator + report** — retract/patterns, report v2.0, steps modules, architecture PNG, /api/why reroute
-- [ ] **R7: Calibration + live** — Achva metrics on both gold layers, budget ledger, <300 s on Vercel, tag `v2-redesign`
+- [x] **R1: Chunker + guards** — `parse()` → blocks/sentences/windows, offset-exact; quote verification; input guards
+- [x] **R2: Lexicon expansion** — `build_lexicon.py`, 44 → ≥1,500 sourced entries with `condition` + provenance
+- [x] **R3: Gold assets + scorer** — `doc_gold.json` from the annotated PDF (97 spans) + overlap-based P/R scorer
+- [x] **R4: DocumentAuditor** — per-window detection, fixed exemplars, verbatim quote verification, recurrence grouping
+- [x] **R5: EvidenceInvestigator** — bounded tool loop (corpus_search + ERIC ladder), parallel fan-out, confirm/reject
+- [x] **R6: Consolidator + report** — retract/patterns, report v2.0, steps modules, architecture PNG, /api/why reroute
+- [x] **R7: Calibration + live** — Achva metrics on both gold layers, budget ledger, <300 s on Vercel, tag `v2-redesign`
 
 ### v2 success criteria (summary; authoritative exits in BUILD_PLAN §3)
 1. Full pytest suite green with zero keys (MockLLM drives audit/investigate/consolidate).
@@ -145,13 +145,13 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| R1. Chunker + guards | — | Not started | — |
-| R2. Lexicon expansion | — | Not started | — |
-| R3. Gold assets + scorer | — | Not started | — |
-| R4. DocumentAuditor | — | Not started | — |
-| R5. EvidenceInvestigator | — | Not started | — |
-| R6. Consolidator + report | — | Not started | — |
-| R7. Calibration + live | — | Not started | — |
+| R1. Chunker + guards | PR #12 | Complete | 2026-07-24 |
+| R2. Lexicon expansion | PR #13 | Complete | 2026-07-24 |
+| R3. Gold assets + scorer | PR #11 | Complete | 2026-07-24 |
+| R4. DocumentAuditor | PR #14 | Complete | 2026-07-24 |
+| R5. EvidenceInvestigator | PR #15 | Complete | 2026-07-24 |
+| R6. Consolidator + report | PR #17 | Complete | 2026-07-24 |
+| R7. Calibration + live | PR #18 | Complete | 2026-07-24 |
 | 1. Scaffold | direct | Complete | 2026-06-20 (tag p1) |
 | 2. Providers | direct | Complete | 2026-06-20 (tag p2) |
 | 3. Tools | direct | Complete | 2026-06-20 (tag p3) |

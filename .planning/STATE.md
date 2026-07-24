@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2
 milestone_name: v2 Redesign (Auditor–Investigator–Consolidator)
-status: planned
+status: complete
 last_updated: "2026-07-24T00:00:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 0
+  completed_phases: 7
   total_plans: 0
   completed_plans: 0
-  percent: 0
+  percent: 100
 ---
 
 # Project State
@@ -22,8 +22,12 @@ See: .planning/PROJECT.md · Full design: docs/PRD.md (v2.0) · Build plan: docs
 discourse context, seeks its own evidence (local RAG or live ERIC search), rejects/retracts what it
 can't support — and delivers the 5-field contract per finding: verbatim quote · classification ·
 grounded why · evidence example · inclusive alternative.
-**Current focus:** v2 planning COMPLETE (2026-07-24) — PRD v2.0 + BUILD_PLAN v0.3 + this roadmap.
-Next action: execute R1 (chunker + guards).
+**Current focus:** v2-redesign COMPLETE (2026-07-24, tag `v2-redesign`, main @ 1e7b576) — R1-R7
+all merged via reviewed PRs (#10-#18), production on Vercel verified serving the v2 chain.
+Live-calibrated: sentence-level F1 0.911 (ablation baseline 0.367); doc-level span R 0.25 / P 0.12
+reported honestly in README with characterized causes. 259 offline tests.
+Next: Supabase RLS insert policy (human task); optional post-course: more annotated gold docs,
+taxonomy alignment, selectivity dial.
 **Carry-over from v1:** Supabase RLS insert policy still pending (human task); Vercel deploy live
 and verified; LLMod.ai + Pinecone wired.
 
