@@ -4,6 +4,9 @@ data/eric/*
 !data/eric/queries.txt
 # Gold sets are course/expert data — never committed (use locally only)
 data/gold/
+# scripts/build_lexicon.py's raw-fetch cache (reproducible from the network any time;
+# provenance/commit-sha is recorded in the built JSON + data/lexicon/README.md instead)
+data/lexicon/cache/
 .chroma/
 qdrant_storage/
 models/
