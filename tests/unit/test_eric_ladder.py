@@ -65,6 +65,28 @@ def test_compile_query_strips_lucene_breaking_chars() -> None:
     assert q == '"gendered titles" AND (roletitle OR roletitles)'
 
 
+def test_compile_query_any_of_multiword_term_is_quoted_not_pluralized() -> None:
+    """Regression: an unquoted multiword OR-group member binds per-token in Lucene, not
+    per-phrase — "higher education" must not leak into the group as two bare tokens."""
+    q1 = compile_query(["gendered language"], ["curriculum", "sanity check"], None, 1)
+    assert q1 == (
+        '"gendered language" AND (curriculum OR curriculums OR "sanity check") '
+        'AND peerreviewed:T'
+    )
+    q2 = compile_query(["gendered language"], ["curriculum", "sanity check"], None, 2)
+    assert q2 == '"gendered language" AND (curriculum OR curriculums OR "sanity check")'
+
+
+def test_compile_query_any_of_single_multiword_term_no_or_parens() -> None:
+    q = compile_query(["gendered language"], ["higher education"], None, 2)
+    assert q == '"gendered language" AND "higher education"'
+
+
+def test_compile_query_any_of_multiword_strips_before_quoting() -> None:
+    q = compile_query(["x"], ["higher (education)"], None, 2)
+    assert q == '"x" AND "higher education"'
+
+
 # ---- live_search_ladder (network mocked via urlopen) ---------------------------
 
 class _FakeResp(io.BytesIO):

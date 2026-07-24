@@ -113,16 +113,28 @@ def _clean(term: str) -> str:
 
 
 def _plural_variants(terms: Sequence[str]) -> list[str]:
-    """Each cleaned term plus a naive plural (term + 's', unless it already ends in 's').
+    """Expand each cleaned term for the any_of OR-group.
+
+    Single-word term: naive plural pair, unquoted (term + 's', unless already ending in 's').
+    Multiword term: double-quoted as a phrase, no pluralization — an unquoted multiword
+    OR-group member binds per-token in Lucene, not per-phrase (silently wrong), and a naive
+    +s on a multiword head is wrong anyway ("higher educations").
 
     ponytail: naive singular/plural pair only, no stemmer. ERIC does no stemming either
     (ladder spec: "stereotype" 1,982 hits vs "stereotypes" 18,579) so this is the cheap
-    fix for the common case; add a real lemmatizer only if eval shows it still misses.
+    fix for the common single-word case; add a real lemmatizer only if eval shows it still misses.
     """
     out: list[str] = []
     for raw in terms:
         term = _clean(raw)
-        if not term or term in out:
+        if not term:
+            continue
+        if " " in term:
+            phrase = f'"{term}"'
+            if phrase not in out:
+                out.append(phrase)
+            continue
+        if term in out:
             continue
         out.append(term)
         if not term.endswith("s"):
@@ -143,8 +155,9 @@ def _or_group(terms: list[str]) -> str:
 def compile_query(phrases: list[str], any_of: list[str], min_year: int | None, rung: int) -> str:
     """Compile one rung of the ERIC search ladder into a Lucene query string. Pure function.
 
-    rung 1 (strict) : quoted phrases AND-joined, AND'd any_of OR-group (+ naive plurals),
-                       AND peerreviewed:T, AND a publication-year range if min_year is given.
+    rung 1 (strict) : quoted phrases AND-joined, AND'd any_of OR-group (single-word terms
+                       get naive plurals; multiword terms are quoted phrases instead), AND
+                       peerreviewed:T, AND a publication-year range if min_year is given.
     rung 2 (relaxed): same phrases + any_of group, no peerreviewed/year filter.
     rung 3 (broad)  : every phrase word + any_of term, unquoted and space-joined — implicit
                        OR, the recall net for when strict/relaxed come up dry.
