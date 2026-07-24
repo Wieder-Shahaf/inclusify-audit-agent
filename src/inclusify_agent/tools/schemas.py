@@ -101,3 +101,30 @@ class Window:
     heading_path: str
     block_idxs: list[int]
     overlap_char_end: int
+
+
+# ---- v2 auditor candidates (PRD §4 [2] / BUILD_PLAN R4) — additive ----------------------
+
+@dataclass
+class Candidate:
+    """A verbatim-verified problematic span from the DocumentAuditor (BUILD_PLAN R4).
+
+    `char_start`/`char_end` are the PRIMARY (first, by document order) occurrence's
+    absolute offsets. A framing repeated verbatim elsewhere in the doc collapses into
+    one `Candidate` whose `occurrences` lists every (start, end) pair, primary first —
+    when unset, `occurrences` defaults to that single (char_start, char_end) pair.
+    """
+    id: str
+    quote: str
+    char_start: int
+    char_end: int
+    category: str
+    reason: str
+    lexicon_backed: bool
+    window_id: str
+    sentence_id: str | None
+    occurrences: list[tuple[int, int]] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if not self.occurrences:
+            self.occurrences = [(self.char_start, self.char_end)]

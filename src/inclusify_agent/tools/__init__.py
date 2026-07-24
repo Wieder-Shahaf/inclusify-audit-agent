@@ -1,4 +1,5 @@
 from .ask_user import ask_user
+from .audit_window import audit_window, build_hints
 from .chunk import chunk, find_quote, parse
 from .classify_span import classify_span
 from .eric_live_search import eric_live_enabled, eric_live_search
@@ -8,7 +9,7 @@ from .lexicon_lookup import lexicon_lookup, load_lexicon, scan_document
 from .propose_rewrite import propose_rewrite
 from .record_finding import record_finding
 from .retrieve_citation import retrieve_citation
-from .schemas import Block, Chunk, Citation, Finding, LexiconHit, Sentence, Window
+from .schemas import Block, Candidate, Chunk, Citation, Finding, LexiconHit, Sentence, Window
 
 __all__ = [
     # Tools (7 per BUILD_PLAN)
@@ -29,6 +30,9 @@ __all__ = [
     "find_quote",
     "is_probably_english",
     "max_windows",
+    # v2 DocumentAuditor (PRD §4 [2] / BUILD_PLAN R4) — hint aggregation + window call
+    "build_hints",
+    "audit_window",
     # Schemas
     "Chunk",
     "Citation",
@@ -37,6 +41,7 @@ __all__ = [
     "Block",
     "Sentence",
     "Window",
+    "Candidate",
     # Lexicon loader (re-exported for tests)
     "load_lexicon",
     # Whole-document lexicon scan (BUILD_PLAN R2)
