@@ -2,11 +2,29 @@
 
 ## Overview
 
-Build the standalone autonomous Inclusify Audit Agent (LangGraph ReAct + Reflection + Agentic-RAG) fully
-offline behind mock/local providers — phase by phase, each exiting on a command that returns 0 (the offline
-Definition of Done). Full design: `docs/PRD.md`; process, guardrails, and per-phase detail: `docs/BUILD_PLAN.md`.
+**Current milestone: v2-redesign** — rebuild the agent core to the Auditor–Investigator–Consolidator
+architecture (orchestrator-workers on LangGraph `Send` fan-out), English-only, with the 5-field output
+contract (quote · classification · grounded why · evidence example · inclusive alternative) in the main
+response. Design: `docs/PRD.md` v2.0; phases + exit checks: `docs/BUILD_PLAN.md` §3.
+v0-offline and v1-course-api are complete below (tags `v0-offline`, `v1-course-api`).
 
-## Phases
+## Milestone v2-redesign — Phases
+
+- [ ] **R1: Chunker + guards** — `parse()` → blocks/sentences/windows, offset-exact; quote verification; input guards
+- [ ] **R2: Lexicon expansion** — `build_lexicon.py`, 44 → ≥1,500 sourced entries with `condition` + provenance
+- [ ] **R3: Gold assets + scorer** — `doc_gold.json` from the annotated PDF (97 spans) + overlap-based P/R scorer
+- [ ] **R4: DocumentAuditor** — per-window detection, fixed exemplars, verbatim quote verification, recurrence grouping
+- [ ] **R5: EvidenceInvestigator** — bounded tool loop (corpus_search + ERIC ladder), parallel fan-out, confirm/reject
+- [ ] **R6: Consolidator + report** — retract/patterns, report v2.0, steps modules, architecture PNG, /api/why reroute
+- [ ] **R7: Calibration + live** — Achva metrics on both gold layers, budget ledger, <300 s on Vercel, tag `v2-redesign`
+
+### v2 success criteria (summary; authoritative exits in BUILD_PLAN §3)
+1. Full pytest suite green with zero keys (MockLLM drives audit/investigate/consolidate).
+2. Gold-paper audit: span P/R/F1 + FP-rate-on-correct reported; every quote verbatim at its offsets.
+3. `steps[]`, diagram, and descriptions share the exact module names DocumentAuditor / EvidenceInvestigator / ReportConsolidator.
+4. Vercel `/api/execute` on the 12-page gold paper completes < 300 s; token ledger logged to Supabase.
+
+## Completed milestones (v0 + v1) — Phases
 
 - [x] **Phase 1: Scaffold** - repo skeleton, pinned deps, ruff/pytest, Docker, import smoke
 - [x] **Phase 2: Providers** - LLM/embeddings/vectorstore interfaces + mock/local impls + contract tests
@@ -123,10 +141,17 @@ Plans:
 
 ## Progress
 
-**Execution Order:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
+**Execution Order:** v2: R1 → R2 → R3 → R4 → R5 → R6 → R7 (R2/R3 parallelizable after R1) · v0/v1: complete
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
+| R1. Chunker + guards | — | Not started | — |
+| R2. Lexicon expansion | — | Not started | — |
+| R3. Gold assets + scorer | — | Not started | — |
+| R4. DocumentAuditor | — | Not started | — |
+| R5. EvidenceInvestigator | — | Not started | — |
+| R6. Consolidator + report | — | Not started | — |
+| R7. Calibration + live | — | Not started | — |
 | 1. Scaffold | direct | Complete | 2026-06-20 (tag p1) |
 | 2. Providers | direct | Complete | 2026-06-20 (tag p2) |
 | 3. Tools | direct | Complete | 2026-06-20 (tag p3) |

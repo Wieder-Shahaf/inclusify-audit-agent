@@ -9,6 +9,11 @@ finalizing. ReAct + Reflection + Agentic-RAG, built on LangGraph.
 > Design: [`docs/PRD.md`](docs/PRD.md) · Build plan: [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md) ·
 > Needs-keys: [`docs/NEEDS_KEYS.md`](docs/NEEDS_KEYS.md) · Deploy: [`docs/DEPLOY.md`](docs/DEPLOY.md)
 
+> **⚠ v2 redesign in progress (planned 2026-07-24).** PRD v2.0 replaces the ReAct-router loop with
+> **DocumentAuditor → parallel EvidenceInvestigators → ReportConsolidator** (English-only, 5-field
+> finding contract, evidence in the main response). The code below still implements v1 until the
+> R1–R7 phases land — see `docs/BUILD_PLAN.md` §3 and `.planning/ROADMAP.md`.
+
 ## HTTP API + Web GUI
 
 ```bash
