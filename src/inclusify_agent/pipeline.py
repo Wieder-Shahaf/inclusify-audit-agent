@@ -80,14 +80,18 @@ def audit_document(
     total_hints = 0
     total_raw_candidates = 0
     dropped_unverified = 0
+    windows_parse_failed = 0
 
     for window in windows:
         hints = build_hints(lexicon_hits, window)
         result = audit_window(llm, window, hints)
         raw_candidates = result.get("candidates", [])
         hint_verdicts = result.get("hint_verdicts", [])
+        parse_failed = bool(result.get("parse_failed", False))
         total_hints += len(hints)
         total_raw_candidates += len(raw_candidates)
+        if parse_failed:
+            windows_parse_failed += 1
 
         for cand in raw_candidates:
             found = find_quote(text, cand["quote"], search_start=window.char_start)
@@ -115,6 +119,7 @@ def audit_document(
                 "candidates": len(raw_candidates),
                 "hint_verdicts": len(hint_verdicts),
                 "verdicts_filled": bool(result.get("verdicts_filled", False)),
+                "parse_failed": parse_failed,
             },
         })
 
@@ -164,6 +169,7 @@ def audit_document(
         "raw_candidates": total_raw_candidates,
         "dropped_unverified": dropped_unverified,
         "candidates": len(candidates),
+        "windows_parse_failed": windows_parse_failed,
     }
     trace.append({"node": "audit_summary", "detail": stats})
 

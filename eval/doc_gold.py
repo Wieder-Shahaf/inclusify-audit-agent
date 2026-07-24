@@ -83,6 +83,15 @@ def score(
     - unmatched_fp: no gold span clears `min_overlap`.
     - FN: a problem gold span matched by no predicted span.
 
+    Also returns a label-AGNOSTIC `span_detection` block (P/R/F1 on "was this
+    location flagged at all", independent of category) and
+    `per_gold_label_span_recall` (per expert label, the fraction of its problem
+    spans span-detected regardless of predicted category) — our 7-category set
+    (gendered/ableist/exclusionary/...) and the expert legend's 5 labels don't
+    line up 1:1, so strict per-label TP alone conflates "missed it" with "saw it,
+    named it differently."  A `label_miss` counts toward `span_detection`'s tp
+    (the location WAS found) but never toward the strict per-label/micro tp.
+
     Pure function — no I/O.
     """
     problem_indices = {i for i, g in enumerate(gold_spans) if _is_problem(g)}
@@ -91,9 +100,11 @@ def score(
     fp_by_label: dict[str, int] = defaultdict(int)
     fn_by_label: dict[str, int] = defaultdict(int)
     matched_indices: set[int] = set()
+    span_matched_indices: set[int] = set()
     fp_on_correct = 0
     unmatched_fp = 0
     label_miss = 0
+    span_tp = 0
 
     for pred in predicted:
         category = _normalize_label(pred["category"])
@@ -106,6 +117,10 @@ def score(
             fp_on_correct += 1
             fp_by_label[category] += 1
             continue
+        # The location is a problem span -- span-level detection counts it
+        # regardless of whether the predicted category also matches.
+        span_tp += 1
+        span_matched_indices.add(best_idx)
         gold_labels = {_normalize_label(label) for label in gold_spans[best_idx]["labels"]}
         if category in gold_labels:
             tp_by_label[category] += 1
@@ -127,10 +142,32 @@ def score(
     }
     micro = _prf1(sum(tp_by_label.values()), sum(fp_by_label.values()), sum(fn_by_label.values()))
 
+    span_fp = fp_on_correct + unmatched_fp
+    span_fn = len(problem_indices - span_matched_indices)
+    span_detection = _prf1(span_tp, span_fp, span_fn)
+
+    # Per-expert-label span recall: of THIS label's problem spans, what fraction
+    # were detected at all (any predicted category) -- isolates "did we see it"
+    # from "did we name it one of our 7 categories vs. the legend's 5".
+    spans_by_label: dict[str, list[int]] = defaultdict(list)
+    for i in problem_indices:
+        for label in gold_spans[i]["labels"]:
+            norm = _normalize_label(label)
+            if norm != "correct":
+                spans_by_label[norm].append(i)
+    per_gold_label_span_recall = {}
+    for label, indices in spans_by_label.items():
+        detected = sum(1 for i in indices if i in span_matched_indices)
+        per_gold_label_span_recall[label] = {
+            "detected": detected, "total": len(indices), "recall": detected / len(indices),
+        }
+
     n_predicted = len(predicted)
     return {
         "per_label": per_label,
         "micro": micro,
+        "span_detection": span_detection,
+        "per_gold_label_span_recall": per_gold_label_span_recall,
         "fp_on_correct": {
             "count": fp_on_correct,
             "rate": fp_on_correct / n_predicted if n_predicted else 0.0,

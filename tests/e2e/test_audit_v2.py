@@ -6,6 +6,7 @@ LLM calls, guard rejections -- never MockLLM's literal string content.
 """
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -145,6 +146,38 @@ def test_synthetic_doc_exactly_one_audit_call_per_window() -> None:
     recording_llm = RecordingLLM(MockLLM(), steps)
     out = _audit_synthetic(llm=recording_llm)
     assert len(steps) == len(out["windows"])
+
+
+class _OneWindowAlwaysBadLLM:
+    """Garbage forever for the window containing `_trigger` (never parses, even
+    after audit_window's one repair retry); valid empty JSON for every other window.
+    Simulates R7's silent-truncation bug (one dense window's response never fits its
+    token budget) in isolation from the rest of a document that audits fine."""
+
+    def __init__(self, trigger: str) -> None:
+        self._trigger = trigger
+        self.calls = 0
+
+    def complete(self, prompt: str, *, system: str | None = None, **kwargs) -> str:
+        self.calls += 1
+        if self._trigger in kwargs.get("window_text", ""):
+            return "not json, still not json even on the retry"
+        return json.dumps({"candidates": [], "hint_verdicts": []})
+
+
+def test_audit_document_counts_windows_that_never_parse() -> None:
+    """No-silent-caps (R7): a window whose audit call never parses -- even after the
+    repair retry -- must be visible in stats/trace, not just silently contribute
+    zero candidates as if the window were clean. "gamma" (B3's filler word) is
+    unique to w2's window text -- see the synthetic-doc windowing comment above."""
+    llm = _OneWindowAlwaysBadLLM(trigger="gamma")
+    out = _audit_synthetic(llm=llm)
+
+    assert out["stats"]["windows_parse_failed"] == 1
+    failed = [ev for ev in out["trace"]
+              if ev["node"] == "audit" and ev["detail"]["parse_failed"]]
+    assert len(failed) == 1
+    assert llm.calls == 4  # w0 + w1 succeed first-try; w2 fails twice (initial + retry)
 
 
 # ---- guards -------------------------------------------------------------------------------

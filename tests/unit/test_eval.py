@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import eval.run as eval_run
 from eval.baseline import run_baseline
 from eval.gold import GOLD, score
 from inclusify_agent.providers.llm import MockLLM
@@ -50,8 +51,9 @@ def test_baseline_trace_has_no_reflect_or_ask() -> None:
 
 
 def test_eval_cli_emits_divergence_and_exits_zero() -> None:
-    """BUILD_PLAN §6 P7 exit check:
-    `python -m eval.run --mock` exits 0 AND prints control-flow divergence."""
+    """BUILD_PLAN §6 P7 exit check (v2, BUILD_PLAN R7):
+    `python -m eval.run --mock` exits 0 AND prints control-flow divergence
+    (informational only, per R7 live-calibration feedback -- see the next test)."""
     result = subprocess.run(
         [sys.executable, "-m", "eval.run", "--mock"],
         cwd=REPO_ROOT, capture_output=True, text=True, timeout=120,
@@ -60,5 +62,64 @@ def test_eval_cli_emits_divergence_and_exits_zero() -> None:
     report = json.loads(result.stdout)
     only_agent = report["control_flow_divergence"]["agent_only_event_types"]
     assert only_agent, "no agent-only events — autonomy claim unsupported"
-    # Specifically expect 'retract' (reflect node) or 'ask' (ask_user).
-    assert set(only_agent) & {"retract", "ask"}
+    # v2's DocumentAuditor reads a whole window and flags candidates ("flag") --
+    # the fixed baseline (chunk -> lexicon -> classify) never takes that step.
+    assert set(only_agent) & {"flag"}
+
+
+def test_eval_cli_exits_zero_even_with_no_divergence(monkeypatch, capsys) -> None:
+    """R7 live calibration found a real achva-en run exiting 1 solely because the
+    first-3-gold-items sample happened to produce no divergent event (content-
+    dependent with a live LLM, unlike MockLLM's tuned fixtures) -- the metrics were
+    fine, only the v1-era gate wasn't. Forces the no-divergence case directly so
+    this doesn't depend on incidentally passing today."""
+    monkeypatch.setattr(eval_run, "_agent_trace_events", lambda *a, **kw: ["same"])
+    monkeypatch.setattr(eval_run, "_baseline_trace_events", lambda *a, **kw: ["same"])
+    rc = eval_run.main(["--mock"])
+    assert rc == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["control_flow_divergence"]["agent_only_event_types"] == []
+
+
+def test_eval_cli_doc_gold_mock_exits_zero(tmp_path) -> None:
+    """BUILD_PLAN R7 exit check: `--gold doc --mock` runs the full v2 pipeline
+    (run_v2) end to end and exits 0, printing span metrics + wall-clock + LLM-call
+    count. Real Achva gold data is local-only/gitignored, so this uses a tiny
+    synthetic doc_gold.json fixture via --gold-path, same shape as scripts/
+    extract_gold_pdf.py's output (fulltext + char-offset spans)."""
+    gold_path = tmp_path / "doc_gold.json"
+    gold_path.write_text(json.dumps({
+        "fulltext": "The chairman called the meeting to order.",
+        "spans": [{"char_start": 4, "char_end": 12, "labels": ["biased"]}],
+    }), encoding="utf-8")
+
+    result = subprocess.run(
+        [sys.executable, "-m", "eval.run", "--mock", "--gold", "doc",
+         "--gold-path", str(gold_path)],
+        cwd=REPO_ROOT, capture_output=True, text=True, timeout=120,
+    )
+    assert result.returncode == 0, f"exit {result.returncode}: {result.stderr}"
+    report = json.loads(result.stdout)
+    assert report["gold_set"] == "doc"
+    assert "precision" in report["metrics"]["micro"]
+    assert report["wall_clock_s"] >= 0
+    assert report["llm_calls"] >= 1  # at least one DocumentAuditor call
+
+
+def test_eval_cli_doc_gold_live_path_falls_back_offline(tmp_path) -> None:
+    """`--gold doc` without --mock still exits 0 with no .env (config.build_llm()
+    degrades to MockLLM) -- this is the code path that runs the FULL fulltext
+    (no [:4000] truncation) through run_v2, exercised here with no live keys."""
+    gold_path = tmp_path / "doc_gold.json"
+    gold_path.write_text(json.dumps({
+        "fulltext": "The committee approved the budget for the new laptops.",
+        "spans": [],
+    }), encoding="utf-8")
+
+    result = subprocess.run(
+        [sys.executable, "-m", "eval.run", "--gold", "doc", "--gold-path", str(gold_path)],
+        cwd=REPO_ROOT, capture_output=True, text=True, timeout=120,
+    )
+    assert result.returncode == 0, f"exit {result.returncode}: {result.stderr}"
+    report = json.loads(result.stdout)
+    assert report["predicted_spans"] == 0  # clean text, nothing to flag

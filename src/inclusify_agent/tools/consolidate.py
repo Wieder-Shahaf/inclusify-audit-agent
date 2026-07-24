@@ -157,7 +157,8 @@ def consolidate(llm: Any, investigations: list[Investigation]) -> dict[str, Any]
     all_ids = [c["id"] for c in compact]
 
     prompt = _user_prompt(compact, rejected, needs_review)
-    call_kwargs = {"system": _SYSTEM, "task": "consolidate", "findings": compact}
+    call_kwargs = {"system": _SYSTEM, "task": "consolidate", "findings": compact,
+                   "max_tokens": 1500}
 
     raw = llm.complete(prompt, **call_kwargs)
     parsed = _try_parse(raw)

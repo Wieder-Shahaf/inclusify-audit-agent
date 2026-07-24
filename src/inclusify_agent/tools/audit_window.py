@@ -44,7 +44,10 @@ _SYSTEM = (
     "sensor, never an auto-flagger: read every hinted term in its actual sentence "
     "and decide flag or clean yourself. Do not stop at the hints — also hunt the "
     "rest of the window for problems with no trigger word at all (implied bias, "
-    "stereotyped framing, outdated claims).\n\n"
+    "stereotyped framing, outdated claims). Dense academic text often contains "
+    "SEVERAL problematic spans per window — enumerate every one you find, "
+    "including repeated framings each time they carry the problem; do not stop "
+    "at the most salient.\n\n"
     "FLAG a span when it contains any of these — even subtly:\n"
     "  - Gendered defaults: 'chairman', 'mankind', generic 'he/his', 'freshmen'.\n"
     "  - Exclusionary metaphors: 'blacklist', 'master/slave', 'sanity check'.\n"
@@ -61,9 +64,12 @@ _SYSTEM = (
     "THE DECISIVE RULE: a sentence whose SUBJECT is a harmful or debunked view gets "
     "flagged even when hedged ('some individuals perceive...', 'historically it was "
     "assumed...') and even when the sentence itself calls the view discredited — "
-    "restating the framing perpetuates it in course material. SKIP a sentence when "
-    "its subject is the correction, the affirmation, or the respectful finding "
-    "itself.\n\n"
+    "restating the framing perpetuates it in course material. This applies equally "
+    "to STUDY-REPORTING sentences: a sentence neutrally reporting a study, method, "
+    "or finding whose premise is a discredited framing (e.g., inferring identity "
+    "from appearance or physiology, pathologizing an identity) gets flagged — "
+    "reporting the premise still restates it. SKIP a sentence when its subject is "
+    "the correction, the affirmation, or the respectful finding itself.\n\n"
     "Expert-labeled examples:\n"
     "- 'In 1990, the World Health Organization reclassified homosexuality from a "
     "condition requiring treatment to a sexual orientation category...' -> SKIP "
@@ -93,12 +99,23 @@ _SYSTEM = (
     "- 'Bisexual individuals are frequently perceived as experiencing an interim "
     "period towards definitive heterosexuality.' -> FLAG (biased — bisexuality as "
     "a temporary phase).\n"
+    "- 'Early studies measured participants' skull dimensions to identify criminal "
+    "tendencies, reporting high classification accuracy.' -> FLAG (outdated — "
+    "neutrally reports a physiognomic method; the discredited premise is the "
+    "subject).\n"
+    "- 'The model was trained to predict participants' sexual orientation from "
+    "voice recordings, achieving strong accuracy.' -> FLAG (potentially-offensive "
+    "— operationalizes the assumption that identity is inferable from biology/"
+    "appearance).\n"
     "- 'The chairman approved the budget.' -> FLAG (gendered).\n\n"
     "Quote every flagged span EXACTLY verbatim from the window text — character-"
     "for-character, no paraphrasing, no ellipsis, no added or removed punctuation; "
     "an unverifiable quote is discarded downstream.\n\n"
     "Categories (use exactly one of these 7 per candidate): gendered | exclusionary "
-    "| ableist | outdated | factually-incorrect | potentially-offensive | biased.\n\n"
+    "| ableist | outdated | factually-incorrect | potentially-offensive | biased. "
+    "Use factually-incorrect ONLY for verifiably false claims stated as fact; a "
+    "discredited framing or premise is outdated (or biased), not "
+    "factually-incorrect.\n\n"
     "You MUST return exactly one verdict per hinted term listed in the HINTS block "
     "below, even for terms you judge clean or don't otherwise mention.\n\n"
     "Respond with ONLY a JSON object, no prose, no markdown fences, in exactly this "
@@ -240,8 +257,12 @@ def audit_window(llm: Any, window: Window, hints: list[dict[str, Any]]) -> dict[
     """
     hint_terms = [h["term"] for h in hints]
     prompt = _user_prompt(window, hints)
+    # 4000: a dense window's response can carry 20 hint_verdicts plus several
+    # candidates each quoting a full sentence verbatim -- the 512 provider default
+    # truncates that mid-JSON, which then "fails" the exact same way on the retry
+    # (same cap) and silently degrades to empty candidates (see parse_failed below).
     call_kwargs = {"system": _SYSTEM, "task": "audit", "window_text": window.text,
-                    "hint_terms": hint_terms}
+                    "hint_terms": hint_terms, "max_tokens": 4000}
 
     raw = llm.complete(prompt, **call_kwargs)
     parsed = _try_parse(raw)

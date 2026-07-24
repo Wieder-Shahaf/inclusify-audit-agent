@@ -125,6 +125,31 @@ def test_audit_window_no_hints_no_crash() -> None:
     assert result["verdicts_filled"] is False
 
 
+# ---- audit_window: token budget (R7 -- silent-truncation fix) --------------------------
+
+class _RecordingLLM:
+    """Records the kwargs each complete() call received; returns valid empty JSON."""
+    name = "recording"
+
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    def complete(self, prompt: str, *, system: str | None = None, **kwargs) -> str:
+        self.calls.append(kwargs)
+        return json.dumps({"candidates": [], "hint_verdicts": []})
+
+
+def test_audit_window_requests_a_larger_token_budget() -> None:
+    """A dense window's response (up to 20 hint_verdicts plus several candidates each
+    quoting a full sentence) doesn't fit the provider's bare 512-token fallback --
+    that truncates the JSON mid-response, and the identically-capped retry fails the
+    same way, silently degrading to empty candidates. audit_window must ask for a
+    budget sized for its own response shape."""
+    llm = _RecordingLLM()
+    audit_window(llm, _window(), hints=[])
+    assert llm.calls[0]["max_tokens"] == 4000
+
+
 # ---- audit_window: JSON parse-repair / double-failure paths ----------------------------
 
 class _FlakyLLM:
