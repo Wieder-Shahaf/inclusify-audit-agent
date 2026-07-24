@@ -61,12 +61,15 @@ def test_execute_ok_contract():
 
 
 def test_execute_logs_every_llm_call():
-    """steps must trace each LLM module the ReAct loop invoked."""
+    """steps must trace each v2 LLM module the pipeline invoked."""
     r = client.post("/api/execute",
                     json={"prompt": "The chairman approved the budget."})
     mods = {s["module"] for s in r.json()["steps"]}
-    # Router (control flow) + SpanClassifier (judging) always run.
-    assert {"Router", "SpanClassifier"} <= mods
+    # DocumentAuditor always runs on a non-empty prompt; "chairman" is a lexicon-backed
+    # candidate MockLLM's investigate script always ends up confirming (weak-evidence
+    # fallback if the corpus has nothing better), so EvidenceInvestigator runs too --
+    # and a confirmed finding always triggers ReportConsolidator.
+    assert {"DocumentAuditor", "EvidenceInvestigator", "ReportConsolidator"} <= mods
 
 
 def test_execute_empty_prompt_errors():
@@ -94,8 +97,8 @@ def test_why_ok_contract():
         assert {"id", "text", "score", "metadata"} <= set(c)
     for step in body["steps"]:
         _assert_step_schema(step)
-    # The generation call is the GroundingChecker module in the trace.
-    assert any(s["module"] == "GroundingChecker" for s in body["steps"])
+    # /api/why is a single-finding EvidenceInvestigator run (PRD §4 module map).
+    assert any(s["module"] == "EvidenceInvestigator" for s in body["steps"])
 
 
 def test_why_empty_span_errors():

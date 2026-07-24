@@ -1,12 +1,15 @@
 """Recording decorator around any LLMProvider.
 
-Every LLM call in the graph goes through `llm.complete(prompt, system=..., task=...)`.
-Wrapping the provider lets us capture the assignment-required `steps` trace
-(one entry per LLM call) without touching a single tool or node.
+Every LLM call in the v2 pipeline goes through `llm.complete(prompt, system=...,
+task=...)`. Wrapping the provider lets us capture the assignment-required `steps`
+trace (one entry per LLM call) without touching a single tool or node.
 
-MODULE_BY_TASK is the SINGLE SOURCE OF TRUTH for sub-module names — the same names
-must appear in the architecture diagram (scripts/gen_architecture.py) and in the
-`steps[].module` field (assignment §C: names must be consistent across all three).
+MODULE_BY_TASK is the SINGLE SOURCE OF TRUTH for sub-module names — the same three
+names must appear in the architecture diagram (scripts/gen_architecture.py) and in
+`GET /api/agent_info`'s description (assignment §C: names must be consistent across
+all three). v1's task names (route/classify/rewrite/reflect/ground) are gone: the v2
+server (server/app.py) only ever calls `run_v2`/`investigate`, which only ever tag
+calls "audit"/"investigate"/"consolidate".
 """
 from __future__ import annotations
 
@@ -15,11 +18,9 @@ from typing import Any
 
 # task kwarg (set at each call-site) -> architecture sub-module name.
 MODULE_BY_TASK = {
-    "route": "Router",
-    "classify": "SpanClassifier",
-    "rewrite": "RewriteComposer",
-    "reflect": "Reflector",
-    "ground": "GroundingChecker",
+    "audit": "DocumentAuditor",
+    "investigate": "EvidenceInvestigator",
+    "consolidate": "ReportConsolidator",
 }
 
 
@@ -57,8 +58,8 @@ if __name__ == "__main__":
             return json.dumps({"ok": True})
 
     steps: list[dict] = []
-    RecordingLLM(_Echo(), steps).complete("hi", system="sys", task="classify")
-    assert steps[0]["module"] == "SpanClassifier"
+    RecordingLLM(_Echo(), steps).complete("hi", system="sys", task="audit")
+    assert steps[0]["module"] == "DocumentAuditor"
     assert steps[0]["prompt"] == {"System_prompt": "sys", "User_prompt": "hi"}
     assert steps[0]["response"] == {"ok": True}
     print("recording_llm self-check ok")

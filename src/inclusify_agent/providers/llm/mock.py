@@ -12,6 +12,7 @@ Call-site routing (by 'task' kwarg):
 - task="ground"     → returns "grounded" or "ungrounded" given a candidate citation
 - task="audit"      → v2 DocumentAuditor: per-window candidate list + hint verdicts
 - task="investigate" → v2 EvidenceInvestigator: scripted corpus/live-search/finalize loop
+- task="consolidate" → v2 ReportConsolidator: retract low-confidence + group patterns
 
 Output is always JSON-stringifiable text so the graph can `json.loads` it.
 """
@@ -48,6 +49,8 @@ class MockLLM:
             return self._audit(prompt, **kwargs)
         if task == "investigate":
             return self._investigate(prompt, **kwargs)
+        if task == "consolidate":
+            return self._consolidate(prompt, **kwargs)
         # Fallback: echo the prompt deterministically so tests can detect "untasked" calls.
         return json.dumps({"echo": prompt[:120], "task": task or "unknown"})
 
@@ -206,4 +209,43 @@ class MockLLM:
             "secondary_category": None, "explanation": "weak evidence",
             "rewrite": rewrite, "confidence": "low", "needs_human_review": True,
             "evidence_used": [],
+        })
+
+    def _consolidate(self, prompt: str, **kwargs: Any) -> str:
+        """v2 ReportConsolidator script (BUILD_PLAN R6): retract the FIRST
+        confirmed finding with confidence=="low" (seeds the `retract` trace event
+        offline), keep the rest; group kept findings into one pattern per category
+        that has >= 2 of them; fixed deterministic summary.
+
+        Driven entirely by the `findings` kwarg (the same compact list
+        `consolidate.consolidate` builds and passes to the prompt), so this stays a
+        pure function of that input like every other MockLLM script.
+        """
+        findings = kwargs.get("findings") or []
+        retracted_id = None
+        kept = []
+        for f in findings:
+            if retracted_id is None and f.get("confidence") == "low":
+                retracted_id = f["id"]
+                continue
+            kept.append(f)
+        retracted = (
+            [{"id": retracted_id, "rationale": "weak grounding — likely false positive"}]
+            if retracted_id else []
+        )
+
+        by_category: dict[str, list[str]] = {}
+        for f in kept:
+            by_category.setdefault(f["category"], []).append(f["id"])
+        patterns = [
+            {"framing": f"recurring {cat} phrasing", "category": cat, "finding_ids": ids}
+            for cat, ids in by_category.items() if len(ids) >= 2
+        ]
+
+        return json.dumps({
+            "kept": [f["id"] for f in kept],
+            "retracted": retracted,
+            "patterns": patterns,
+            "summary": "Consolidation complete: findings reviewed for duplicates, "
+                       "contradictions, and recurring patterns.",
         })
