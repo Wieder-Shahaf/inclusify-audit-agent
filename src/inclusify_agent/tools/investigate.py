@@ -24,6 +24,10 @@ _INVALID_NOTE = "Your last reply was not a valid action."
 _LIVE_UNAVAILABLE_NOTE = (
     "live_search is not available for this run; choose corpus_search or finalize."
 )
+_PREMATURE_FINALIZE_NOTE = (
+    "You must gather evidence before a confirmed verdict -- run corpus_search first."
+)
+_NO_EVIDENCE_SUFFIX = "(no supporting evidence was retrieved)"
 _MAX_SNIPPET = 400
 
 # The exact per-turn action contract -- stated once in `_SYSTEM` below, then repeated
@@ -53,12 +57,15 @@ _SYSTEM = (
     + _CONTRACT + "\n\n"
     'Rules: verdict "rejected" means the span is actually fine in its context -- '
     'explain why, and set rewrite to "". Cite evidence indices like [1] and [2] in '
-    "the explanation whenever the verdict is confirmed and evidence exists. Prefer "
-    "the candidate's own lexicon alternatives in your rewrite when they fit. "
-    "Confidence: high = strong directly-relevant evidence, medium = related "
-    "evidence, low = weak or no evidence. If evidence stays weak after searching, "
-    "still give an honest verdict and set needs_human_review to true rather than "
-    "stalling."
+    "the explanation whenever the verdict is confirmed and evidence exists. Never "
+    "finalize a confirmed verdict before at least one search; a confirmed verdict "
+    "without cited evidence will be downgraded. Prefer the candidate's own lexicon "
+    "alternatives in your rewrite when they fit. Rewrites must be complete "
+    "grammatical sentences; when a sentence restates a discredited view, make the "
+    "correction the subject of your rewrite. Confidence: high = strong "
+    "directly-relevant evidence, medium = related evidence, low = weak or no "
+    "evidence. If evidence stays weak after searching, still give an honest "
+    "verdict and set needs_human_review to true rather than stalling."
 )
 
 
@@ -138,25 +145,42 @@ def _finalize_result(
     evidence: list[Citation],
     actions_taken: list[str],
     turns: int,
+    *,
+    confidence_capped: bool = False,
 ) -> dict[str, Any]:
+    """Build the accepted-finalize result. `confidence_capped=True` is the second
+    line of defense against an ungrounded "confirmed" (a live model demonstrably
+    ignores the prompt-only rule sometimes, PR #15 review): the model's own
+    confidence/needs_human_review are overridden -- never trusted as-is -- and the
+    explanation is marked so a reader knows this verdict shipped without evidence.
+    """
     secondary_raw = action.get("secondary_category")
-    confidence = action.get("confidence")
     verdict = action.get("verdict")
+    explanation = str(action.get("explanation") or "")
+    if confidence_capped:
+        confidence = "low"
+        needs_human_review = True
+        explanation = f"{explanation} {_NO_EVIDENCE_SUFFIX}" if explanation else _NO_EVIDENCE_SUFFIX
+    else:
+        raw_confidence = action.get("confidence")
+        confidence = raw_confidence if raw_confidence in ("high", "medium", "low") else "low"
+        needs_human_review = bool(action.get("needs_human_review", False))
     return {
         # Conservative default: an unparseable/unexpected verdict does not claim
         # "confirmed" on the model's behalf.
         "verdict": verdict if verdict in ("confirmed", "rejected") else "rejected",
         "category": _normalize_category(action.get("category")),
         "secondary_category": _normalize_category(secondary_raw) if secondary_raw else None,
-        "explanation": str(action.get("explanation") or ""),
+        "explanation": explanation,
         "rewrite": str(action.get("rewrite") or ""),
-        "confidence": confidence if confidence in ("high", "medium", "low") else "low",
-        "needs_human_review": bool(action.get("needs_human_review", False)),
+        "confidence": confidence,
+        "needs_human_review": needs_human_review,
         "evidence": [_citation_dict(i, c) for i, c in enumerate(evidence, start=1)],
         "evidence_used": action.get("evidence_used") or [],
         "turns": turns,
         "actions": list(actions_taken),
         "forced": False,
+        "confidence_capped": confidence_capped,
     }
 
 
@@ -185,6 +209,7 @@ def _forced_result(
         "turns": turns,
         "actions": list(actions_taken),
         "forced": True,
+        "confidence_capped": False,
     }
 
 
@@ -210,12 +235,21 @@ def investigate(
     is wired, all downgrade to "not a valid action" -- the turn is spent, and the next
     prompt carries a note asking the model to try again. Running out of turns without
     a `finalize` forces one (see `_forced_result`).
+
+    A `finalize` with verdict "confirmed" and zero evidence gathered so far is never
+    trusted at face value (prompt-only instructions demonstrably don't hold against a
+    live model, PR #15 review): the FIRST time it happens, and only if turns remain,
+    it's bounced like an invalid action (with its own note) so the model gets one
+    real chance to search first; a repeat, or running out of turns, still finalizes
+    but with confidence/needs_human_review overridden (see `_finalize_result`'s
+    `confidence_capped`). A `rejected` verdict never needs evidence and is unaffected.
     """
     evidence: list[Citation] = []
     seen_ids: set[str] = set()
     actions_taken: list[str] = []
     notes: list[str] = []
     live_available = live_search is not None
+    premature_finalize_used = False
     turns = 0
 
     for turn in range(1, max_turns + 1):
@@ -242,8 +276,16 @@ def investigate(
         name = action.get("action") if action else None
 
         if name == "finalize":
+            ungrounded_confirm = action.get("verdict") == "confirmed" and not evidence
+            if ungrounded_confirm and turn < max_turns and not premature_finalize_used:
+                premature_finalize_used = True
+                actions_taken.append("premature_finalize")
+                notes.append(_PREMATURE_FINALIZE_NOTE)
+                continue
             actions_taken.append("finalize")
-            return _finalize_result(action, evidence, actions_taken, turns)
+            return _finalize_result(
+                action, evidence, actions_taken, turns, confidence_capped=ungrounded_confirm,
+            )
 
         if name == "corpus_search":
             actions_taken.append("corpus_search")
