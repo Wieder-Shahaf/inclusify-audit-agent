@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import eval.run as eval_run
 from eval.baseline import run_baseline
 from eval.gold import GOLD, score
 from inclusify_agent.providers.llm import MockLLM
@@ -51,7 +52,8 @@ def test_baseline_trace_has_no_reflect_or_ask() -> None:
 
 def test_eval_cli_emits_divergence_and_exits_zero() -> None:
     """BUILD_PLAN §6 P7 exit check (v2, BUILD_PLAN R7):
-    `python -m eval.run --mock` exits 0 AND prints control-flow divergence."""
+    `python -m eval.run --mock` exits 0 AND prints control-flow divergence
+    (informational only, per R7 live-calibration feedback -- see the next test)."""
     result = subprocess.run(
         [sys.executable, "-m", "eval.run", "--mock"],
         cwd=REPO_ROOT, capture_output=True, text=True, timeout=120,
@@ -63,6 +65,20 @@ def test_eval_cli_emits_divergence_and_exits_zero() -> None:
     # v2's DocumentAuditor reads a whole window and flags candidates ("flag") --
     # the fixed baseline (chunk -> lexicon -> classify) never takes that step.
     assert set(only_agent) & {"flag"}
+
+
+def test_eval_cli_exits_zero_even_with_no_divergence(monkeypatch, capsys) -> None:
+    """R7 live calibration found a real achva-en run exiting 1 solely because the
+    first-3-gold-items sample happened to produce no divergent event (content-
+    dependent with a live LLM, unlike MockLLM's tuned fixtures) -- the metrics were
+    fine, only the v1-era gate wasn't. Forces the no-divergence case directly so
+    this doesn't depend on incidentally passing today."""
+    monkeypatch.setattr(eval_run, "_agent_trace_events", lambda *a, **kw: ["same"])
+    monkeypatch.setattr(eval_run, "_baseline_trace_events", lambda *a, **kw: ["same"])
+    rc = eval_run.main(["--mock"])
+    assert rc == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["control_flow_divergence"]["agent_only_event_types"] == []
 
 
 def test_eval_cli_doc_gold_mock_exits_zero(tmp_path) -> None:

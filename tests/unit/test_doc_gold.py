@@ -111,6 +111,45 @@ def test_gold_problem_span_with_no_prediction_is_false_negative() -> None:
     assert m["per_label"]["biased"]["fn"] == 0
 
 
+# --- eval.doc_gold.score: span_detection / per_gold_label_span_recall (R7) ------
+
+def test_label_miss_counts_as_span_tp_not_strict_tp() -> None:
+    """Right location, wrong one of our 7 categories vs. the expert's 5 labels --
+    label_miss, not a strict TP -- but span_detection must still count it: the
+    Auditor DID find the problem, it just named it differently."""
+    gold = [_gold(0, 20, ["biased"])]
+    pred = [_pred(0, 20, "outdated")]  # overlaps, category doesn't match
+    m = score(pred, gold)
+    assert m["label_miss"] == 1
+    assert m["micro"]["tp"] == 0
+    assert m["span_detection"]["tp"] == 1
+    assert m["span_detection"]["fn"] == 0
+    assert m["span_detection"]["fp"] == 0
+
+
+def test_span_detection_fp_combines_fp_on_correct_and_unmatched() -> None:
+    gold = [_gold(0, 20, ["correct"]), _gold(100, 120, ["biased"])]
+    pred = [_pred(0, 20, "biased"), _pred(500, 520, "biased")]  # fp_on_correct + unmatched
+    m = score(pred, gold)
+    assert m["fp_on_correct"]["count"] == 1
+    assert m["unmatched_fp"] == 1
+    assert m["span_detection"]["fp"] == 2
+    assert m["span_detection"]["tp"] == 0
+    assert m["span_detection"]["fn"] == 1  # the biased gold span was never matched
+
+
+def test_per_gold_label_span_recall_ignores_predicted_category() -> None:
+    gold = [_gold(0, 20, ["biased"]), _gold(50, 70, ["outdated"])]
+    pred = [_pred(0, 20, "gendered")]  # detects the biased span under the wrong category
+    m = score(pred, gold)
+    assert m["per_gold_label_span_recall"]["biased"] == {
+        "detected": 1, "total": 1, "recall": 1.0,
+    }
+    assert m["per_gold_label_span_recall"]["outdated"] == {
+        "detected": 0, "total": 1, "recall": 0.0,
+    }
+
+
 def test_score_is_pure_and_order_independent() -> None:
     """No I/O; calling twice with the same inputs gives the same result."""
     gold = [_gold(0, 20, ["biased"]), _gold(50, 70, ["correct"])]

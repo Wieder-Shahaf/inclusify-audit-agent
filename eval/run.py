@@ -13,9 +13,13 @@ Prints:
 - Agent metrics: precision/recall/f1 on the gold set.
 - Baseline metrics: same numbers via the fixed pipeline.
 - Per-label breakdown when --gold achva* (true/false rates split by Achva category).
-- Control-flow divergence: trace event types present in agent but not in baseline.
-- --gold doc instead prints span-level P/R/F1 + fp-on-correct via eval.doc_gold.score,
-  plus wall-clock and total LLM calls.
+- Control-flow divergence: trace event types present in agent but not in baseline --
+  informational only (v1-era P7 check); does not affect the exit code.
+- --gold doc instead prints span-level P/R/F1 + fp-on-correct + label-agnostic
+  span-detection P/R/F1 (eval.doc_gold.score), plus wall-clock and total LLM calls.
+
+Exit code: 0 whenever metrics were computed and printed (both --gold doc and the
+achva*/synthetic modes). Only argument errors / a missing gold file exit non-zero.
 
 v2 (BUILD_PLAN R7): "agent" now means the v2 pipeline (`pipeline.audit_document` for
 per-sentence gold, `pipeline.run_v2` for the document-level gold) -- the retired v1
@@ -258,11 +262,10 @@ def main(argv: list[str] | None = None) -> int:
 
     print(json.dumps(report, indent=2))
 
-    # Exit 0 only if the agent's control flow demonstrably differs.
-    if not only_agent:
-        print("FAIL: agent emitted no events absent from the fixed pipeline baseline.",
-              file=sys.stderr)
-        return 1
+    # control_flow_divergence is informational only (v1-era P7 acceptance check) --
+    # it no longer gates the exit code. Whether the first 3 gold items happen to
+    # produce a divergent event is corpus-content-dependent with a live LLM (unlike
+    # MockLLM's tuned synthetic fixtures); the metrics above are the real deliverable.
     return 0
 
 
