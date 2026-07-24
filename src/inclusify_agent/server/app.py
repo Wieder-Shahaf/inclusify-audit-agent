@@ -88,23 +88,36 @@ def _shared_rag() -> tuple[Any, Any]:
 # ----------------------------------------------------------------------------- agent
 def execute_prompt(prompt: str) -> dict[str, Any]:
     """Run one v2 audit (DocumentAuditor -> EvidenceInvestigator -> ReportConsolidator)
-    and shape it into the required {status,error,response,steps}."""
+    and shape it into the required {status,error,response,steps}, plus two
+    caller-only `tokens_in`/`tokens_out` keys (course req #1c budget ledger) --
+    `api_execute` reads them for persistence logging and strips them before the
+    HTTP response goes out, so the wire contract stays exactly the four spec fields."""
     if not prompt or not prompt.strip():
         return {"status": "error", "error": "prompt is required and must be non-empty",
-                "response": None, "steps": []}
+                "response": None, "steps": [], "tokens_in": None, "tokens_out": None}
     try:
         steps: list[dict[str, Any]] = []
         llm = RecordingLLM(config.build_llm(), steps)
         embedder, store = _shared_rag()
         result = run_v2(prompt, llm=llm, store=store, embedder=embedder)
         validate_v2(result["report"])
-        return {"status": "ok", "error": None,
-                "response": result["markdown"], "steps": steps}
+
+        response = result["markdown"]
+        tokens_in = tokens_out = None
+        usage_fn = getattr(llm.inner, "usage", None)
+        if callable(usage_fn):
+            usage = usage_fn()
+            if usage.get("in") or usage.get("out"):
+                tokens_in, tokens_out = usage["in"], usage["out"]
+                response += f"\n\n---\n_Tokens: {tokens_in} in / {tokens_out} out (this audit)_"
+        return {"status": "ok", "error": None, "response": response, "steps": steps,
+                "tokens_in": tokens_in, "tokens_out": tokens_out}
     except ValueError as e:  # guards (empty / non-English / too-large) -> a clean message
-        return {"status": "error", "error": str(e), "response": None, "steps": []}
+        return {"status": "error", "error": str(e), "response": None, "steps": [],
+                "tokens_in": None, "tokens_out": None}
     except Exception as e:  # surface a human-readable error, never 500 the agent
         return {"status": "error", "error": f"{type(e).__name__}: {e}",
-                "response": None, "steps": []}
+                "response": None, "steps": [], "tokens_in": None, "tokens_out": None}
 
 
 # ----------------------------------------------------------------------------- routes
@@ -118,8 +131,11 @@ def api_execute(body: ExecuteIn) -> dict[str, Any]:
     _persistence.log_run(
         prompt=body.prompt, status=result["status"],
         response=result["response"], steps=result["steps"],
+        tokens_in=result["tokens_in"], tokens_out=result["tokens_out"],
     )
-    return result
+    # Wire contract is exactly {status, error, response, steps} (spec §C) -- tokens_*
+    # were for the log_run call above only.
+    return {k: result[k] for k in ("status", "error", "response", "steps")}
 
 
 class WhyIn(BaseModel):

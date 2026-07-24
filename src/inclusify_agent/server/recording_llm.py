@@ -41,12 +41,18 @@ class RecordingLLM:
         self.name = getattr(inner, "name", "llm")
 
     def complete(self, prompt: str, *, system: str | None = None, **kwargs: Any) -> str:
+        usage_fn = getattr(self.inner, "usage", None)
+        before = usage_fn() if callable(usage_fn) else None
         response = self.inner.complete(prompt, system=system, **kwargs)
-        self.steps.append({
+        step: dict[str, Any] = {
             "module": MODULE_BY_TASK.get(kwargs.get("task", ""), "Agent"),
             "prompt": {"System_prompt": system or "", "User_prompt": prompt},
             "response": _as_obj(response),
-        })
+        }
+        if before is not None:
+            after = usage_fn()
+            step["usage"] = {"in": after["in"] - before["in"], "out": after["out"] - before["out"]}
+        self.steps.append(step)
         return response
 
 
@@ -62,4 +68,22 @@ if __name__ == "__main__":
     assert steps[0]["module"] == "DocumentAuditor"
     assert steps[0]["prompt"] == {"System_prompt": "sys", "User_prompt": "hi"}
     assert steps[0]["response"] == {"ok": True}
+    assert "usage" not in steps[0]  # no usage() on the inner provider -> key omitted
+
+    class _Metered:
+        name = "metered"
+        def __init__(self):
+            self._n = 0
+        def complete(self, prompt, *, system=None, **kw):  # noqa: ANN001
+            self._n += 1
+            return json.dumps({"call": self._n})
+        def usage(self):
+            return {"in": self._n * 10, "out": self._n * 2}
+
+    steps2: list[dict] = []
+    metered_llm = RecordingLLM(_Metered(), steps2)
+    metered_llm.complete("a", task="audit")
+    metered_llm.complete("b", task="audit")
+    assert steps2[0]["usage"] == {"in": 10, "out": 2}  # per-call delta, not cumulative
+    assert steps2[1]["usage"] == {"in": 10, "out": 2}
     print("recording_llm self-check ok")

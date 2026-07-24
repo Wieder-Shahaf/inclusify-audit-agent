@@ -21,6 +21,8 @@ class OpenAICompatLLM:
         self._api_key = api_key
         self._model = model
         self._client = None  # lazy
+        self.usage_in = 0
+        self.usage_out = 0
 
     def _get_client(self) -> Any:
         if self._client is None:
@@ -51,4 +53,14 @@ class OpenAICompatLLM:
             max_tokens=kwargs.get("max_tokens", 512),
             **extra,
         )
+        usage = getattr(resp, "usage", None)  # some OpenAI-compat providers omit it
+        if usage is not None:
+            self.usage_in += getattr(usage, "prompt_tokens", 0) or 0
+            self.usage_out += getattr(usage, "completion_tokens", 0) or 0
         return resp.choices[0].message.content or ""
+
+    def usage(self) -> dict[str, int]:
+        """Cumulative token usage across every `complete()` call on this instance
+        (course req #1c: a visible budget). A fresh provider per request (see
+        `server/app.py::execute_prompt`) makes this per-request, not process-lifetime."""
+        return {"in": self.usage_in, "out": self.usage_out}
