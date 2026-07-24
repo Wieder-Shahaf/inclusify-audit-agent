@@ -43,6 +43,10 @@ live = [
     "pinecone==5.4.2",
     "supabase==2.31.0",
 ]
+gold = [
+    # Optional: scripts/extract_gold_pdf.py only — never a package runtime dependency.
+    "pymupdf==1.28.0",
+]
 
 [project.scripts]
 inclusify-audit = "inclusify_agent.cli:main"
