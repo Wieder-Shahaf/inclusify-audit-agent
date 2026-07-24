@@ -128,3 +128,25 @@ class Candidate:
     def __post_init__(self) -> None:
         if not self.occurrences:
             self.occurrences = [(self.char_start, self.char_end)]
+
+
+# ---- v2 investigator verdicts (PRD §4 [3] / BUILD_PLAN R5) — additive -------------------
+
+@dataclass
+class Investigation:
+    """A verdict + evidence for one `Candidate`, from the EvidenceInvestigator (BUILD_PLAN R5).
+
+    `evidence` is the list of citations shown to the model, in `[n]` order, each a
+    plain dict of the `Citation`'s fields (id/text/score/metadata) plus its `n`.
+    """
+    candidate: Candidate
+    verdict: str
+    category: str
+    secondary_category: str | None
+    explanation: str
+    rewrite: str
+    confidence: str
+    needs_human_review: bool
+    evidence: list[dict[str, Any]]
+    turns: int
+    forced: bool
