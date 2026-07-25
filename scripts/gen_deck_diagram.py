@@ -651,7 +651,7 @@ def build() -> Image.Image:
         d,
         [(suff_cx, row3_cy + suff_hh), (suff_cx, bypass_y), (plan_cx, bypass_y),
          (plan_cx, plan_box[3])],
-        color=RED, label="revise query · ≤4 LLM turns total (incl. finalize)",
+        color=MUTED, label="revise query · ≤4 LLM turns total (incl. finalize)",
         font=f_label, label_fill=MUTED, label_pos=((suff_cx + plan_cx) / 2 + 40, bypass_y - 12),
     )
     # NO: dashed blue tap -> LiveSearch, then solid LiveSearch -> Review
