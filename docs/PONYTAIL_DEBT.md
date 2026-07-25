@@ -1,5 +1,8 @@
 # Ponytail debt ledger
 
+Snapshot from the v0-offline milestone (2026-06-20). v2 debt is tracked as `ponytail:`
+comments in code; regenerate with /ponytail-debt.
+
 Deliberate shortcuts and deferrals taken under ponytail mode `full`. Tracking these so
 they don't quietly rot into "later means never".
 

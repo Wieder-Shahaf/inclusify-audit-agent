@@ -1,14 +1,11 @@
-from .ask_user import ask_user
 from .audit_window import audit_window, build_hints
 from .chunk import chunk, find_quote, parse
 from .classify_span import classify_span
 from .consolidate import consolidate
 from .eric_live_search import eric_live_enabled, eric_live_search, live_search_ladder
-from .explain_why import explain_why
 from .guards import is_probably_english, max_windows
 from .investigate import investigate
 from .lexicon_lookup import lexicon_lookup, load_lexicon, scan_document
-from .propose_rewrite import propose_rewrite
 from .record_finding import record_finding
 from .retrieve_citation import retrieve_citation
 from .schemas import (
@@ -24,16 +21,12 @@ from .schemas import (
 )
 
 __all__ = [
-    # Tools (7 per BUILD_PLAN)
+    # Retained v1-era tools — also power eval's fixed-pipeline baseline ablation
     "chunk",
     "lexicon_lookup",
     "classify_span",
     "retrieve_citation",
-    "propose_rewrite",
-    "ask_user",
     "record_finding",
-    # On-demand Why?-RAG chain (PRD interactive stage)
-    "explain_why",
     # Live ERIC fallback (env-gated; dormant offline)
     "eric_live_search",
     "eric_live_enabled",

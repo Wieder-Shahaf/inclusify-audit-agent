@@ -26,10 +26,10 @@ achva*/synthetic modes). Only argument errors / a missing gold file exit non-zer
 
 v2 (BUILD_PLAN R7): "agent" now means the v2 pipeline (`pipeline.audit_document` for
 per-sentence gold, `pipeline.run_v2` for the document-level gold) -- the retired v1
-ReAct graph (`agent.run_audit`) is gone from this harness. The "baseline" ablation
-(`eval.baseline.run_baseline`, a hard-coded chunk->lexicon->classify sequence with no
-LLM judgment over a whole window) is untouched: it's still what v2's autonomy must
-diverge from.
+ReAct graph is gone, from this harness and from the codebase entirely. The "baseline"
+ablation (`eval.baseline.run_baseline`, a hard-coded chunk->lexicon->classify sequence
+with no LLM judgment over a whole window) is untouched: it's still what v2's autonomy
+must diverge from.
 """
 from __future__ import annotations
 
@@ -68,8 +68,9 @@ def _baseline_predict(item_text: str, *, llm: Any) -> bool:
 
 
 def _agent_trace_events(text: str, *, llm: Any) -> list[str]:
-    """v2's DocumentAuditor has no 'reflect'/'ask_user' -- the control-flow signal a
-    fixed baseline never takes is a whole-window LLM read that flags a candidate."""
+    """v2's DocumentAuditor has no branching control-flow actions (no reflect/retract,
+    no clarifying-question step) -- the signal a fixed baseline never takes is a
+    whole-window LLM read that flags a candidate."""
     result = audit_document(text, llm=llm)
     return [
         "flag" for ev in result["trace"]
@@ -78,12 +79,10 @@ def _agent_trace_events(text: str, *, llm: Any) -> list[str]:
 
 
 def _baseline_trace_events(text: str, *, llm: Any) -> list[str]:
-    out = run_baseline(text, llm=llm)
-    events: list[str] = []
-    for ev in out["trace"]:
-        if ev.get("tool") in ("ask_user",):
-            events.append("ask")
-    return events
+    """The fixed-order baseline emits no agentic trace events by construction —
+    kept as a real call so the informational divergence block stays honest."""
+    run_baseline(text, llm=llm)
+    return []
 
 
 def _per_label_breakdown(
