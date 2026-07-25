@@ -32,10 +32,6 @@
               "verdict": "flag"
             }
           ]
-        },
-        "usage": {
-          "in": 1380,
-          "out": 98
         }
       },
       {
@@ -47,10 +43,6 @@
         "response": {
           "action": "corpus_search",
           "query": "chairman freshmen manpower inclusive alternatives chairperson first-year students workforce gendered defaults academic text"
-        },
-        "usage": {
-          "in": 762,
-          "out": 37
         }
       },
       {
@@ -72,10 +64,6 @@
             1,
             2
           ]
-        },
-        "usage": {
-          "in": 1123,
-          "out": 130
         }
       },
       {
@@ -99,10 +87,6 @@
             }
           ],
           "summary": "One confirmed finding was kept. It reflects gendered language through occupational and generic terms, with no duplicates or contradictory findings to retract."
-        },
-        "usage": {
-          "in": 374,
-          "out": 79
         }
       }
     ]
@@ -120,10 +104,6 @@
         "response": {
           "candidates": [],
           "hint_verdicts": []
-        },
-        "usage": {
-          "in": 1276,
-          "out": 15
         }
       }
     ]

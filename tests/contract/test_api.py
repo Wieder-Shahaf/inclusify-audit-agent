@@ -43,6 +43,9 @@ def test_agent_info_shape():
     assert {"prompt", "full_response", "steps"} <= set(ex)
     for step in ex["steps"]:
         _assert_step_schema(step)
+        # Example steps mirror the bare /api/execute wire exactly (gen_examples.py
+        # applies the same _spec_steps projection).
+        assert set(step.keys()) == {"module", "prompt", "response"}
 
 
 def test_execute_ok_contract():

@@ -294,7 +294,7 @@ audit (ledger), wall-clock. Ablation: v2 vs the v1 tag on the same gold assets.
 | Efficiency / prompt size / $13 | §8 — architecture-level, plus the visible ledger |
 | Vercel ≤300 s | parallel fan-out + window cap + guards (§4 [0]) |
 | Models | LLMod.ai `MB5R2CF-azure/gpt-5.4-mini` + `text-embedding-3-small` (wired, verified) |
-| Databases | Pinecone (ERIC vectors) · Supabase (run log + ledger; RLS policy pending — human task) |
+| Databases | Pinecone (ERIC vectors) · Supabase (run log + ledger; verified end-to-end in production 2026-07-25 — see docs/NEEDS_KEYS.md) |
 | GUI | unchanged (textarea → Run → response + steps); optional interactivity = `/api/why` |
 | Offline-first (repo hard rule) | MockLLM gains `audit`/`investigate`/`consolidate` scripted tasks; hash embedder + seeded store; full suite green with zero keys |
 
