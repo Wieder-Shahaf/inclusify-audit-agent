@@ -26,6 +26,12 @@ grounded why · evidence example · inclusive alternative.
 all merged via reviewed PRs (#10-#18), production on Vercel verified serving the v2 chain.
 Live-calibrated: sentence-level F1 0.911 (ablation baseline 0.367); doc-level span R 0.25 / P 0.12
 reported honestly in README with characterized causes. 259 offline tests.
+**v2 GUI shipped** (2026-07-25, tag `v2-ui`, PR #22, main @ 3e1f5a4): approved claude.ai/design
+"Broadsheet" 4-tab page (Audit / Agent / Metrics / Team) replaces the v1 frontend — single
+self-contained `frontend/index.html`, new `POST /api/ui/execute` structured superset (report JSON +
+span occurrences + rejected candidates), `GET /api/health` extended additively; `/api/execute` wire
+contract pinned unchanged. 243 offline tests + 1 skipped; live-verified on prod (GUI at `/`,
+per-step token usage 4/4 on a live run).
 Next: Supabase RLS insert policy (human task); optional post-course: more annotated gold docs,
 taxonomy alignment, selectivity dial.
 **Carry-over from v1:** Supabase RLS insert policy still pending (human task); Vercel deploy live
