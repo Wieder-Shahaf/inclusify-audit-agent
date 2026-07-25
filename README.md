@@ -175,10 +175,9 @@ src/inclusify_agent/
                              #   (scan_document), audit_window.py (DocumentAuditor),
                              #   investigate.py (EvidenceInvestigator: CorpusSearch/LiveSearch tool
                              #   loop), consolidate.py (ReportConsolidator), retrieve_citation,
-                             #   propose_rewrite, explain_why, eric_live_search; classify_span /
-                             #   ask_user / record_finding retained for eval's v1 baseline ablation
-  graph/                     # legacy v1 ReAct state machine -- no longer on the request path,
-                             #   kept for the v1 regression tests + eval.run's ablation tag
+                             #   eric_live_search. tools/ also retains classify_span +
+                             #   record_finding -- the fixed-pipeline ablation baseline
+                             #   (eval/baseline.py) measures against them.
   server/                    # FastAPI app: GUI + /api/* endpoints (+ recording LLM for steps[])
   agent.py / cli.py / report.py / ingest.py
 api/index.py                 # Vercel ASGI entrypoint (path is fixed by Vercel)

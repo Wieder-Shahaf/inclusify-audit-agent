@@ -1,9 +1,11 @@
 """Tiny in-memory RAG seed for the offline API demo.
 
 The default offline store is empty, so retrieve_citation returns nothing and every
-flag is routed to ask_user (no rewrite). Seeding a handful of authoritative snippets
-that mention the common trigger terms lets hash-embedding cosine clear the 0.3 floor,
-so the offline /api/execute exercises the full pipeline incl. RewriteComposer.
+flag stays weakly-grounded (confidence=low, needs_human_review=True) instead of
+citing evidence. Seeding a handful of authoritative snippets that mention the common
+trigger terms lets hash-embedding cosine clear the 0.3 floor, so the offline
+/api/execute exercises the full v2 pipeline (DocumentAuditor -> EvidenceInvestigator
+-> ReportConsolidator), including grounded rewrites.
 
 ponytail: 6 canned snippets, not the 40MB ERIC corpus. Run `inclusify-agent.ingest`
 for the real corpus; this is just enough to make the keyless demo show all modules.

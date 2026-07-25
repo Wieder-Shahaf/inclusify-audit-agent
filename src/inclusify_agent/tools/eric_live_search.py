@@ -8,7 +8,7 @@ merges them into the citation pool.
 
 Offline-first: dormant unless ERIC_LIVE_SEARCH=1 — the tool returns [] without
 touching the network. It also never raises; any network failure degrades to []
-(the audit then falls back to ask_user exactly as before).
+(the finding stays weakly-grounded / needs human review, same as before).
 
 `live_search_ladder` (PRD v2.0 §6) adds a compiled-Lucene query ladder on top of the
 same fetch/rerank machinery: strict -> relaxed -> broad, stopping at the first rung

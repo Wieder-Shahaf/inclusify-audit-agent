@@ -40,9 +40,10 @@ def chunk(text: str, *, context_chars: int = 80) -> list[Chunk]:
 
 
 # ==== v2 offset-exact parse (PRD §5 / BUILD_PLAN R1) ==========================
-# `Chunk`/`chunk()` above are unchanged (v1 graph still uses them). Everything below
-# is additive: `parse()` returns the three new units v2 needs — `Block`, `Sentence`,
-# `Window` — all offset-exact into the caller's *unmodified* raw string.
+# `Chunk`/`chunk()` above are unchanged (eval's fixed-pipeline baseline still uses
+# them). Everything below is additive: `parse()` returns the three new units v2
+# needs — `Block`, `Sentence`, `Window` — all offset-exact into the caller's
+# *unmodified* raw string.
 
 # ---- 1. Block parse -----------------------------------------------------------
 

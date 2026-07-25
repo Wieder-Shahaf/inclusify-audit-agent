@@ -49,7 +49,8 @@ def lexicon_lookup(chunk: Chunk, *, lexicon_path: str | None = None) -> list[Lex
     """Return every lexicon match in the chunk's text.
 
     Case-insensitive, word-boundary matching so substrings inside larger words don't fire.
-    Unchanged signature/behavior (BUILD_PLAN R2: the v1 graph still calls this per-chunk).
+    Unchanged signature/behavior (BUILD_PLAN R2): eval's fixed-pipeline baseline
+    (eval/baseline.py) calls this per-chunk.
     """
     entries = load_lexicon(lexicon_path)
     text = chunk.text
@@ -87,7 +88,7 @@ def _scan_index(lexicon_path: str | None) -> tuple[dict[str, dict], list[re.Patt
 def scan_document(text: str, *, lexicon_path: str | None = None) -> list[LexiconHit]:
     """Scan an entire raw document once against the full lexicon; absolute char offsets.
 
-    Unlike `lexicon_lookup` (per-chunk, one regex search per term, used by the v1 graph),
+    Unlike `lexicon_lookup` (per-chunk, one regex search per term, used by eval's baseline),
     this compiles the whole lexicon into a handful of longest-first alternation patterns
     (batched at `_SCAN_CHUNK_SIZE` terms each) and does one `finditer` pass per pattern,
     so a ~1.5k-term lexicon costs a handful of passes rather than one search per term.
