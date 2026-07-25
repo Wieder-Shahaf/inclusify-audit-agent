@@ -7,7 +7,12 @@ from __future__ import annotations
 
 import os
 
-DEFAULT_MAX_WINDOWS = 40
+# Calibrated to Vercel's 300 s function cap (course spec): audits are sequential
+# (~10 s/window) + investigations ~1.2 s/candidate effective at 5 concurrent lanes.
+# 10 windows covers the PRD's largest use case (12-page paper = 9-10 windows) and
+# keeps a realistically dense run near ~230 s. Raise via AGENT_MAX_WINDOWS where
+# there is no serverless timeout (local Docker).
+DEFAULT_MAX_WINDOWS = 10
 
 
 def is_probably_english(text: str) -> bool:

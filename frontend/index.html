@@ -269,7 +269,7 @@ const ENDPOINTS = [
   { path: "GET /api/agent_info", returns: "description, purpose, prompt_template, prompt_examples" },
   { path: "GET /api/model_architecture", returns: "architecture diagram (image/png)" },
   { path: "POST /api/execute", returns: "{status, error, response, steps} — response is the markdown report; steps traces every LLM call" },
-  { path: "POST /api/ui/execute", returns: "the GUI's structured superset of /api/execute — adds report JSON + span offsets" },
+  { path: "POST /api/execute?ui=1", returns: "the GUI's structured superset of the same run — adds report JSON + span offsets (alias: /api/ui/execute)" },
   { path: "POST /api/why", returns: "{explanation, citations, augmented_prompt, steps} — one EvidenceInvestigator over a user-supplied span" },
   { path: "GET /api/health", returns: "{status, llm, model, embeddings, vector_store, persistence, eric_live}" },
 ];
@@ -289,7 +289,7 @@ const LEVERS = [
   { name: "Identical system prompt", how: "Fixed curated exemplars, so the provider KV-caches across windows and runs." },
   { name: "Recurrence dedup", how: "One investigation per framing; the verdict applies to every occurrence." },
   { name: "Skip-if-empty", how: "No consolidator call on a clean document; no investigators without candidates." },
-  { name: "Hard bounds", how: "≤4 turns per investigation · ≤5 concurrent · ≤40 windows · one JSON-repair retry." },
+  { name: "Hard bounds", how: "≤4 turns per investigation · ≤5 concurrent · ≤10 windows · one JSON-repair retry." },
 ];
 
 const DOC_METRICS = [
@@ -369,7 +369,7 @@ const state = {
   health: null,
   agentInfo: null,
   teamInfo: null,
-  lastSteps: null,       // steps[] from the last successful /api/ui/execute call (Metrics tab ledger)
+  lastSteps: null,       // steps[] from the last successful /api/execute?ui=1 call (Metrics tab ledger)
   audit: {
     phase: "idle",        // idle | running | report
     text: FIXTURE_TEXT,
@@ -651,7 +651,7 @@ function renderAuditIdle() {
       <div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:14px">
         <button class="btn btn-primary" style="font-size:15px;padding:11px 22px" onclick="UI.run()">Run audit</button>
         <span id="meta-line" style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">${esc(metaLineText(st.text))}</span>
-        <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-left:auto">English only · ≤40 windows · 300 s deploy cap</span>
+        <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-left:auto">English only · ≤10 windows · 300 s deploy cap</span>
       </div>
 
       <div style="margin-top:38px">
@@ -777,7 +777,7 @@ function startRun() {
   }, 100);
   st.timers = timers;
 
-  fetch("/api/ui/execute", {
+  fetch("/api/execute?ui=1", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: submitted }),
   }).then((r) => r.json()).then((data) => {
     clearRunTimers();

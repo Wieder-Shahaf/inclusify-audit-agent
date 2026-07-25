@@ -87,7 +87,7 @@ POST /api/execute {"prompt": raw English academic text}
         │
   [0] GUARDS ─────────────────── code · no LLM
         │   empty → error · non-Latin-dominant → "English only" error
-        │   > ~40 windows → "document too large" error (300 s guard)
+        │   > ~10 windows → "document too large" error (300 s guard)
         ▼
   [1] PERCEIVE (Chunker) ─────── code · no LLM
         │   blocks (heading/list/paragraph, char offsets)
@@ -156,7 +156,9 @@ anchoring (verbatim quotes, rewrite scope). Sentences are never the LLM call uni
    Guarantees contract field #1 is verbatim.
 
 Sizing: 10-page syllabus ≈ 6.5k tokens → 4–5 windows; the 12-page gold paper ≈ 15k tokens →
-9–10 windows. Cap ~40 windows/request with a clean error.
+9–10 windows. Cap 10 windows/request with a clean error (live-recalibrated 2026-07-25: audits
+run sequentially at ~10 s/window, so 40 windows could not finish inside Vercel's 300 s cap;
+10 still covers the gold paper. `AGENT_MAX_WINDOWS` raises it where no serverless timeout applies).
 
 `Chunk` is replaced by three dataclasses: `Block`, `Sentence`, `Window` (`tools/schemas.py`).
 
@@ -229,7 +231,7 @@ the Auditor, with the `condition` note riding along in the hint.
 | Skip-if-empty | no Consolidator call on clean docs; no Investigators without candidates |
 | Precomputed examples | `agent_info` prompt_examples served static (v1 re-ran 2 audits per Vercel cold start) |
 | Budget ledger | token usage per call summed into the Supabase `audit_runs` row; visible in GUI |
-| Bounds | ≤4 turns/investigation · ≤5 concurrent · ≤40 windows · JSON-repair retry ≤1 |
+| Bounds | ≤4 turns/investigation · ≤5 concurrent · ≤10 windows · JSON-repair retry ≤1 |
 
 **Expected profile** (gpt-5.4-mini via LLMod.ai): 3-page syllabus ≈ **~17 small calls, ~30–45 s**;
 the 12-page gold paper ≈ **~60–70 calls, ~2 min** — inside the 300 s cap with margin; ~1,000

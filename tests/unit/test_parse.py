@@ -240,7 +240,7 @@ def test_is_probably_english_false_for_empty_or_no_letters() -> None:
 
 def test_max_windows_default_and_env(monkeypatch) -> None:
     monkeypatch.delenv("AGENT_MAX_WINDOWS", raising=False)
-    assert max_windows() == 40
+    assert max_windows() == 10
     monkeypatch.setenv("AGENT_MAX_WINDOWS", "7")
     assert max_windows() == 7
 
