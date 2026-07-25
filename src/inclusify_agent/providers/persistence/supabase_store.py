@@ -13,13 +13,12 @@ Expected table (SQL):
     -- tokens_in/tokens_out (course req #1c budget ledger): populated when the LLM
     -- provider exposes usage() (OpenAICompatLLM; MockLLM never does) -- omitted from
     -- the row entirely when None, so the columns can be added to an existing table
-    -- at any time without a backfill.
-    -- Supabase enables RLS by default; with the publishable (anon) key the
-    -- insert needs a policy (insert-only is enough — we write returning=minimal):
-    --   create policy "anon_insert_audit_runs" on audit_runs
-    --       for insert to anon with check (true);
-    --   (pending: this policy has not been added yet -- inserts 403 until it is;
-    --   see docs/NEEDS_KEYS.md.)
+    -- at any time without a backfill. Gotcha (burned 2026-07-24/25): if the live
+    -- table predates these columns, every live-provider insert fails with 42703
+    -- (column does not exist) and is swallowed below -- offline/MockLLM rows still
+    -- land, so the breakage is invisible until you read the table back.
+    -- Live table verified end-to-end 2026-07-25 (see docs/NEEDS_KEYS.md); inserts
+    -- work with the publishable key -- no extra RLS policy was needed in practice.
 """
 from __future__ import annotations
 

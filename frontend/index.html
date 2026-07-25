@@ -649,7 +649,7 @@ function renderAuditIdle() {
       <textarea id="audit-textarea" class="input" oninput="UI.onTextInput(this)" style="min-height:190px;font-size:16px;line-height:1.6;padding:14px 16px;margin-top:8px">${esc(st.text)}</textarea>
 
       <div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:14px">
-        <button class="btn btn-primary" style="font-size:15px;padding:11px 22px" onclick="UI.run()">Run audit</button>
+        <button class="btn btn-primary" style="font-size:15px;padding:11px 22px" onclick="UI.run()">Run Agent</button>
         <span id="meta-line" style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">${esc(metaLineText(st.text))}</span>
         <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-left:auto">English only · ≤10 windows · 300 s deploy cap</span>
       </div>
@@ -797,6 +797,7 @@ function startRun() {
     const t3 = setTimeout(() => {
       st.phase = "report";
       st.report = data.report; st.ui = data.ui; st.steps = data.steps;
+      st.response = data.response; st.rawOpen = false;
       st.sel = null; st.open = null;
       st.whyOpen = {}; st.whyCache = {}; st.whyLoading = {};
       st.traceOpen = false; st.openStep = null;
@@ -1143,6 +1144,7 @@ function renderAuditReport() {
       </div>
       <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn btn-secondary" onclick="UI.resetAudit()">New audit</button>
+        <button class="btn btn-secondary" onclick="UI.toggleRaw()">${st.rawOpen ? "Hide raw response" : "Raw response"}</button>
         <button class="btn btn-secondary" id="copyjsonbtn" onclick="UI.copyReportJson()">${st.jsonCopied ? "Copied report JSON" : "Copy report JSON"}</button>
       </div>
     </div>
@@ -1150,6 +1152,11 @@ function renderAuditReport() {
     <div style="height:1px;background:var(--color-text)"></div>
     <div style="display:flex;flex-wrap:wrap;gap:0 26px;padding:11px 0;font-size:12.5px;font-variant-numeric:tabular-nums">${renderSummaryStrip(report, ui, steps.length)}</div>
     <div style="height:1px;background:var(--color-divider)"></div>
+    ${st.rawOpen ? `
+    <div style="padding-top:18px">
+      <div class="kicker text-muted" style="margin-bottom:8px">Raw response — the exact response string returned by POST /api/execute</div>
+      <pre style="font-size:12px;line-height:1.7;margin:0;padding:16px;border:1px solid var(--color-divider);white-space:pre-wrap;max-height:420px;overflow:auto">${esc(st.response || "")}</pre>
+    </div>` : ""}
 
     <div style="display:flex;flex-wrap:wrap;gap:48px;padding-top:32px;align-items:flex-start">
       <div class="source-panel" style="flex:1 1 400px;min-width:300px;position:sticky;top:20px">
@@ -1202,6 +1209,10 @@ const UI = {
     st.jsonCopied = true;
     rerenderReport();
     setTimeout(() => { st.jsonCopied = false; rerenderReport(); }, 1600);
+  },
+  toggleRaw() {
+    state.audit.rawOpen = !state.audit.rawOpen;
+    rerenderReport();
   },
   copyRewrite(id) {
     const f = findFinding(id);

@@ -25,11 +25,32 @@ MODULE_BY_TASK = {
 
 
 def _as_obj(raw: str) -> Any:
-    """The agent's LLM responses are JSON strings; return parsed object when possible."""
+    """The agent's LLM responses are JSON strings; return parsed object when possible.
+
+    A model occasionally emits several JSON objects back-to-back in one completion;
+    parse that as a list so steps[].response stays structured (the spec's step sketch
+    shows an object, not a string). Any non-JSON tail keeps the raw text untouched —
+    the trace must stay faithful to what the model actually said."""
     try:
         return json.loads(raw)
     except (json.JSONDecodeError, TypeError):
-        return raw
+        if not isinstance(raw, str):
+            return raw
+    decoder = json.JSONDecoder()
+    values: list[Any] = []
+    idx, n = 0, len(raw)
+    while True:
+        while idx < n and raw[idx].isspace():
+            idx += 1
+        if idx >= n:
+            break
+        try:
+            value, idx = decoder.raw_decode(raw, idx)
+        except json.JSONDecodeError:
+            return raw
+        values.append(value)
+    # A single value would have parsed above; only a true sequence lands here.
+    return values if len(values) > 1 else raw
 
 
 class RecordingLLM:
@@ -86,4 +107,8 @@ if __name__ == "__main__":
     metered_llm.complete("b", task="audit")
     assert steps2[0]["usage"] == {"in": 10, "out": 2}  # per-call delta, not cumulative
     assert steps2[1]["usage"] == {"in": 10, "out": 2}
+
+    assert _as_obj('{"a": 1}\n{"b": 2}') == [{"a": 1}, {"b": 2}]  # concatenated objects
+    assert _as_obj('{"a": 1} trailing prose') == '{"a": 1} trailing prose'  # stays faithful
+    assert _as_obj("not json at all") == "not json at all"
     print("recording_llm self-check ok")

@@ -24,10 +24,15 @@ from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from inclusify_agent.server.recording_llm import MODULE_BY_TASK  # noqa: E402
+from inclusify_agent.tools.guards import DEFAULT_MAX_WINDOWS  # noqa: E402
 
 AUDITOR_NAME = MODULE_BY_TASK["audit"]
 INVESTIGATOR_NAME = MODULE_BY_TASK["investigate"]
 CONSOLIDATOR_NAME = MODULE_BY_TASK["consolidate"]
+
+# Pulled from code (like MODULE_BY_TASK) so the diagram can't drift from the guards.
+GUARDS_SUB = f"empty · English-only · ≤ {DEFAULT_MAX_WINDOWS} windows"
+RUN_LOG_CHIP = "Supabase · steps[] · token usage"
 
 # ---- palette (spec hex values) -----------------------------------------------------
 BG = (255, 255, 255)
@@ -440,8 +445,7 @@ def build() -> Image.Image:
     # heights: measure each, take the max for a uniform rectangular-box row height,
     # diamond sized independently (smaller) but centered on the same row axis.
     execute_h = _measure_label_h(d, execute_w, "POST /api/execute", "{prompt}", f_name, f_sub)
-    guards_h = _measure_label_h(d, guards_w, "[0] Guards", "empty · English-only · ≤ 40 windows",
-                                 f_name, f_sub)
+    guards_h = _measure_label_h(d, guards_w, "[0] Guards", GUARDS_SUB, f_name, f_sub)
     auditor_h = _measure_label_h(
         d, auditor_w, f"[2] {AUDITOR_NAME}",
         "LLM · 1 call/window · adjudicates every lexicon hint (flag/clean per term)",
@@ -470,8 +474,7 @@ def build() -> Image.Image:
     _draw_label(d, execute_box, "POST /api/execute", "{prompt}", f_name=f_name, f_sub=f_sub)
 
     _box(d, guards_box, fill=GREEN_FILL, border=GREEN_BORDER)
-    _draw_label(d, guards_box, "[0] Guards", "empty · English-only · ≤ 40 windows",
-                f_name=f_name, f_sub=f_sub)
+    _draw_label(d, guards_box, "[0] Guards", GUARDS_SUB, f_name=f_name, f_sub=f_sub)
 
     _box(d, perceive_box, fill=GREEN_FILL, border=GREEN_BORDER)
     px0, py0, px1, py1 = perceive_box
@@ -711,7 +714,7 @@ def build() -> Image.Image:
     api_h = api_name_h + 8 + len(api_sub_lines) * _line_h(d, f_sub) + 20
 
     run_name_h = _line_h(d, f_name)
-    run_chip_h = _text_size(d, "Supabase · steps[] · token usage · pending RLS", f_chip)[1] + 12
+    run_chip_h = _text_size(d, RUN_LOG_CHIP, f_chip)[1] + 12
     run_h = run_name_h + 8 + run_chip_h + 8 + run_chip_h + 16
 
     out_h = max(api_h, run_h)
@@ -761,8 +764,7 @@ def build() -> Image.Image:
     ry2 += run_name_h + 8
     chip1_box = _chip(d, rcx2, ry2, "Null (offline)", f_chip, border=BLUE_BORDER)
     ry2 = chip1_box[3] + 8
-    chip2_box = _chip(d, rcx2, ry2, "Supabase · steps[] · token usage · pending RLS",
-                       f_chip, border=BLUE_BORDER)
+    chip2_box = _chip(d, rcx2, ry2, RUN_LOG_CHIP, f_chip, border=BLUE_BORDER)
     _fits_or_raise("Run logging box", chip2_box[3] - ry0, (ry1 - ry0))
 
     # arrows: Finalize -> [4] -> [5] -> {API/GUI, Run logging}; Clean report -> both outputs

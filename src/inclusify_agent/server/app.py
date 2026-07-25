@@ -20,7 +20,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel
@@ -134,6 +136,28 @@ class ExecuteIn(BaseModel):
     prompt: str
 
 
+@app.exception_handler(RequestValidationError)
+async def _execute_error_envelope(request: Request, exc: RequestValidationError) -> Any:
+    """A malformed /api/execute body (missing, non-JSON, wrong shape) gets the spec's
+    in-band error envelope — same shape and 200 status as every other agent error —
+    never FastAPI's default 422 {"detail": ...}. Other routes keep the default."""
+    if request.url.path in ("/api/execute", "/api/ui/execute"):
+        return JSONResponse({
+            "status": "error",
+            "error": 'request body must be JSON of the form {"prompt": "<text to audit>"}',
+            "response": None,
+            "steps": [],
+        })
+    return await request_validation_exception_handler(request, exc)
+
+
+def _spec_steps(steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Spec §C step schema, exactly: {module, prompt, response}. Drops the per-call
+    `usage` superset key, which stays on ?ui=1 (the GUI's token ledger) and in the
+    persistence log."""
+    return [{k: s[k] for k in ("module", "prompt", "response")} for s in steps]
+
+
 @app.post("/api/execute")
 def api_execute(body: ExecuteIn, ui: bool = False) -> dict[str, Any]:
     if ui:
@@ -148,7 +172,8 @@ def api_execute(body: ExecuteIn, ui: bool = False) -> dict[str, Any]:
     )
     # Wire contract is exactly {status, error, response, steps} (spec §C) -- tokens_*
     # were for the log_run call above only.
-    return {k: result[k] for k in ("status", "error", "response", "steps")}
+    return {"status": result["status"], "error": result["error"],
+            "response": result["response"], "steps": _spec_steps(result["steps"])}
 
 
 @app.post("/api/ui/execute")
