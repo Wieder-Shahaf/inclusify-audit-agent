@@ -532,7 +532,7 @@ function renderMetrics() {
     <div style="flex:1 1 540px;min-width:320px">
       <div class="kicker" style="color:var(--color-accent-700)">Budget ledger</div>
       <h2 style="font-size:34px;margin:10px 0 4px">$13.00 <span style="font-weight:400;font-size:20px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">course budget</span></h2>
-      <div class="text-muted" style="font-size:12px;font-variant-numeric:tabular-nums">Global spend aggregation pends the Supabase read policy — this run's ledger below is measured.</div>
+      <div class="text-muted" style="font-size:12px;font-variant-numeric:tabular-nums">The ledger below measures this run; every run's tokens are logged to the Supabase audit_runs table.</div>
 
       <h3 style="font-size:20px;margin:34px 0 8px">This run — token ledger</h3>
       <div class="table-wrap"><table class="table"><thead><tr><th>Module</th><th style="text-align:right">Calls</th><th style="text-align:right">Tokens in</th><th style="text-align:right">Tokens out</th></tr></thead><tbody>${ledgerBody}</tbody></table></div>

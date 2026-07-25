@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from inclusify_agent.server.app import _EXAMPLE_PROMPTS, execute_prompt  # noqa: E402
+from inclusify_agent.server.app import _EXAMPLE_PROMPTS, _spec_steps, execute_prompt  # noqa: E402
 
 _OUT = (
     Path(__file__).resolve().parents[1]
@@ -28,7 +28,9 @@ def main() -> None:
     out = []
     for p in _EXAMPLE_PROMPTS:
         r = execute_prompt(p)
-        out.append({"prompt": p, "full_response": r["response"], "steps": r["steps"]})
+        # Same projection as the bare /api/execute wire: example steps stay
+        # byte-consistent with what a grader sees from the live endpoint.
+        out.append({"prompt": p, "full_response": r["response"], "steps": _spec_steps(r["steps"])})
     _OUT.write_text(json.dumps(out, indent=2, default=str), encoding="utf-8")
     print(f"wrote {_OUT} ({_OUT.stat().st_size} bytes, {len(out)} examples)")
 

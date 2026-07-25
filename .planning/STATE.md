@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v2
 milestone_name: v2 Redesign (Auditor–Investigator–Consolidator)
 status: complete
-last_updated: "2026-07-24T00:00:00.000Z"
+last_updated: "2026-07-25T00:00:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 7
@@ -32,10 +32,10 @@ self-contained `frontend/index.html`, new `POST /api/ui/execute` structured supe
 span occurrences + rejected candidates), `GET /api/health` extended additively; `/api/execute` wire
 contract pinned unchanged. 243 offline tests + 1 skipped; live-verified on prod (GUI at `/`,
 per-step token usage 4/4 on a live run).
-Next: Supabase RLS insert policy (human task); optional post-course: more annotated gold docs,
-taxonomy alignment, selectivity dial.
-**Carry-over from v1:** Supabase RLS insert policy still pending (human task); Vercel deploy live
-and verified; LLMod.ai + Pinecone wired.
+Next (optional, post-course): more annotated gold docs, taxonomy alignment, selectivity dial.
+**Carry-over from v1:** Vercel deploy live and verified; LLMod.ai + Pinecone wired; Supabase
+run logging verified end-to-end in production 2026-07-25 (the long-standing "RLS pending" note
+was stale — see docs/NEEDS_KEYS.md for the real history).
 
 ## Accumulated Context
 
