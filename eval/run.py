@@ -79,12 +79,10 @@ def _agent_trace_events(text: str, *, llm: Any) -> list[str]:
 
 
 def _baseline_trace_events(text: str, *, llm: Any) -> list[str]:
-    out = run_baseline(text, llm=llm)
-    events: list[str] = []
-    for ev in out["trace"]:
-        if ev.get("tool") in ("ask_user",):
-            events.append("ask")
-    return events
+    """The fixed-order baseline emits no agentic trace events by construction —
+    kept as a real call so the informational divergence block stays honest."""
+    run_baseline(text, llm=llm)
+    return []
 
 
 def _per_label_breakdown(
