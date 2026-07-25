@@ -22,7 +22,7 @@ docker compose up            # api on :8000, web GUI on http://localhost:3000
 ```
 
 The GUI — a 4-tab page (Audit / Agent / Metrics / Team) in the "Broadsheet" design system,
-bound to the live endpoints below — is at the root URL. Audit runs a real `POST /api/ui/execute`
+bound to the live endpoints below — is at the root URL. Audit runs a real `POST /api/execute?ui=1`
 call and renders the report: highlighted source spans, per-finding evidence/rewrite,
 a "Why?" re-ask, and the full `steps[]` reasoning trace. The four endpoints (names fixed by
 the assignment spec):
@@ -33,7 +33,7 @@ the assignment spec):
 | `GET /api/agent_info` | description, purpose, prompt_template, prompt_examples |
 | `GET /api/model_architecture` | architecture diagram (PNG) |
 | `POST /api/execute` | `{prompt}` → `{status, error, response, steps}` — `steps` traces every LLM call (`module`, `prompt.{System_prompt,User_prompt}`, `response`) |
-| `POST /api/ui/execute` | `{prompt}` → the GUI's structured superset of `/api/execute`: the same `{status, error, response, steps}` plus the validated v2 `report` and a `ui` block (span offsets, rejected candidates, stats, wall-clock, tokens) for rendering highlights without re-deriving them from markdown |
+| `POST /api/execute?ui=1` | `{prompt}` → the GUI's structured superset of the same run: `{status, error, response, steps}` plus the validated v2 `report` and a `ui` block (span offsets, rejected candidates, stats, wall-clock, tokens) for rendering highlights without re-deriving them from markdown. `POST /api/ui/execute` is a back-compat alias |
 
 Plus one extra endpoint — the PRD's on-demand "Why?" stage, a **single-finding
 EvidenceInvestigator** run over a user-supplied span (not a whole-document audit): CorpusSearch

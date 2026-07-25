@@ -5,6 +5,7 @@ Endpoint names are fixed by the spec and must match exactly:
   GET  /api/agent_info         -> agent meta + prompt templates/examples
   GET  /api/model_architecture -> image/png of the architecture
   POST /api/execute            -> {status, error, response, steps}
+                                  (?ui=1 -> superset with report + span data; the GUI's call)
   GET  /                       -> minimal GUI (no auth)
 
 Offline-first: defaults to MockLLM + hash embeddings + a seeded in-memory store,
@@ -134,7 +135,11 @@ class ExecuteIn(BaseModel):
 
 
 @app.post("/api/execute")
-def api_execute(body: ExecuteIn) -> dict[str, Any]:
+def api_execute(body: ExecuteIn, ui: bool = False) -> dict[str, Any]:
+    if ui:
+        # Spec §3: the GUI's Run button posts to /api/execute — ?ui=1 selects the
+        # structured superset response; the bare call keeps the exact 4-key contract.
+        return api_ui_execute(body)
     result = execute_prompt(body.prompt)
     _persistence.log_run(
         prompt=body.prompt, status=result["status"],
@@ -148,7 +153,8 @@ def api_execute(body: ExecuteIn) -> dict[str, Any]:
 
 @app.post("/api/ui/execute")
 def api_ui_execute(body: ExecuteIn) -> dict[str, Any]:
-    """The GUI's structured superset of `/api/execute`: identical status/error/response/
+    """The GUI's structured superset of `/api/execute` (reached as `/api/execute?ui=1`;
+    this route is the back-compat alias): identical status/error/response/
     steps semantics (same `execute_prompt` call, same persistence logging -- this IS a
     real audit, not a preview), plus the validated v2 report and the span/stat sugar
     the frontend needs to render highlights and the fanout view without re-deriving

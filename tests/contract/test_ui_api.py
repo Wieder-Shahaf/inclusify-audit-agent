@@ -125,6 +125,19 @@ def test_execute_contract_still_exactly_four_keys():
     assert set(r.json().keys()) == {"status", "error", "response", "steps"}
 
 
+def test_execute_ui_param_returns_superset():
+    """`/api/execute?ui=1` (the GUI's Run-button call, spec §3) must return the same
+    superset shape as `/api/ui/execute` — one pipeline run, structured view."""
+    r = client.post("/api/execute?ui=1", json={"prompt": "The chairman approved the budget."})
+    assert r.status_code == 200
+    body = r.json()
+    assert set(body.keys()) == {"status", "error", "response", "steps", "report", "ui"}
+    assert body["status"] == "ok"
+    validate_v2(body["report"])
+    for key in ("occurrences", "rejected", "stats", "duration_s", "tokens_in", "tokens_out"):
+        assert key in body["ui"]
+
+
 def test_health_has_extended_keys():
     r = client.get("/api/health")
     assert r.status_code == 200
@@ -144,4 +157,4 @@ def test_gui_served_is_the_new_broadsheet_page():
     assert "Inclusify" in html
     for label in (">Audit<", ">Agent<", ">Metrics<", ">Team<"):
         assert label in html
-    assert "/api/ui/execute" in html
+    assert "/api/execute?ui=1" in html  # spec §3: the Run button posts to /api/execute
