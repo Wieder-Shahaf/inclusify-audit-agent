@@ -8,7 +8,20 @@ NAME ("openai_compat"), never the URL — leave-no-evidence discipline.
 """
 from __future__ import annotations
 
+import os
 from typing import Any
+
+# The openai SDK's defaults are a 600 s timeout with 2 retries -- a single wedged
+# upstream call would outlive Vercel's 300 s function cap, so the request dies with
+# zero bytes and the in-band error envelope never gets a chance to fire (observed
+# live 2026-07-25: 1 of 4 identical runs hung >320 s). 60 s is ~6x the slowest
+# observed single call (dense audit window ~10 s); with max_retries=1 a wedged call
+# costs ~2 min worst-case and then surfaces as a normal exception -> error envelope.
+_DEFAULT_TIMEOUT_S = 60.0
+
+
+def _timeout_s() -> float:
+    return float(os.environ.get("LLM_TIMEOUT_S", _DEFAULT_TIMEOUT_S))
 
 
 class OpenAICompatLLM:
@@ -33,7 +46,10 @@ class OpenAICompatLLM:
                 raise RuntimeError(
                     "openai package not installed. Install with: pip install '.[live]'"
                 ) from e
-            self._client = OpenAI(base_url=self._base_url, api_key=self._api_key)
+            self._client = OpenAI(
+                base_url=self._base_url, api_key=self._api_key,
+                timeout=_timeout_s(), max_retries=1,
+            )
         return self._client
 
     def complete(self, prompt: str, *, system: str | None = None, **kwargs: Any) -> str:
