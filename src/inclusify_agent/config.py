@@ -25,6 +25,14 @@ def get_agent_max_iters() -> int:
     return int(os.environ.get("AGENT_MAX_ITERS", "12"))
 
 
+def get_llm_model_name() -> str:
+    """Live model name (the same LLM_MODEL env `build_llm` reads for openai_compat).
+    Empty for the mock provider -- there's no model name to report offline."""
+    if get_llm_provider_name() == "mock":
+        return ""
+    return os.environ.get("LLM_MODEL", "")
+
+
 def build_llm() -> Any:
     name = get_llm_provider_name()
     if name == "mock":
