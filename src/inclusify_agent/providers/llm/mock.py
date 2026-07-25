@@ -1,20 +1,18 @@
-"""Deterministic mock LLM driving the whole graph.
+"""Deterministic mock LLM driving the v2 pipeline.
 
 BUILD_PLAN §3: MockLLM is the offline keystone. It returns schema-valid outputs for
-every call-site so the ReAct + Reflection + Agentic-RAG loop runs end-to-end with no
-keys. The same prompt always yields the same response — tests can assert on the trace.
+every call-site so the DocumentAuditor -> EvidenceInvestigator -> ReportConsolidator
+pipeline runs end-to-end with no keys. The same prompt always yields the same
+response — tests can assert on the trace.
 
 Call-site routing (by 'task' kwarg):
-- task="classify"   → flag/skip decision JSON for a span
-- task="route"      → next-tool decision (scripted ReAct sequence)
-- task="reflect"    → drops one seeded false-positive
-- task="rewrite"    → templated inclusive-rewrite JSON
-- task="ground"     → returns "grounded" or "ungrounded" given a candidate citation
-- task="audit"      → v2 DocumentAuditor: per-window candidate list + hint verdicts
+- task="classify"    → flag/skip decision JSON for a span (also drives eval's baseline)
+- task="rewrite"     → templated inclusive-rewrite JSON
+- task="audit"       → v2 DocumentAuditor: per-window candidate list + hint verdicts
 - task="investigate" → v2 EvidenceInvestigator: scripted corpus/live-search/finalize loop
 - task="consolidate" → v2 ReportConsolidator: retract low-confidence + group patterns
 
-Output is always JSON-stringifiable text so the graph can `json.loads` it.
+Output is always JSON-stringifiable text so callers can `json.loads` it.
 """
 from __future__ import annotations
 
@@ -37,14 +35,8 @@ class MockLLM:
         task = kwargs.get("task", "")
         if task == "classify":
             return self._classify(prompt, **kwargs)
-        if task == "route":
-            return self._route(prompt, **kwargs)
-        if task == "reflect":
-            return self._reflect(prompt, **kwargs)
         if task == "rewrite":
             return self._rewrite(prompt, **kwargs)
-        if task == "ground":
-            return self._ground(prompt, **kwargs)
         if task == "audit":
             return self._audit(prompt, **kwargs)
         if task == "investigate":
@@ -67,44 +59,6 @@ class MockLLM:
             })
         return json.dumps({"label": "skip", "category": None, "reason": "no trigger"})
 
-    def _route(self, prompt: str, **kwargs: Any) -> str:
-        """Pick next tool given the last action in the state hint.
-
-        Scripted ReAct: lexicon_lookup → classify_span → retrieve_citation
-        → propose_rewrite → (back to lexicon_lookup for next chunk) → ... → reflect.
-        Deterministic; same hint always yields same tool.
-        """
-        hint = kwargs.get("state_hint", "")
-        # state_hint format: "chunk_idx=I/N; last_action=X; findings=K"
-        last_action = "lexicon_lookup"
-        for part in hint.split(";"):
-            part = part.strip()
-            if part.startswith("last_action="):
-                last_action = part.split("=", 1)[1]
-        next_map = {
-            "lexicon_lookup": "classify_span",
-            "classify_span": "retrieve_citation",
-            "retrieve_citation": "propose_rewrite",
-            "propose_rewrite": "lexicon_lookup",   # next chunk's first action
-            "ask_user": "lexicon_lookup",
-            "reflect": "stop",
-        }
-        nxt = next_map.get(last_action, "lexicon_lookup")
-        return json.dumps({"tool": nxt, "rationale": f"after {last_action}: {nxt}"})
-
-    def _reflect(self, prompt: str, **kwargs: Any) -> str:
-        findings = kwargs.get("findings", [])
-        # Drop the first finding tagged as 'low_confidence' (seeds the retract event in the trace).
-        kept, retracted = [], []
-        dropped_one = False
-        for f in findings:
-            if not dropped_one and f.get("confidence") == "low":
-                retracted.append(f.get("id"))
-                dropped_one = True
-                continue
-            kept.append(f)
-        return json.dumps({"kept": kept, "retracted": retracted})
-
     def _rewrite(self, prompt: str, **kwargs: Any) -> str:
         span = kwargs.get("span", "")
         # Order matters: longer first so "chairman" matches before "he" inside it doesn't,
@@ -121,13 +75,6 @@ class MockLLM:
         for k, v in replacements:
             out = re.sub(rf"\b{re.escape(k)}\b", v, out, flags=re.IGNORECASE)
         return json.dumps({"rewrite": out, "preserves_meaning": True})
-
-    def _ground(self, prompt: str, **kwargs: Any) -> str:
-        citation = kwargs.get("citation", "")
-        # Deterministic: empty / 'unverified' citations are ungrounded; otherwise grounded.
-        if not citation or "unverified" in citation.lower():
-            return json.dumps({"status": "ungrounded"})
-        return json.dumps({"status": "grounded"})
 
     def _audit(self, prompt: str, **kwargs: Any) -> str:
         """v2 DocumentAuditor script (BUILD_PLAN R4): scan `window_text` for the same

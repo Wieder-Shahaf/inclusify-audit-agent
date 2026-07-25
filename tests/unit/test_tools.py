@@ -1,8 +1,6 @@
 """Unit tests for all 7 tools (BUILD_PLAN §6, P3 exit check)."""
 from __future__ import annotations
 
-import io
-
 from inclusify_agent.providers.embeddings import HashEmbeddings
 from inclusify_agent.providers.llm import MockLLM
 from inclusify_agent.providers.vectorstore import InMemoryStore
@@ -11,14 +9,11 @@ from inclusify_agent.tools import (
     Citation,
     Finding,
     LexiconHit,
-    ask_user,
     chunk,
     classify_span,
     eric_live_search,
-    explain_why,
     lexicon_lookup,
     load_lexicon,
-    propose_rewrite,
     record_finding,
     retrieve_citation,
 )
@@ -219,71 +214,6 @@ def test_eric_live_search_network_failure_returns_empty(monkeypatch) -> None:
 
     monkeypatch.setattr(urllib.request, "urlopen", _down)
     assert eric_live_search(HashEmbeddings(dim=16), query="chairman") == []
-
-
-# ---- explain_why (Why?-RAG chain) ----------------------------------------------
-
-def test_explain_why_returns_grounded_shape() -> None:
-    emb = HashEmbeddings(dim=32)
-    store = InMemoryStore(dim=32)
-    store.add(
-        ids=["d1"],
-        vectors=emb.embed(["gendered job titles like chairman"]),
-        texts=["Gendered job titles such as 'chairman' exclude non-male readers."],
-        metadatas=[{"title": "Style guide", "doc_id": "g1"}],
-    )
-    out = explain_why(MockLLM(), store, emb, span="the chairman", category="gendered")
-    assert set(out.keys()) == {"explanation", "citations", "augmented_prompt"}
-    assert isinstance(out["explanation"], str) and out["explanation"]
-    assert out["citations"], "seeded store must yield at least one citation"
-    assert {"id", "text", "score", "metadata"} <= set(out["citations"][0])
-    assert "[1]" in out["augmented_prompt"], "context blocks must be numbered"
-    assert "the chairman" in out["augmented_prompt"], "question must embed the span"
-
-
-def test_explain_why_empty_store_still_answers() -> None:
-    emb = HashEmbeddings(dim=32)
-    out = explain_why(MockLLM(), InMemoryStore(dim=32), emb, span="the chairman")
-    assert out["citations"] == []
-    assert "(no passages retrieved)" in out["augmented_prompt"]
-    assert isinstance(out["explanation"], str) and out["explanation"]
-
-
-# ---- propose_rewrite ---------------------------------------------------------
-
-def test_propose_rewrite_returns_rewrite_field() -> None:
-    out = propose_rewrite(MockLLM(), span="The chairman approved.", category="gendered")
-    assert "rewrite" in out
-    assert "chairperson" in out["rewrite"]
-
-
-def test_propose_rewrite_preserves_meaning_flag() -> None:
-    out = propose_rewrite(MockLLM(), span="text", category=None)
-    assert "preserves_meaning" in out
-
-
-# ---- ask_user ----------------------------------------------------------------
-
-def test_ask_user_auto_mode() -> None:
-    out = ask_user("What did you mean?", mode="auto", default_answer="unknown")
-    assert out["mode"] == "auto"
-    assert out["question"] == "What did you mean?"
-    assert out["answer"] == "unknown"
-
-
-def test_ask_user_interactive_mode_reads_stdin() -> None:
-    stdin = io.StringIO("clarification text\n")
-    stdout = io.StringIO()
-    out = ask_user("clarify?", mode="interactive", stdin=stdin, stdout=stdout)
-    assert out["mode"] == "interactive"
-    assert out["answer"] == "clarification text"
-    assert "[ask_user]" in stdout.getvalue()
-
-
-def test_ask_user_rejects_bad_mode() -> None:
-    import pytest
-    with pytest.raises(ValueError, match="mode"):
-        ask_user("q", mode="nonsense")
 
 
 # ---- record_finding ----------------------------------------------------------
