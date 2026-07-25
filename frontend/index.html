@@ -1,335 +1,1273 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Inclusify — Curriculum Inclusivity Auditor</title>
 <style>
-  :root{
-    --bg:#ffffff; --panel:#f6f6f3; --panel-2:#efeeea;
-    --ink:#0b0b0c; --muted:#6c6c72; --hair:#e7e6e1;
-    --indigo:#5b4ef0; --mint:#0f9d76;
-    --grad:linear-gradient(120deg,#6d5ef8 0%,#b45cff 48%,#ff7ac6 100%);
-    --code-bg:#0d0d12; --code-ink:#e9e9f2;
-    --radius:18px; --maxw:920px;
-    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0}
-  body{
-    font-family:var(--sans); color:var(--ink); background:var(--bg);
-    -webkit-font-smoothing:antialiased; line-height:1.5;
-    background-image:radial-gradient(60% 40% at 80% -5%,rgba(180,92,255,.10),transparent 60%),
-                     radial-gradient(50% 35% at 0% 0%,rgba(109,94,248,.10),transparent 55%);
-  }
-  .wrap{max-width:var(--maxw); margin:0 auto; padding:28px 24px 96px}
+/* ============================== Broadsheet design system (verbatim) ============================== */
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
 
-  header.top{display:flex; align-items:center; justify-content:space-between; padding:6px 0 8px}
-  .brand{display:flex; align-items:center; gap:10px; font-weight:650; letter-spacing:-.01em}
-  .brand .dot{width:22px; height:22px; border-radius:7px; background:var(--grad)}
-  .top nav{font-size:13.5px; color:var(--muted)}
-  .top nav a{color:var(--muted); text-decoration:none; margin-left:18px}
-  .top nav a:hover{color:var(--ink)}
+:root {
+  --color-bg: #f3f2f2;
+  --color-surface: #eae9e9;
+  --color-text: #201e1d;
+  --color-accent: #0088b0;
+  --color-accent-2: #d6006c;
+  --color-divider: color-mix(in srgb, #201e1d 16%, transparent);
 
-  .hero{padding:52px 0 30px; max-width:760px}
-  .eyebrow{font-size:12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
-           color:var(--indigo)}
-  h1{font-size:clamp(34px,6vw,58px); line-height:1.02; letter-spacing:-.03em;
-     margin:16px 0 14px; font-weight:680}
-  .hero p{font-size:18px; color:var(--muted); margin:0; max-width:600px}
+  --color-neutral-100: #f8f4f4;
+  --color-neutral-200: #eae7e7;
+  --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6;
+  --color-neutral-500: #9b9797;
+  --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d;
+  --color-neutral-800: #444141;
+  --color-neutral-900: #2d2b2b;
 
-  /* Composer */
-  .composer{background:var(--panel); border:1px solid var(--hair); border-radius:var(--radius);
-            padding:8px; box-shadow:0 1px 0 rgba(0,0,0,.02)}
-  textarea{
-    width:100%; border:0; background:transparent; resize:vertical; min-height:138px;
-    font-family:var(--sans); font-size:17px; color:var(--ink); padding:16px 16px 4px;
-    outline:none; line-height:1.55;
-  }
-  textarea::placeholder{color:#a6a6ad}
-  .composer .bar{display:flex; align-items:center; gap:12px; padding:8px 8px 8px 12px;
-                 flex-wrap:wrap}
-  .chips{display:flex; gap:8px; flex-wrap:wrap; flex:1; min-width:0}
-  .chip{font-size:12.5px; color:var(--muted); background:#fff; border:1px solid var(--hair);
-        border-radius:999px; padding:6px 12px; cursor:pointer; white-space:nowrap;
-        max-width:100%; overflow:hidden; text-overflow:ellipsis}
-  .chip:hover{border-color:#d8d7d1; color:var(--ink)}
-  .run{border:0; cursor:pointer; color:#fff; font-weight:600; font-size:15px;
-       padding:12px 22px; border-radius:999px; background:var(--grad);
-       box-shadow:0 6px 20px rgba(124,82,232,.28); transition:transform .12s ease, filter .12s ease}
-  .run:hover{filter:brightness(1.05)} .run:active{transform:translateY(1px)}
-  .run[disabled]{opacity:.6; cursor:progress; box-shadow:none}
-  .spin{display:inline-block; width:14px; height:14px; margin-right:8px; vertical-align:-2px;
-        border:2px solid rgba(255,255,255,.5); border-top-color:#fff; border-radius:50%;
-        animation:spin .7s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
+  --color-accent-100: #e9f8ff;
+  --color-accent-200: #cbeeff;
+  --color-accent-300: #99e0ff;
+  --color-accent-400: #62c5ee;
+  --color-accent-500: #38a6cf;
+  --color-accent-600: #1186ac;
+  --color-accent-700: #006786;
+  --color-accent-800: #004961;
+  --color-accent-900: #0a303e;
 
-  /* Results */
-  .results{margin-top:34px; display:none}
-  .results.show{display:block; animation:rise .4s ease both}
-  @keyframes rise{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+  --color-accent-2-100: #fff1f4;
+  --color-accent-2-200: #ffdee6;
+  --color-accent-2-300: #ffc0d0;
+  --color-accent-2-400: #ff90b1;
+  --color-accent-2-500: #ff458e;
+  --color-accent-2-600: #d82071;
+  --color-accent-2-700: #aa0b56;
+  --color-accent-2-800: #790e3d;
+  --color-accent-2-900: #4b1528;
 
-  .banner{border-radius:14px; padding:14px 16px; font-size:14.5px; margin-bottom:18px}
-  .banner.err{background:#fff1f0; border:1px solid #ffd6d2; color:#9b1c14}
+  --color-process-yellow: #edbb00;
 
-  .sec-label{display:flex; align-items:baseline; gap:12px; margin:30px 0 14px}
-  .sec-label h2{font-size:14px; letter-spacing:.04em; text-transform:uppercase;
-                margin:0; color:var(--ink)}
-  .sec-label span{font-size:13px; color:var(--muted)}
+  --font-heading: "Source Serif 4", system-ui, sans-serif;
+  --font-heading-weight: 600;
+  --font-body: "Source Serif 4", system-ui, sans-serif;
 
-  .card{background:#fff; border:1px solid var(--hair); border-radius:var(--radius); padding:22px 24px}
-  .report h3{font-size:15px; margin:0 0 6px; letter-spacing:-.01em}
-  .report .meta{font-size:14px; color:var(--muted); margin:0 0 14px}
-  .finding{border-top:1px solid var(--hair); padding:14px 0}
-  .finding:first-of-type{border-top:0; padding-top:0}
-  .tag{display:inline-block; font-size:11px; font-weight:700; letter-spacing:.06em;
-       padding:3px 8px; border-radius:6px; margin-right:8px; vertical-align:1px}
-  .tag.flag{background:#fdeede; color:#9a5b00} .tag.ask{background:#e7eefe; color:#274bb5}
-  .tag.skip{background:#eafaf1; color:#0f7a4d} .tag.retr{background:#f1f1f1; color:#888}
-  .finding .span{font-size:15.5px}
-  .finding .span s{color:var(--muted)}
-  .kv{font-size:14px; color:var(--muted); margin:6px 0 0}
-  .kv b{color:var(--ink); font-weight:600}
-  .rw{margin-top:6px; font-size:14.5px}
-  .rw b{color:var(--mint)}
-  .empty{color:var(--muted); font-size:14.5px}
+  --space-1: 5.0px;
+  --space-2: 10.0px;
+  --space-3: 15.0px;
+  --space-4: 20.0px;
+  --space-6: 30.0px;
+  --space-8: 40.0px;
 
-  /* Reasoning trace — the signature: every LLM call, in order */
-  .trace{counter-reset:step}
-  .step{position:relative; border-left:2px solid var(--hair); margin-left:8px;
-        padding:0 0 8px 26px}
-  .step::before{counter-increment:step; content:counter(step);
-        position:absolute; left:-13px; top:0; width:24px; height:24px; border-radius:50%;
-        background:var(--indigo); color:#fff; font-size:12px; font-weight:700;
-        display:flex; align-items:center; justify-content:center;
-        box-shadow:0 0 0 4px var(--bg)}
-  .step:last-child{border-left-color:transparent}
-  .step .mod{font-weight:650; font-size:15px; margin-bottom:8px; display:flex;
-             align-items:center; gap:9px}
-  .step .mod .badge{font-size:11px; font-weight:600; color:var(--indigo);
-        background:#efeefe; border:1px solid #e0ddfb; border-radius:999px; padding:2px 9px}
-  details{background:var(--panel); border:1px solid var(--hair); border-radius:12px;
-          margin-bottom:8px; overflow:hidden}
-  summary{cursor:pointer; list-style:none; padding:10px 14px; font-size:13px; font-weight:600;
-          color:var(--muted); display:flex; justify-content:space-between; align-items:center}
-  summary::-webkit-details-marker{display:none}
-  summary::after{content:"+"; color:#b3b3b8; font-weight:700}
-  details[open] summary::after{content:"–"}
-  details[open] summary{color:var(--ink); border-bottom:1px solid var(--hair)}
-  pre{margin:0; padding:14px 16px; font-family:var(--mono); font-size:12.5px; line-height:1.6;
-      white-space:pre-wrap; word-break:break-word; max-height:340px; overflow:auto}
-  pre.sys{background:#fff; color:#3a3a40} pre.usr{background:#fff; color:#3a3a40}
-  pre.resp{background:var(--code-bg); color:var(--code-ink)}
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: 4px;
 
-  footer{margin-top:60px; padding-top:22px; border-top:1px solid var(--hair);
-          font-size:12.5px; color:var(--muted); display:flex; gap:18px; flex-wrap:wrap}
-  footer a{color:var(--muted)}
-  @media (max-width:560px){ .run{width:100%} .composer .bar{flex-direction:column; align-items:stretch} .chips{order:2} }
-  @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: var(--font-heading-weight); }
+
+.halftone{position:relative;filter:grayscale(0.35) contrast(1.15);overflow:hidden}
+.halftone::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(0,0,0,0.22) 30%,transparent 32%);
+  background-size:3px 3px;mix-blend-mode:multiply}
+
+.cmyk-num{--cmyk-num-ground:var(--color-bg);
+  position:relative;width:fit-content;line-height:0.9;
+  font-feature-settings:"pnum" 1;
+  background:var(--cmyk-num-ground);padding:0.12em;margin:-0.12em}
+.cmyk-num .paper{color:var(--color-bg);
+  text-shadow:0.036em 0.025em 0 var(--color-bg),-0.031em -0.023em 0 var(--color-bg)}
+.cmyk-num .plate{position:absolute;inset:0.12em;mix-blend-mode:multiply;
+  text-box:trim-both cap alphabetic}
+.cmyk-num .plate-c{color:var(--color-accent)}
+.cmyk-num .plate-m{color:var(--color-accent-2);
+  translate:calc(0.036em + 0.018em*var(--press-nx, 0)) calc(0.025em + 0.0125em*var(--press-ny, 0))}
+.cmyk-num .plate-y{color:var(--color-process-yellow);
+  translate:calc(-0.031em + 0.018em*var(--press-nx, 0)) calc(-0.023em + 0.0125em*var(--press-ny, 0))}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 var(--space-2);
+}
+h1 { font-size: 42px; }
+h2 { font-size: 32px; }
+h3 { font-size: 25px; }
+h4 { font-size: 20px; }
+h5 { font-size: 16px; }
+h6 { font-size: 13px; }
+h6 { letter-spacing: 0.08em; text-transform: uppercase; }
+p { margin: 0 0 var(--space-3); }
+a { color: var(--color-accent); text-underline-offset: 3px; }
+img { display: block; max-width: 100%; }
+figure { margin: 0; }
+figcaption {
+  font-size: 11px; margin-top: var(--space-1);
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+.text-muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
+
+.hr {
+  height: 1px; border: 0; margin: var(--space-4) 0;
+  background: var(--color-divider);
+}
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; text-decoration: none;
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 14px; line-height: 1.2; color: var(--color-text);
+  background: transparent; border: 1px solid transparent;
+  padding: var(--space-2) calc(var(--space-3) * 1.2);
+  border-radius: var(--radius-md);
+}
+.btn svg { display: block; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: var(--color-accent); color: var(--color-bg); }
+.btn-primary:hover { background: var(--color-accent-600); }
+.btn-primary:active { background: var(--color-accent-700); }
+.btn-secondary { border-color: var(--color-divider); }
+.btn-secondary:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.btn-secondary:active { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
+.btn-ghost { color: var(--color-accent); padding-inline: var(--space-1); }
+.btn-ghost:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+.btn-ghost:active { background: color-mix(in srgb, var(--color-accent) 18%, transparent); }
+.btn-icon { width: 36px; height: 36px; padding: 0; }
+.btn-block { width: 100%; margin-top: var(--space-2); }
+
+.field > label {
+  display: block; font-size: 12px; margin-bottom: 5px;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+}
+.input {
+  width: 100%; min-height: 36px; padding: 6px 10px; font: inherit;
+  font-size: 14px; color: var(--color-text); caret-color: var(--color-accent);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider); border-radius: var(--radius-md);
+}
+.input::placeholder { color: color-mix(in srgb, var(--color-text) 65%, transparent); opacity: 1; }
+.input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+.input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
+textarea.input { min-height: 90px; resize: vertical; }
+
+.tag {
+  display: inline-flex; align-items: center; font-size: 11px;
+  letter-spacing: 0.02em; padding: 3px 10px;
+  border-radius: calc(var(--radius-md) * 0.75);
+}
+.tag-accent { background: var(--color-accent-100); color: var(--color-accent-800); }
+.tag-accent-2 { background: var(--color-accent-2-100); color: var(--color-accent-2-800); }
+.tag-neutral { background: var(--color-neutral-100); color: var(--color-neutral-800); }
+.tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent); }
+
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th {
+  text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+  padding: var(--space-2); border-bottom: 1px solid var(--color-divider);
+}
+.table td {
+  padding: var(--space-2);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+.table tbody tr:hover { background: color-mix(in srgb, var(--color-text) 4%, transparent); }
+
+/* ============================== Page-level additions (not in broadsheet.css) ============================== */
+html, body { max-width: 100%; overflow-x: hidden; }
+.container { max-width: 1280px; margin: 0 auto; padding: 0 32px; }
+.kicker { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+.nav a { color: var(--color-text); text-decoration: none; font-size: 15px; }
+.nav a[aria-current="page"] { color: var(--color-accent); }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;
+      font-family: ui-monospace, Menlo, Consolas, monospace; }
+.table-wrap { overflow-x: auto; }
+.trace-drawer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+                background: var(--color-bg); box-shadow: var(--shadow-lg);
+                border-top: 3px solid var(--color-text); }
+.src-span { outline-offset: 3px; }
+
+@keyframes pulseInk { 0%,100% { opacity: .35 } 50% { opacity: 1 } }
+@keyframes riseIn { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media (max-width: 860px) {
+  .source-panel { position: static !important; top: auto !important; }
+}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div class="brand"><span class="dot"></span>Inclusify</div>
-    <nav>
-      <a href="/api/agent_info" target="_blank">Agent info</a>
-      <a href="/api/model_architecture" target="_blank">Architecture</a>
-      <a href="/api/docs" target="_blank">API</a>
-    </nav>
-  </header>
 
-  <section class="hero">
-    <div class="eyebrow">Curriculum inclusivity auditor</div>
-    <h1>See how every line of your material reads to everyone.</h1>
-    <p>Paste a sentence, syllabus excerpt, or slide. Inclusify flags gendered,
-       exclusionary, and outdated phrasing — and shows its full reasoning, step by step.</p>
-  </section>
-
-  <section class="composer">
-    <textarea id="prompt" placeholder="The chairman told the freshmen that manpower was short this semester."></textarea>
-    <div class="bar">
-      <div class="chips" id="chips"></div>
-      <button class="run" id="run">Run audit</button>
+<header>
+  <div class="container">
+    <div style="height:5px;background:var(--color-text)"></div>
+    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:16px;padding:7px 0 6px">
+      <span class="kicker">Technion 00960237 · AI Agent Systems</span>
+      <span class="kicker" style="margin-left:auto">Report schema v2.0</span>
+      <span class="kicker" id="provider-chip" style="color:var(--color-accent-700)">MockLLM · hash embedder · seeded in-memory store</span>
     </div>
-  </section>
-
-  <section class="results" id="results">
-    <div id="banner"></div>
-
-    <div class="sec-label"><h2>Audit</h2><span>final agent response</span></div>
-    <div class="card report" id="report"></div>
-
-    <div class="sec-label"><h2>Why?</h2><span>RAG-grounded explanation from the corpus, on demand</span></div>
-    <div class="card" id="why">
-      <div class="chips" id="why-chips"></div>
-      <div id="why-out"><p class="empty">Run an audit, then pick a flagged phrase.</p></div>
+    <div style="height:1px;background:var(--color-text)"></div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:24px;padding:22px 0 18px">
+      <div>
+        <div style="font-family:var(--font-heading);font-weight:600;font-size:52px;line-height:.95;letter-spacing:-.02em">Inclusify</div>
+        <div style="font-size:14px;max-width:44ch;margin-top:8px;color:color-mix(in srgb,var(--color-text) 62%,transparent)">An autonomous curriculum-inclusivity auditor. Orchestrator–workers over LangGraph, offline-first.</div>
+      </div>
+      <nav class="nav" style="display:flex;flex-wrap:wrap;gap:22px;margin-left:auto;padding-bottom:6px">
+        <a href="#audit" id="nav-audit" onclick="event.preventDefault();UI.nav('audit')">Audit</a>
+        <a href="#agent" id="nav-agent" onclick="event.preventDefault();UI.nav('agent')">Agent</a>
+        <a href="#metrics" id="nav-metrics" onclick="event.preventDefault();UI.nav('metrics')">Metrics</a>
+        <a href="#team" id="nav-team" onclick="event.preventDefault();UI.nav('team')">Team</a>
+      </nav>
     </div>
+    <div style="height:1px;background:var(--color-divider)"></div>
+  </div>
+</header>
 
-    <div class="sec-label"><h2>Reasoning trace</h2><span id="trace-count"></span></div>
-    <div class="trace" id="trace"></div>
-  </section>
-
-  <footer>
-    <span>Inclusify · Technion AI Agent Systems</span>
-    <a href="/api/team_info" target="_blank">Team</a>
-    <span>Offline-first · LangGraph ReAct + Reflection + Agentic-RAG</span>
-  </footer>
-</div>
+<main class="container" style="padding-bottom:140px">
+  <section id="sec-audit" data-screen-label="Audit"><div id="audit-container"></div></section>
+  <section id="sec-agent" data-screen-label="Agent" style="display:none;padding:44px 0 0"><div id="agent-container"></div></section>
+  <section id="sec-metrics" data-screen-label="Metrics" style="display:none;padding:44px 0 0"><div id="metrics-container"></div></section>
+  <section id="sec-team" data-screen-label="Team" style="display:none;padding:44px 0 0"><div id="team-container"></div></section>
+</main>
 
 <script>
-const EXAMPLES = [
-  "The chairman told the freshmen that manpower was short this semester.",
-  "Whitelist the trusted hosts and blacklist the rest.",
-  "The Stonewall Uprising marked a critical juncture in LGBTQ+ rights.",
+"use strict";
+
+/* ============================== constants ============================== */
+
+// ponytail: verbatim from data/fixtures/sample.txt (byte-exact incl. trailing newline) —
+// keep in sync if that file ever changes.
+const FIXTURE_TEXT = `The chairman of the department will manage the freshmen orientation, and his secretary will assist.
+Each student should bring his own laptop. The blacklist of plagiarism cases is reviewed annually by the manpower committee.
+`;
+
+const STAGES = [
+  { name: "Guards", kind: "code · no LLM", blurb: "Language + size checks — no LLM call." },
+  { name: "Chunker", kind: "code · no LLM", blurb: "Splits the raw text into blocks, sentences, and windows." },
+  { name: "LexiconScanner", kind: "code · no LLM", blurb: "Scans for known terms — sensor hints, never auto-flags." },
+  { name: "DocumentAuditor", kind: "LLM · 1 call / window", blurb: "Reads each window, proposes candidate spans." },
+  { name: "EvidenceInvestigator", kind: "LLM tool-loop · parallel ≤5", blurb: "Researches each candidate against the corpus." },
+  { name: "ReportConsolidator", kind: "LLM · 1 call", blurb: "Retracts, groups, and orders confirmed findings." },
+  { name: "Report", kind: "code · no LLM", blurb: "Renders markdown + JSON (schema 2.0) + steps[]." },
 ];
-const $ = (id) => document.getElementById(id);
 
-// Example chips
-const chips = $("chips");
-EXAMPLES.forEach(t => {
-  const c = document.createElement("button");
-  c.className = "chip"; c.textContent = t; c.title = t;
-  c.onclick = () => { $("prompt").value = t; $("prompt").focus(); };
-  chips.appendChild(c);
-});
+const ENDPOINTS = [
+  { path: "GET /api/team_info", returns: "team + students" },
+  { path: "GET /api/agent_info", returns: "description, purpose, prompt_template, prompt_examples" },
+  { path: "GET /api/model_architecture", returns: "architecture diagram (image/png)" },
+  { path: "POST /api/execute", returns: "{status, error, response, steps} — response is the markdown report; steps traces every LLM call" },
+  { path: "POST /api/ui/execute", returns: "the GUI's structured superset of /api/execute — adds report JSON + span offsets" },
+  { path: "POST /api/why", returns: "{explanation, citations, augmented_prompt, steps} — one EvidenceInvestigator over a user-supplied span" },
+  { path: "GET /api/health", returns: "{status, llm, model, embeddings, vector_store, persistence, eric_live}" },
+];
 
-const esc = s => String(s).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+const AUTONOMY = [
+  { decision: "Which spans are candidates, including implied bias with no trigger word", by: "DocumentAuditor" },
+  { decision: "How many investigators spawn — fan-out is input-dependent", by: "Auditor output → LangGraph Send" },
+  { decision: "What evidence would prove or refute a finding — the query itself", by: "EvidenceInvestigator" },
+  { decision: "Whether local evidence is sufficient, or the live ERIC API is needed", by: "EvidenceInvestigator" },
+  { decision: "Confirm or reject its own candidate", by: "EvidenceInvestigator" },
+  { decision: "Retract, merge, and pattern-group across findings", by: "ReportConsolidator" },
+];
 
-// Minimal markdown -> HTML for the audit report (headings, bold, lists).
-function renderReport(md){
-  const lines = md.split("\n"); let html = ""; let inList = false;
-  const inline = s => esc(s).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>")
-                            .replace(/`(.+?)`/g,"<code>$1</code>");
-  for (let raw of lines){
-    const line = raw.replace(/\s+$/,"");
-    if (!line){ if(inList){html+="</ul>";inList=false;} continue; }
-    if (line.startsWith("# ")){ html += `<h3>${inline(line.slice(2))}</h3>`; continue; }
-    if (/^\s*-\s/.test(line)){
-      if(!inList){html+="<ul style='margin:6px 0;padding-left:18px'>";inList=true;}
-      html += `<li>${inline(line.replace(/^\s*-\s/,""))}</li>`; continue;
-    }
-    if(inList){html+="</ul>";inList=false;}
-    html += `<p class="meta">${inline(line)}</p>`;
-  }
-  if(inList) html+="</ul>";
-  return html;
+const LEVERS = [
+  { name: "No routing calls", how: "Control flow is code; the LLM is called only where judgment is contingent." },
+  { name: "Document read ≈ once", how: "Windows, not per-sentence prompts — v1 resent a 1.4k-token system prompt per sentence." },
+  { name: "Identical system prompt", how: "Fixed curated exemplars, so the provider KV-caches across windows and runs." },
+  { name: "Recurrence dedup", how: "One investigation per framing; the verdict applies to every occurrence." },
+  { name: "Skip-if-empty", how: "No consolidator call on a clean document; no investigators without candidates." },
+  { name: "Hard bounds", how: "≤4 turns per investigation · ≤5 concurrent · ≤40 windows · one JSON-repair retry." },
+];
+
+const DOC_METRICS = [
+  { label: "Span detection, label-agnostic (≥50% overlap)", value: "P 0.121 · R 0.250 · F1 0.163" },
+  { label: "Strict span + expert label, micro F1", value: "0.059" },
+  { label: "Predictions on expert-approved spans", value: "12 of 66" },
+  { label: "Wall clock / LLM calls / parse failures", value: "212 s · 231 · 0" },
+];
+
+const TEAM_STACK = [
+  { role: "Orchestration", what: "LangGraph Send · orchestrator–workers with evaluator loops" },
+  { role: "LLM", what: "MockLLM offline · gpt-5.4-mini via the LLMod.ai proxy live" },
+  { role: "Embeddings", what: "hash offline · text-embedding-3-small live" },
+  { role: "Vector store", what: "in-memory / Chroma offline · Pinecone (ERIC, 21,870 chunks) live" },
+  { role: "Persistence", what: "null offline · Supabase audit_runs with the token ledger" },
+  { role: "Serving", what: "FastAPI on Vercel · 60 s cap, window guard well inside it" },
+];
+
+// ponytail: this is copy, not a live metric (no endpoint reports a test count) --
+// re-paste the final `pytest tests -q` number here if the suite grows meaningfully.
+const TEST_COUNT = "244";
+
+/* ============================== helpers ============================== */
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+}
+const escAttr = esc;
+
+function hostOf(url) {
+  try { return new URL(url).hostname; } catch (e) { return url; }
 }
 
-function fmt(v){ return typeof v === "string" ? v : JSON.stringify(v, null, 2); }
-
-function renderTrace(steps){
-  $("trace-count").textContent = `${steps.length} LLM call${steps.length===1?"":"s"}, in order`;
-  return steps.map(s => `
-    <div class="step">
-      <div class="mod">${esc(s.module)} <span class="badge">LLM call</span></div>
-      <details><summary>System prompt</summary><pre class="sys">${esc(s.prompt.System_prompt) || "(none)"}</pre></details>
-      <details open><summary>User prompt</summary><pre class="usr">${esc(s.prompt.User_prompt)}</pre></details>
-      <details open><summary>Response</summary><pre class="resp">${esc(fmt(s.response))}</pre></details>
-    </div>`).join("");
+// Evidence URLs come from the RAG corpus / live ERIC results -- not LLM free text, but
+// not first-party either. Only ever land an http(s) URL in an href; anything else
+// (javascript:, data:, a malformed string) degrades to "#" rather than being followed.
+function safeHref(url) {
+  try {
+    const u = new URL(url, window.location.href);
+    return u.protocol === "http:" || u.protocol === "https:" ? u.href : "#";
+  } catch (e) { return "#"; }
 }
 
-async function runAgent(){
-  const prompt = $("prompt").value;
-  const btn = $("run"), results = $("results"), banner = $("banner");
-  btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Auditing';
-  banner.innerHTML = "";
-  try{
-    const res = await fetch("/api/execute", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({prompt})
-    });
-    const data = await res.json();
-    results.classList.add("show");
-    if (data.status !== "ok"){
-      banner.innerHTML = `<div class="banner err">${esc(data.error || "Something went wrong.")}</div>`;
-      $("report").innerHTML = `<p class="empty">No audit produced.</p>`;
-      $("trace").innerHTML = ""; $("trace-count").textContent = "";
-      return;
-    }
-    $("report").innerHTML = renderReport(data.response);
-    $("trace").innerHTML = renderTrace(data.steps);
-    buildWhyChips(data.response);
-  } catch(e){
-    results.classList.add("show");
-    banner.innerHTML = `<div class="banner err">Could not reach the agent: ${esc(e.message)}</div>`;
-  } finally {
-    btn.disabled = false; btn.textContent = "Run audit";
-  }
-}
-// "Why?" — per flagged span, ask /api/why for a corpus-grounded explanation.
-function extractFindings(md){
-  const out = [];
-  const lines = md.split("\n");
-  for (let i = 0; i < lines.length; i++){
-    // Span is Python-repr'd: single quotes normally, double when it contains an
-    // apostrophe. Skip retracted findings (they carry a "(RETRACTED)" suffix).
-    const m = lines[i].match(/^- \*\*(FLAG|ASK)\s*\*\* \[\w+\] (?:'(.+)'|"(.+)")$/);
-    if (!m) continue;
-    const cat = (lines[i+1] || "").match(/category:\s*(\w+)/);
-    out.push({span: m[2] || m[3], category: cat ? cat[1] : null});
-  }
-  return out;
+function prefersReducedMotion() {
+  return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-function buildWhyChips(reportMd){
-  const box = $("why-chips"), outEl = $("why-out");
-  box.innerHTML = "";
-  outEl.innerHTML = '<p class="empty">Pick a flagged phrase.</p>';
-  const findings = extractFindings(reportMd);
-  if (!findings.length){
-    outEl.innerHTML = '<p class="empty">No flagged phrases in this audit.</p>';
-    return;
-  }
-  findings.forEach(f => {
-    const c = document.createElement("button");
-    c.className = "chip"; c.title = f.span;
-    c.textContent = "Why? — " + (f.span.length > 60 ? f.span.slice(0, 57) + "…" : f.span);
-    c.onclick = () => askWhy(f, c);
-    box.appendChild(c);
+function scrollToId(id) {
+  requestAnimationFrame(() => {
+    const el = document.getElementById(id);
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "center" });
   });
 }
 
-async function askWhy(f, chip){
-  const outEl = $("why-out");
-  chip.disabled = true;
-  outEl.innerHTML = '<p class="empty"><span class="spin"></span>Retrieving from the corpus…</p>';
-  try{
-    const res = await fetch("/api/why", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({span: f.span, category: f.category})
-    });
-    const data = await res.json();
-    if (data.status !== "ok"){
-      outEl.innerHTML = `<p class="empty">${esc(data.error || "Could not explain.")}</p>`;
-      return;
-    }
-    const cites = (data.citations || []).map((c, i) => {
-      const meta = c.metadata || {};
-      const title = meta.title || c.id;
-      const link = meta.url ? `<a href="${esc(meta.url)}" target="_blank">${esc(title)}</a>` : esc(title);
-      return `<li>[${i+1}] ${link} <span class="meta">(score ${Number(c.score).toFixed(2)})</span></li>`;
-    }).join("");
-    outEl.innerHTML = `
-      <p>${esc(data.explanation)}</p>
-      <ul style="margin:6px 0;padding-left:18px">${cites}</ul>
-      <details><summary>Augmented prompt</summary><pre class="usr">${esc(data.augmented_prompt || "")}</pre></details>`;
-  } catch(e){
-    outEl.innerHTML = `<p class="empty">Could not reach the agent: ${esc(e.message)}</p>`;
-  } finally {
-    chip.disabled = false;
-  }
+function copyText(text) {
+  try { navigator.clipboard.writeText(text); } catch (e) { /* clipboard unavailable in this context */ }
 }
 
-$("run").addEventListener("click", runAgent);
-$("prompt").addEventListener("keydown", e => {
-  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") runAgent();
-});
+function titleCaseProvider(s) {
+  const map = { chroma: "Chroma", pinecone: "Pinecone", inmemory: "In-memory", supabase: "Supabase", null: "None" };
+  if (map[s]) return map[s];
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
 
-// Deep-link: /?q=<text> prefills and runs (shareable audit links).
-const q = new URLSearchParams(location.search).get("q");
-if (q){ $("prompt").value = q; runAgent(); }
+function metaLineText(text) {
+  const chars = text.length;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const tokens = Math.round(words * 1.3);
+  const windows = Math.max(1, Math.ceil(tokens / 1800));
+  return `${chars} characters · ≈${tokens} tokens · ${windows} window${windows === 1 ? "" : "s"}`;
+}
+
+/* ============================== state ============================== */
+
+const state = {
+  tab: "audit",
+  health: null,
+  agentInfo: null,
+  teamInfo: null,
+  lastSteps: null,       // steps[] from the last successful /api/ui/execute call (Metrics tab ledger)
+  audit: {
+    phase: "idle",        // idle | running | report
+    text: FIXTURE_TEXT,
+    error: null,
+    timers: [], intervalId: null,
+    stageDone: [false, false, false, false, false, false, false],
+    stageActive: false,
+    fetchElapsed: "0.0 s",
+    fanoutRows: null,
+    report: null, ui: null, steps: null,
+    sel: null, open: null,
+    whyOpen: {}, whyCache: {}, whyLoading: {},
+    traceOpen: false, openStep: null,
+    copied: {}, jsonCopied: false,
+  },
+};
+
+/* ============================== header / nav / tabs ============================== */
+
+function setProviderChip(health) {
+  const el = document.getElementById("provider-chip");
+  if (!el) return;
+  if (!health || health.llm === "mock") {
+    el.textContent = "MockLLM · hash embedder · seeded in-memory store";
+    return;
+  }
+  const vs = titleCaseProvider(health.vector_store);
+  const persist = titleCaseProvider(health.persistence);
+  const model = health.model || health.llm;
+  el.textContent = `${model} via LLMod.ai · ${vs} · ${persist}`;
+}
+
+function showTab(tab) {
+  state.tab = tab;
+  ["audit", "agent", "metrics", "team"].forEach((t) => {
+    const sec = document.getElementById("sec-" + t);
+    if (sec) sec.style.display = t === tab ? "" : "none";
+    const link = document.getElementById("nav-" + t);
+    if (link) { if (t === tab) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current"); }
+  });
+  if (tab === "audit") renderAudit();
+  else if (tab === "agent") { if (state.agentInfo) renderAgent(); else loadAgentInfo(); }
+  else if (tab === "metrics") renderMetrics();
+  else if (tab === "team") { if (state.teamInfo) renderTeam(); else loadTeamInfo(); }
+}
+
+function loadHealth() {
+  fetch("/api/health").then((r) => r.json()).then((h) => { state.health = h; setProviderChip(h); }).catch(() => setProviderChip(null));
+}
+
+function examplesListHtml() {
+  const examples = (state.agentInfo && state.agentInfo.prompt_examples) || [];
+  const rows = examples.map((ex, i) => `
+    <button onclick="UI.fillExample(${i})" style="text-align:left;background:transparent;border:0;border-top:1px solid var(--color-divider);padding:13px 2px;font:inherit;font-size:15px;color:var(--color-text);cursor:pointer;display:flex;gap:14px;align-items:baseline;width:100%">
+      <span style="font-size:11px;letter-spacing:.1em;color:var(--color-accent);flex:none">${String(i + 1).padStart(2, "0")}</span>
+      <span style="text-wrap:pretty">${esc(ex.prompt)}</span>
+    </button>`).join("");
+  const fixtureN = String(examples.length + 1).padStart(2, "0");
+  const fixtureRow = `
+    <button onclick="UI.fillFixture()" style="text-align:left;background:transparent;border:0;border-top:1px solid var(--color-divider);padding:13px 2px;font:inherit;font-size:15px;color:var(--color-text);cursor:pointer;display:flex;gap:14px;align-items:baseline;width:100%">
+      <span style="font-size:11px;letter-spacing:.1em;color:var(--color-accent);flex:none">${fixtureN}</span>
+      <span style="text-wrap:pretty">data/fixtures/sample.txt — the repo's offline demo input (loaded).</span>
+    </button>`;
+  return rows + fixtureRow;
+}
+
+function loadAgentInfo() {
+  fetch("/api/agent_info").then((r) => r.json()).then((info) => {
+    state.agentInfo = info;
+    const list = document.getElementById("examples-list");
+    if (list) list.innerHTML = examplesListHtml();      // targeted update — never touches the textarea
+    if (state.tab === "agent") renderAgent();
+  }).catch(() => {});
+}
+
+function loadTeamInfo() {
+  fetch("/api/team_info").then((r) => r.json()).then((info) => {
+    state.teamInfo = info;
+    if (state.tab === "team") renderTeam();
+  }).catch(() => {});
+}
+
+/* ============================== Agent tab ============================== */
+
+function renderAgent() {
+  const container = document.getElementById("agent-container");
+  const info = state.agentInfo;
+  if (!info) { container.innerHTML = `<p class="text-muted" style="padding:44px 0">Loading…</p>`; return; }
+  const endpointRows = ENDPOINTS.map((e) => `<tr><td style="font-family:ui-monospace,Menlo,monospace;font-size:12.5px;white-space:nowrap">${esc(e.path)}</td><td style="font-size:13.5px">${esc(e.returns)}</td></tr>`).join("");
+  const autonomyRows = AUTONOMY.map((a) => `<div style="border-top:1px solid var(--color-divider);padding:11px 0"><div style="font-size:14.5px;text-wrap:pretty">${esc(a.decision)}</div><div style="font-size:11.5px;color:var(--color-accent-700);margin-top:2px">${esc(a.by)}</div></div>`).join("");
+  container.innerHTML = `
+  <div style="display:flex;flex-wrap:wrap;gap:56px">
+    <div style="flex:1 1 520px;min-width:320px">
+      <div class="kicker" style="color:var(--color-accent-700)">GET /api/agent_info</div>
+      <h2 style="font-size:34px;margin:10px 0 14px;max-width:22ch">What the agent is, and what it refuses to be.</h2>
+      <p style="font-size:16px;line-height:1.7;max-width:66ch;text-wrap:pretty">${esc(info.description)}</p>
+
+      <div class="kicker text-muted" style="margin-top:26px">purpose</div>
+      <p style="font-size:16px;max-width:60ch;margin-top:6px">${esc(info.purpose)}</p>
+
+      <div class="kicker text-muted" style="margin-top:26px">prompt_template</div>
+      <pre style="font-size:12px;line-height:1.7;margin:8px 0 0;max-width:66ch;color:color-mix(in srgb,var(--color-text) 72%,transparent)">${esc(info.prompt_template.template)}</pre>
+
+      <div style="height:1px;background:var(--color-text);margin:34px 0 0"></div>
+      <h3 style="font-size:22px;margin:20px 0 10px">Endpoints</h3>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Endpoint</th><th>Returns</th></tr></thead><tbody>${endpointRows}</tbody></table></div>
+    </div>
+
+    <aside style="flex:1 1 380px;min-width:300px">
+      <div class="kicker" style="color:var(--color-accent-700)">GET /api/model_architecture</div>
+      <figure class="halftone" style="margin-top:12px;background:var(--color-bg)">
+        <img src="/api/model_architecture" alt="Inclusify v2 architecture: Chunker and LexiconScanner feeding DocumentAuditor, parallel EvidenceInvestigators over CorpusSearch and LiveSearch, then ReportConsolidator.">
+        <figcaption>image/png · regenerated from the v2 module set by scripts/gen_architecture.py</figcaption>
+      </figure>
+
+      <div class="kicker text-muted" style="margin-top:30px">Where autonomy actually lives</div>
+      <div style="display:flex;flex-direction:column;margin-top:8px">${autonomyRows}<div style="border-top:1px solid var(--color-divider)"></div></div>
+    </aside>
+  </div>`;
+}
+
+/* ============================== Metrics tab ============================== */
+
+function buildLedgerRows() {
+  const steps = state.lastSteps || [];
+  const byModule = {}, order = [];
+  steps.forEach((s) => {
+    if (!byModule[s.module]) { byModule[s.module] = { calls: 0, tin: 0, tout: 0, hasUsage: false }; order.push(s.module); }
+    const m = byModule[s.module];
+    m.calls += 1;
+    if (s.usage) { m.hasUsage = true; m.tin += s.usage.in; m.tout += s.usage.out; }
+  });
+  const rows = order.map((mod) => {
+    const m = byModule[mod];
+    return { module: mod, calls: m.calls, tin: m.hasUsage ? m.tin : null, tout: m.hasUsage ? m.tout : null };
+  });
+  const anyUsage = rows.some((r) => r.tin != null);
+  rows.push({
+    module: "Total", calls: steps.length,
+    tin: anyUsage ? rows.reduce((a, r) => a + (r.tin || 0), 0) : null,
+    tout: anyUsage ? rows.reduce((a, r) => a + (r.tout || 0), 0) : null,
+  });
+  return rows;
+}
+
+function renderMetrics() {
+  const container = document.getElementById("metrics-container");
+  if (!container) return;
+  const hasRun = !!state.lastSteps;
+  const ledgerRows = buildLedgerRows();
+  const missingUsage = hasRun && ledgerRows.some((r) => r.tin == null);
+  const ledgerBody = hasRun
+    ? ledgerRows.map((r) => `<tr><td style="font-size:13.5px">${esc(r.module)}</td><td style="text-align:right;font-variant-numeric:tabular-nums">${r.calls}</td><td style="text-align:right;font-variant-numeric:tabular-nums">${r.tin == null ? "—" : r.tin.toLocaleString()}</td><td style="text-align:right;font-variant-numeric:tabular-nums">${r.tout == null ? "—" : r.tout.toLocaleString()}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="text-muted" style="font-size:13.5px">Run an audit to populate this ledger.</td></tr>`;
+  const leversHtml = LEVERS.map((v) => `<div style="border-top:1px solid var(--color-divider);padding:10px 0;display:flex;flex-wrap:wrap;gap:14px"><span style="font-size:14px;font-family:var(--font-heading);font-weight:600;flex:0 0 190px">${esc(v.name)}</span><span style="font-size:13.5px;color:color-mix(in srgb,var(--color-text) 62%,transparent);flex:1 1 260px">${esc(v.how)}</span></div>`).join("");
+  const docRows = DOC_METRICS.map((m) => `<tr><td style="font-size:13.5px">${esc(m.label)}</td><td style="text-align:right;font-variant-numeric:tabular-nums">${esc(m.value)}</td></tr>`).join("");
+
+  container.innerHTML = `
+  <div style="display:flex;flex-wrap:wrap;gap:56px">
+    <div style="flex:1 1 540px;min-width:320px">
+      <div class="kicker" style="color:var(--color-accent-700)">Budget ledger</div>
+      <h2 style="font-size:34px;margin:10px 0 4px">$13.00 <span style="font-weight:400;font-size:20px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">course budget</span></h2>
+      <div class="text-muted" style="font-size:12px;font-variant-numeric:tabular-nums">Global spend aggregation pends the Supabase read policy — this run's ledger below is measured.</div>
+
+      <h3 style="font-size:20px;margin:34px 0 8px">This run — token ledger</h3>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Module</th><th style="text-align:right">Calls</th><th style="text-align:right">Tokens in</th><th style="text-align:right">Tokens out</th></tr></thead><tbody>${ledgerBody}</tbody></table></div>
+      ${missingUsage ? `<div class="text-muted" style="font-size:11px;margin-top:6px">MockLLM reports no token usage (offline).</div>` : ""}
+      <div class="text-muted" style="font-size:12px;margin-top:8px">Logged to the Supabase audit_runs row alongside prompt, status, response and steps[].</div>
+
+      <h3 style="font-size:20px;margin:36px 0 8px">Efficiency levers</h3>
+      <div style="display:flex;flex-direction:column">${leversHtml}<div style="border-top:1px solid var(--color-divider)"></div></div>
+    </div>
+
+    <aside style="flex:1 1 400px;min-width:300px">
+      <div class="kicker" style="color:var(--color-accent-2-700)">Measured, not claimed</div>
+      <h3 style="font-size:22px;margin:10px 0 4px">Sentence-level judgment</h3>
+      <div class="text-muted" style="font-size:12.5px;margin-bottom:8px">50 expert-labeled sentences, balanced across labels</div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>System</th><th style="text-align:right">P</th><th style="text-align:right">R</th><th style="text-align:right">F1</th></tr></thead>
+        <tbody>
+          <tr><td style="font-size:13.5px">v2 agent</td><td style="text-align:right;font-variant-numeric:tabular-nums">0.923</td><td style="text-align:right;font-variant-numeric:tabular-nums">0.900</td><td style="text-align:right;font-variant-numeric:tabular-nums;color:var(--color-accent-700)">0.911</td></tr>
+          <tr><td style="font-size:13.5px">v1 fixed pipeline</td><td style="text-align:right;font-variant-numeric:tabular-nums">1.000</td><td style="text-align:right;font-variant-numeric:tabular-nums">0.225</td><td style="text-align:right;font-variant-numeric:tabular-nums">0.367</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 style="font-size:22px;margin:30px 0 4px">Document-level span agreement</h3>
+      <div class="text-muted" style="font-size:12.5px;margin-bottom:8px">One expert-annotated 12-page paper, 88 gold spans</div>
+      <div class="table-wrap"><table class="table"><tbody>${docRows}</tbody></table></div>
+      <p style="font-size:13px;line-height:1.65;color:color-mix(in srgb,var(--color-text) 62%,transparent);margin-top:14px;max-width:52ch;text-wrap:pretty">The honest frontier. Three characterized causes: the model enumerates every instance of a framing where the experts marked selectively; a 7-category taxonomy that only partly overlaps the experts' 5-label legend; and n = 1 annotated document.</p>
+    </aside>
+  </div>`;
+}
+
+/* ============================== Team tab ============================== */
+
+function renderTeam() {
+  const container = document.getElementById("team-container");
+  const info = state.teamInfo;
+  if (!info) { container.innerHTML = `<p class="text-muted" style="padding:44px 0">Loading…</p>`; return; }
+  const studentsHtml = info.students.map((s) => `<div style="border-top:1px solid var(--color-divider);padding:16px 0;display:flex;flex-wrap:wrap;gap:16px;align-items:baseline"><span style="font-size:22px;font-family:var(--font-heading);font-weight:600">${esc(s.name)}</span><a href="mailto:${escAttr(s.email)}" style="font-size:13.5px;margin-left:auto">${esc(s.email)}</a></div>`).join("");
+  const stackHtml = TEAM_STACK.map((s) => `<div style="border-top:1px solid var(--color-divider);padding:11px 0;display:flex;flex-wrap:wrap;gap:14px"><span style="font-size:13.5px;flex:0 0 130px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">${esc(s.role)}</span><span style="font-size:13.5px;flex:1 1 180px">${esc(s.what)}</span></div>`).join("");
+  container.innerHTML = `
+  <div style="display:flex;flex-wrap:wrap;gap:56px">
+    <div style="flex:1 1 480px;min-width:320px">
+      <div class="kicker" style="color:var(--color-accent-700)">GET /api/team_info</div>
+      <h2 style="font-size:34px;margin:10px 0 22px">Team Inclusify</h2>
+      <div style="display:flex;flex-direction:column">${studentsHtml}<div style="border-top:1px solid var(--color-divider)"></div></div>
+      <div style="display:flex;flex-wrap:wrap;gap:0 34px;margin-top:22px;font-size:13px">
+        <span><span style="color:color-mix(in srgb,var(--color-text) 50%,transparent)">group_batch_order_number</span> <strong>${esc(info.group_batch_order_number)}</strong></span>
+        <span><span style="color:color-mix(in srgb,var(--color-text) 50%,transparent)">team_name</span> <strong>${esc(info.team_name)}</strong></span>
+      </div>
+    </div>
+
+    <aside style="flex:1 1 400px;min-width:300px">
+      <div class="kicker text-muted">Stack</div>
+      <div style="display:flex;flex-direction:column;margin-top:8px">${stackHtml}<div style="border-top:1px solid var(--color-divider)"></div></div>
+      <p style="font-size:13px;line-height:1.65;color:color-mix(in srgb,var(--color-text) 62%,transparent);margin-top:22px;max-width:50ch;text-wrap:pretty">${TEST_COUNT} tests, all key-free. The default config needs no credentials: MockLLM, hash embedder, seeded in-memory store — every endpoint answers offline.</p>
+    </aside>
+  </div>`;
+}
+
+/* ============================== Audit tab: dispatcher ============================== */
+
+function renderAudit() {
+  const container = document.getElementById("audit-container");
+  const st = state.audit;
+  if (st.phase === "idle") container.innerHTML = renderAuditIdle();
+  else if (st.phase === "running") container.innerHTML = renderAuditRunning();
+  else container.innerHTML = `<div id="report-view">${renderAuditReport()}</div>`;
+}
+
+// ponytail: full innerHTML re-render from state on every report-view interaction, no
+// vdom diffing. Focus is preserved by id (stable ids on every interactive element:
+// fcard-/copybtn-/whybtn-/stepbtn-/tracebtn), which covers the keyboard/screen-reader
+// case that matters; a virtual-dom layer would only buy smoother large-list updates,
+// which this page doesn't have. Upgrade if findings lists grow large enough to jank.
+function rerenderReport() {
+  const active = document.activeElement;
+  const activeId = active && active.id;
+  const container = document.getElementById("report-view");
+  if (container) container.innerHTML = renderAuditReport();
+  if (activeId) { const el = document.getElementById(activeId); if (el && el.focus) el.focus(); }
+}
+
+/* ---- idle ---- */
+
+function setText(text) {
+  state.audit.text = text;
+  const ta = document.getElementById("audit-textarea");
+  if (ta) ta.value = text;
+  const meta = document.getElementById("meta-line");
+  if (meta) meta.textContent = metaLineText(text);
+}
+
+function renderAuditIdle() {
+  const st = state.audit;
+  const errorBanner = st.error
+    ? `<div style="background:var(--color-accent-2-100);color:var(--color-accent-2-800);border-radius:var(--radius-md);padding:12px 16px;margin-bottom:18px;font-size:14px">${esc(st.error)}</div>`
+    : "";
+  const stagePreview = STAGES.map((s, i) => `
+    <div style="display:flex;gap:12px;align-items:baseline">
+      <span style="font-size:11px;font-variant-numeric:tabular-nums;color:var(--color-accent);flex:none;width:14px">${String(i + 1).padStart(2, "0")}</span>
+      <div>
+        <div style="font-size:15px;font-family:var(--font-heading);font-weight:600">${esc(s.name)}</div>
+        <div style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">${esc(s.kind)}</div>
+      </div>
+    </div>`).join("");
+
+  return `
+  <div style="display:flex;flex-wrap:wrap;gap:56px;padding:44px 0 0">
+    <div style="flex:1 1 560px;min-width:320px">
+      ${errorBanner}
+      <div class="kicker" style="color:var(--color-accent-700)">POST /api/execute</div>
+      <h2 style="font-size:36px;margin:10px 0 6px;max-width:20ch;text-wrap:pretty">Paste the course material you want audited.</h2>
+      <p style="max-width:58ch;color:color-mix(in srgb,var(--color-text) 62%,transparent)">A paper, syllabus, or slide text. The agent reads it window by window, researches each candidate span against the ERIC corpus, and returns a quote · category · grounded why · evidence · rewrite for every finding.</p>
+
+      <textarea id="audit-textarea" class="input" oninput="UI.onTextInput(this)" style="min-height:190px;font-size:16px;line-height:1.6;padding:14px 16px;margin-top:8px">${esc(st.text)}</textarea>
+
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:14px">
+        <button class="btn btn-primary" style="font-size:15px;padding:11px 22px" onclick="UI.run()">Run audit</button>
+        <span id="meta-line" style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">${esc(metaLineText(st.text))}</span>
+        <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-left:auto">English only · ≤40 windows · 60 s deploy cap</span>
+      </div>
+
+      <div style="margin-top:38px">
+        <div class="kicker text-muted" style="margin-bottom:12px">Example prompts — GET /api/agent_info</div>
+        <div id="examples-list" style="display:flex;flex-direction:column;gap:2px">${examplesListHtml()}</div>
+      </div>
+    </div>
+
+    <aside style="flex:0 1 340px;min-width:280px">
+      <div class="kicker text-muted">What will run</div>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:14px">${stagePreview}</div>
+      <div style="height:1px;background:var(--color-divider);margin:26px 0 16px"></div>
+      <div style="font-size:12.5px;line-height:1.6;color:color-mix(in srgb,var(--color-text) 62%,transparent);text-wrap:pretty">Only the phase order is fixed. The model decides which spans are candidates, how many investigators spawn, what to search for, whether to escalate to live ERIC, and whether to confirm or reject its own candidate.</div>
+    </aside>
+  </div>`;
+}
+
+/* ---- running (honest theater: one blocking fetch, no fake numbers) ---- */
+
+function clearRunTimers() {
+  const st = state.audit;
+  (st.timers || []).forEach(clearTimeout);
+  if (st.intervalId) clearInterval(st.intervalId);
+  st.timers = [];
+  st.intervalId = null;
+}
+
+function runHeadline(st) {
+  if (!(st.stageDone[0] && st.stageDone[1] && st.stageDone[2])) return "Reading the document.";
+  if (!st.stageDone[4]) return "Investigating candidates in parallel.";
+  return "Consolidating the report.";
+}
+
+function verdictLabelFor(confidence) { return confidence === "low" ? "low confidence" : "confirmed"; }
+function verdictColorFor(v) {
+  if (v === "rejected") return "color-mix(in srgb, var(--color-text) 55%, transparent)";
+  if (v === "low confidence") return "var(--color-accent-2-700)";
+  return "var(--color-accent-700)";
+}
+
+// One row per Investigation, reconstructed from the response (report.findings are
+// every CONFIRMED investigation, kept+retracted; ui.rejected are the rest) — there is
+// no separate "investigations" array on the wire, so this is the full set either way.
+function buildFanoutRows(data) {
+  const rows = [];
+  (data.report.findings || []).forEach((f) => {
+    const trace = f.grounded ? `grounded · ${f.evidence.length} source${f.evidence.length === 1 ? "" : "s"}` : "ungrounded — flagged for human review";
+    rows.push({ id: f.id, quote: f.quote, verdict: verdictLabelFor(f.confidence), trace });
+  });
+  (data.ui.rejected || []).forEach((r, i) => {
+    rows.push({ id: "r" + i, quote: r.quote, verdict: "rejected", trace: r.explanation });
+  });
+  return rows;
+}
+
+function renderFanoutList(rows) {
+  return `<div style="display:flex;flex-direction:column;gap:7px;margin-top:12px;padding-left:2px;border-left:2px solid var(--color-accent-200)">
+    ${rows.map((w) => `<div style="display:flex;gap:12px;align-items:baseline;padding-left:14px;font-size:13px">
+      <span style="font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--color-text) 45%,transparent);flex:none">${esc(w.id)}</span>
+      <span style="font-style:italic;flex:none">“${esc(w.quote)}”</span>
+      <span style="color:color-mix(in srgb,var(--color-text) 55%,transparent);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(w.trace)}</span>
+      <span style="margin-left:auto;flex:none;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:${verdictColorFor(w.verdict)}">${esc(w.verdict)}</span>
+    </div>`).join("")}
+  </div>`;
+}
+
+function renderStageRow(s, i, st) {
+  const done = st.stageDone[i];
+  const active = !done && st.stageActive && (i === 3 || i === 4);
+  const mark = done ? "✓" : active ? "▸" : "·";
+  const markColor = done ? "var(--color-accent)" : active ? "var(--color-accent-2)" : "var(--color-neutral-400)";
+  const anim = active ? "pulseInk 1.1s ease-in-out infinite" : "none";
+  const opacity = done || active ? 1 : 0.34;
+  const timing = active ? esc(st.fetchElapsed) : "";
+  const detail = i === 4 && active ? "spawning investigators — ≤5 in parallel…" : esc(s.blurb);
+  const fanout = i === 4 && st.fanoutRows ? renderFanoutList(st.fanoutRows) : "";
+  return `<div style="border-top:1px solid var(--color-divider);padding:15px 0;display:flex;gap:18px;align-items:flex-start;opacity:${opacity}">
+    <span style="flex:none;width:18px;font-size:11px;font-variant-numeric:tabular-nums;color:${markColor};padding-top:4px;animation:${anim}">${mark}</span>
+    <div style="flex:1 1 auto;min-width:0">
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:baseline">
+        <span style="font-family:var(--font-heading);font-weight:600;font-size:19px">${esc(s.name)}</span>
+        <span class="tag tag-neutral" style="font-size:10px">${esc(s.kind)}</span>
+        <span style="margin-left:auto;font-size:12px;font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--color-text) 50%,transparent)">${timing}</span>
+      </div>
+      <div style="font-size:14px;margin-top:3px;color:color-mix(in srgb,var(--color-text) 68%,transparent)">${detail}</div>
+      ${fanout}
+    </div>
+  </div>`;
+}
+
+function renderAuditRunning() {
+  const st = state.audit;
+  const rows = STAGES.map((s, i) => renderStageRow(s, i, st)).join("");
+  return `<div style="padding:44px 0 0;max-width:900px">
+    <div class="kicker" style="color:var(--color-accent-700)">Running · POST /api/execute</div>
+    <h2 style="font-size:34px;margin:10px 0 30px">${esc(runHeadline(st))}</h2>
+    <div style="display:flex;flex-direction:column">${rows}<div style="border-top:1px solid var(--color-divider)"></div></div>
+  </div>`;
+}
+
+function startRun() {
+  const st = state.audit;
+  clearRunTimers();
+  st.phase = "running";
+  st.error = null;
+  st.stageDone = [false, false, false, false, false, false, false];
+  st.stageActive = false;
+  st.fetchElapsed = "0.0 s";
+  st.fanoutRows = null;
+  const submitted = st.text;
+  renderAudit();
+
+  const timers = [];
+  [150, 300, 450].forEach((ms, i) => {
+    timers.push(setTimeout(() => { st.stageDone[i] = true; renderAudit(); }, ms));
+  });
+  timers.push(setTimeout(() => { st.stageActive = true; renderAudit(); }, 470));
+
+  const fetchStart = performance.now();
+  st.intervalId = setInterval(() => {
+    st.fetchElapsed = ((performance.now() - fetchStart) / 1000).toFixed(1) + " s";
+    renderAudit();
+  }, 100);
+  st.timers = timers;
+
+  fetch("/api/ui/execute", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: submitted }),
+  }).then((r) => r.json()).then((data) => {
+    clearRunTimers();
+    if (data.status !== "ok") {
+      st.phase = "idle";
+      st.error = data.error || "Something went wrong.";
+      renderAudit();
+      return;
+    }
+    st.stageActive = false;
+    st.stageDone[3] = true;
+    st.stageDone[4] = true;
+    st.fanoutRows = buildFanoutRows(data);
+    renderAudit();
+    const t1 = setTimeout(() => { st.stageDone[5] = true; renderAudit(); }, 280);
+    const t2 = setTimeout(() => { st.stageDone[6] = true; renderAudit(); }, 560);
+    const t3 = setTimeout(() => {
+      st.phase = "report";
+      st.report = data.report; st.ui = data.ui; st.steps = data.steps;
+      st.sel = null; st.open = null;
+      st.whyOpen = {}; st.whyCache = {}; st.whyLoading = {};
+      st.traceOpen = false; st.openStep = null;
+      st.copied = {}; st.jsonCopied = false;
+      state.lastSteps = data.steps;
+      renderAudit();
+      renderMetrics();
+    }, 900);
+    st.timers = [t1, t2, t3];
+  }).catch((err) => {
+    clearRunTimers();
+    st.phase = "idle";
+    st.error = "Could not reach the agent: " + err.message;
+    renderAudit();
+  });
+}
+
+/* ---- report ---- */
+
+function confidenceMeta(conf) {
+  const w = conf === "high" ? "100%" : conf === "medium" ? "60%" : "28%";
+  const color = conf === "low" ? "var(--color-accent-2)" : "var(--color-accent)";
+  return { w, color };
+}
+
+function ungroundedNote(f) {
+  const base = "No evidence cleared the retrieval floor. The finding stands on the model's judgment alone — flagged for human review";
+  return f.retracted ? base + ", and retracted by the consolidator." : base + ".";
+}
+
+function findFinding(id) {
+  const st = state.audit;
+  return st.report && st.report.findings.find((f) => f.id === id);
+}
+
+// Overlap-safe highlight ranges (kept/retracted findings + rejected candidates):
+// sort by (start asc, length desc), drop anything overlapping an already-accepted range.
+// ponytail: rejected investigations never carry a stable candidate id over the wire
+// (report.findings only holds CONFIRMED investigations, kept+retracted) -- "r"+index
+// is a display-only id local to this render, consistent across buildSourceRanges/
+// buildFanoutRows/renderRetractedAndRejected since ui.rejected's array order is stable
+// within one response.
+function buildSourceRanges(ui, findings) {
+  const ranges = [];
+  findings.forEach((f) => {
+    const kind = f.retracted ? "retracted" : "kept";
+    (ui.occurrences[f.id] || []).forEach(([s, e]) => ranges.push({ start: s, end: e, kind, id: f.id }));
+  });
+  (ui.rejected || []).forEach((r, i) => {
+    const id = "r" + i;
+    (r.occurrences || []).forEach(([s, e]) => ranges.push({ start: s, end: e, kind: "rejected", id }));
+  });
+  ranges.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+  const accepted = [];
+  for (const r of ranges) {
+    if (accepted.some((a) => r.start < a.end && r.end > a.start)) continue;
+    accepted.push(r);
+  }
+  accepted.sort((a, b) => a.start - b.start);
+  return accepted;
+}
+
+function spanStyle(kind) {
+  if (kind === "kept") return "cursor:pointer;background:var(--color-accent-100);box-shadow:inset 0 -2px 0 var(--color-accent)";
+  if (kind === "retracted") return "cursor:pointer;background:var(--color-accent-2-100);box-shadow:inset 0 -2px 0 var(--color-accent-2);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--color-accent-2) 60%,transparent)";
+  return "cursor:pointer;box-shadow:inset 0 -1px 0 var(--color-neutral-400);color:var(--color-neutral-700)";
+}
+
+function renderSourceSpans(text, ranges) {
+  const st = state.audit;
+  let out = "", cursor = 0;
+  for (const r of ranges) {
+    if (r.start < cursor) continue; // safety: never render a negative-length text node
+    out += esc(text.slice(cursor, r.start));
+    const selected = st.sel === r.id;
+    const outline = selected ? "outline:2px solid var(--color-accent);outline-offset:3px" : "outline:none";
+    const call = `UI.pickSpan('${r.kind}','${r.id}')`;
+    out += `<span class="src-span" role="button" tabindex="0" style="${spanStyle(r.kind)};${outline}" onclick="${call}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${call}}">${esc(text.slice(r.start, r.end))}</span>`;
+    cursor = r.end;
+  }
+  out += esc(text.slice(cursor));
+  return out;
+}
+
+function renderPatternBlocks(report) {
+  if (!report.patterns || !report.patterns.length) return "";
+  return report.patterns.map((p) => `
+    <div style="height:1px;background:var(--color-divider);margin:26px 0 16px"></div>
+    <div class="kicker text-muted" style="margin-bottom:14px">Recurring pattern</div>
+    <div style="font-size:15px;font-family:var(--font-heading);font-weight:600">${esc(p.framing)}</div>
+    <div style="font-size:12.5px;color:color-mix(in srgb,var(--color-text) 58%,transparent);margin-top:3px">${esc(p.category)} · grouped across ${p.finding_ids.map((x) => esc(x)).join(", ")} — investigated once, verdict applied to all occurrences</div>
+  `).join("");
+}
+
+// ponytail: a per-turn evidence *count* (as in "N snippets") isn't in the wire data --
+// /api/why's steps[] only records the LLM's own JSON action per turn, not the
+// corpus_search/live_search results (those never go through llm.complete). Showing the
+// real query/verdict text instead of a fabricated count keeps this honest; add a count
+// if /api/why ever threads per-turn evidence into the step record.
+function whyStepSummary(step, i) {
+  const resp = step.response;
+  const n = i + 1;
+  if (!resp || typeof resp !== "object") return `turn ${n} · (unparsed response)`;
+  const act = resp.action || "unknown";
+  if (act === "corpus_search") return `turn ${n} · corpus_search — “${resp.query || ""}”`;
+  if (act === "live_search") return `turn ${n} · live_search — ${(resp.phrases || []).join(", ")}`;
+  if (act === "finalize") return `turn ${n} · finalize — ${resp.verdict || ""}${resp.confidence ? " · " + resp.confidence + " confidence" : ""}`;
+  return `turn ${n} · ${act}`;
+}
+
+function renderWhyPanel(id) {
+  const st = state.audit;
+  if (!st.whyOpen[id]) return "";
+  if (st.whyLoading[id]) {
+    return `<div style="margin-top:18px;padding:16px 18px;background:var(--color-surface);border-radius:var(--radius-md);max-width:74ch">
+      <div class="text-muted" style="font-size:13px">running one EvidenceInvestigator…</div>
+    </div>`;
+  }
+  const data = st.whyCache[id];
+  if (!data) return "";
+  if (data.status !== "ok") {
+    return `<div style="margin-top:18px;padding:16px 18px;background:var(--color-surface);border-radius:var(--radius-md);max-width:74ch">
+      <div style="font-size:13.5px;color:var(--color-accent-2-700)">${esc(data.error || "Could not explain.")}</div>
+    </div>`;
+  }
+  const lines = (data.steps || []).map((s, i) => `<div style="font-size:12px;font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-top:${i === 0 ? 8 : 4}px">${esc(whyStepSummary(s, i))}</div>`).join("");
+  return `<div style="margin-top:18px;padding:16px 18px;background:var(--color-surface);border-radius:var(--radius-md);max-width:74ch;animation:riseIn .22s ease-out">
+    <div class="kicker" style="color:var(--color-accent-700)">POST /api/why — single EvidenceInvestigator run</div>
+    ${lines}
+    <div class="kicker text-muted" style="margin-top:14px">augmented_prompt</div>
+    <pre style="font-size:11.5px;line-height:1.6;margin:6px 0 0;color:color-mix(in srgb,var(--color-text) 72%,transparent)">${esc(data.augmented_prompt || "")}</pre>
+  </div>`;
+}
+
+function renderFindingCard(f) {
+  const st = state.audit;
+  const isOpen = st.open === f.id;
+  const isSel = st.sel === f.id;
+  const cw = confidenceMeta(f.confidence);
+  const groundLabel = f.grounded ? `grounded · ${f.evidence.length} source${f.evidence.length === 1 ? "" : "s"}` : "ungrounded";
+  const groundColor = f.grounded ? "var(--color-accent-700)" : "var(--color-accent-2-700)";
+  const secondary = f.secondary_category ? `<span class="tag tag-outline" style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase">${esc(f.secondary_category)}</span>` : "";
+  const reviewTag = f.needs_human_review ? `<span class="tag tag-accent-2" style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase">needs human review</span>` : "";
+  const occurLabel = f.occurrences > 1 ? ` · ${f.occurrences} occurrences` : "";
+  const rowBg = isSel ? "color-mix(in srgb, var(--color-accent) 5%, transparent)" : "transparent";
+
+  const evidenceHtml = f.evidence.length
+    ? f.evidence.map((e, i) => `<div style="display:flex;gap:12px;align-items:flex-start;max-width:70ch">
+        <span style="flex:none;font-size:12px;color:var(--color-accent);padding-top:2px">[${i + 1}]</span>
+        <div>
+          <div style="font-size:14.5px;font-family:var(--font-heading);font-weight:600;line-height:1.35">${esc(e.title || "(untitled)")}</div>
+          <div style="font-size:12.5px;line-height:1.6;color:color-mix(in srgb,var(--color-text) 62%,transparent);margin-top:2px;text-wrap:pretty">${esc(e.snippet)}</div>
+          <div style="font-size:11px;margin-top:5px;display:flex;flex-wrap:wrap;gap:10px;font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--color-text) 48%,transparent)">
+            <span>${esc(e.source || "")}</span><span>${e.year != null ? esc(String(e.year)) : ""}</span><span>score ${Number(e.score).toFixed(2)}</span>
+            ${e.url ? `<a href="${escAttr(safeHref(e.url))}" target="_blank" rel="noreferrer" style="font-size:11px">${esc(hostOf(e.url))}</a>` : ""}
+          </div>
+        </div>
+      </div>`).join("")
+    : `<div style="font-size:13.5px;color:var(--color-accent-2-700);max-width:66ch">${esc(ungroundedNote(f))}</div>`;
+
+  const rewriteBlock = f.rewrite ? `
+    <div class="kicker text-muted">Suggested rewrite — minimal edit</div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:8px 0 4px">
+      <span style="font-size:17px;font-style:italic">“${esc(f.rewrite)}”</span>
+      <button class="btn btn-secondary" id="copybtn-${f.id}" style="font-size:13px;padding:6px 12px" onclick="UI.copyRewrite('${f.id}')">${st.copied[f.id] ? "Copied" : "Copy rewrite"}</button>
+      <button class="btn btn-ghost" id="whybtn-${f.id}" style="font-size:13px" onclick="UI.toggleWhy('${f.id}')">${st.whyOpen[f.id] ? "Hide the why run" : "Ask why again"}</button>
+    </div>
+    ${renderWhyPanel(f.id)}` : "";
+
+  return `<div id="finding-${f.id}" style="border-top:1px solid var(--color-divider);padding:20px 0;scroll-margin-top:24px;background:${rowBg}">
+    <div id="fcard-${f.id}" role="button" tabindex="0" aria-expanded="${isOpen}" style="cursor:pointer;display:flex;gap:14px;align-items:baseline" onclick="UI.selectFinding('${f.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();UI.selectFinding('${f.id}')}">
+      <span style="flex:none;font-size:11px;font-variant-numeric:tabular-nums;color:var(--color-accent);padding-top:5px">${esc(f.id)}</span>
+      <div style="flex:1 1 auto;min-width:0">
+        <div style="font-size:20px;font-family:var(--font-heading);font-weight:600;line-height:1.3;text-wrap:pretty">“${esc(f.quote)}”</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:9px">
+          <span class="tag tag-accent" style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase">${esc(f.category)}</span>
+          ${secondary}
+          <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">
+            <span style="width:42px;height:5px;background:var(--color-neutral-200);display:block"><span style="display:block;height:5px;width:${cw.w};background:${cw.color}"></span></span>
+            ${esc(f.confidence)} confidence
+          </span>
+          <span style="font-size:11px;color:${groundColor}">${esc(groundLabel)}</span>
+          ${reviewTag}
+          <span style="margin-left:auto;font-size:11px;font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--color-text) 45%,transparent)">chars [${f.offsets[0]}, ${f.offsets[1]}]${occurLabel}</span>
+        </div>
+      </div>
+    </div>
+    ${isOpen ? `<div style="padding:20px 0 2px 32px;animation:riseIn .22s ease-out">
+      <div class="kicker text-muted">Why</div>
+      <p style="font-size:16px;line-height:1.65;margin:6px 0 20px;max-width:66ch;text-wrap:pretty">${esc(f.explanation)}</p>
+      <div class="kicker text-muted">Evidence</div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin:10px 0 20px">${evidenceHtml}</div>
+      ${rewriteBlock}
+    </div>` : ""}
+  </div>`;
+}
+
+function renderRetractedAndRejected(report, ui) {
+  const retracted = report.findings.filter((f) => f.retracted);
+  const rejected = ui.rejected || [];
+  if (!retracted.length && !rejected.length) return "";
+  const st = state.audit;
+  let html = `<div style="border-top:1px solid var(--color-divider);padding:26px 0 0">`;
+  if (retracted.length) {
+    html += `<div class="kicker" style="color:var(--color-accent-2-700);margin-bottom:12px">Walked back by the ReportConsolidator</div>`;
+    html += retracted.map((f) => `
+      <div id="finding-${f.id}" style="margin-bottom:16px;scroll-margin-top:24px;background:${st.sel === f.id ? "color-mix(in srgb, var(--color-accent-2) 6%, transparent)" : "transparent"}">
+        <div style="font-size:17px;font-family:var(--font-heading);font-weight:600">“${esc(f.quote)}” <span style="font-weight:400;font-size:14px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">— ${esc(f.category)} · ${esc(f.confidence)} confidence</span></div>
+        <div style="font-size:13.5px;margin-top:5px;max-width:68ch;color:color-mix(in srgb,var(--color-text) 66%,transparent);text-wrap:pretty">Retracted: ${esc(f.retraction_rationale || "")}</div>
+      </div>`).join("");
+  }
+  if (rejected.length) {
+    html += `<div class="kicker text-muted" style="margin:24px 0 12px">Rejected at verification — never became findings</div>`;
+    html += rejected.map((r, i) => `
+      <div id="rejected-r${i}" style="font-size:15px;margin-bottom:8px;scroll-margin-top:24px;background:${st.sel === "r" + i ? "color-mix(in srgb, var(--color-text) 6%, transparent)" : "transparent"}">“${esc(r.quote)}” <span style="font-size:13.5px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">— ${esc(r.explanation)}</span></div>`).join("");
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderCaveats() {
+  return `<div style="border-top:1px solid var(--color-divider);margin-top:30px;padding:18px 0 0;max-width:70ch">
+    <div class="kicker text-muted" style="margin-bottom:8px">Read this with the measured limits</div>
+    <div style="font-size:13px;line-height:1.65;color:color-mix(in srgb,var(--color-text) 62%,transparent);text-wrap:pretty">Sentence-level judgment agrees with expert labels 91% of the time (F1 0.911). Reproducing an expert team's <em>span selection</em> across a dense paper is the open frontier — document-level F1 0.163 on one annotated paper. Treat findings as a reviewer's shortlist, not a verdict.</div>
+  </div>`;
+}
+
+function stepSummary(step) {
+  const resp = step.response;
+  if (step.module === "DocumentAuditor") {
+    if (resp && typeof resp === "object" && Array.isArray(resp.candidates)) {
+      const hv = Array.isArray(resp.hint_verdicts) ? resp.hint_verdicts.length : 0;
+      return `window — ${resp.candidates.length} candidate${resp.candidates.length === 1 ? "" : "s"}, ${hv} hint verdict${hv === 1 ? "" : "s"}`;
+    }
+    return "window — (unparsed response)";
+  }
+  if (step.module === "EvidenceInvestigator") {
+    // The real prompt says `Quote: "..."`; fall back to a `CANDIDATE: "..."` line
+    // (a format some scripted/mock prompts use) so this stays robust either way.
+    const m = /Quote:\s*"([^"]*)"/.exec(step.prompt.User_prompt) || /CANDIDATE:\s*"([^"]*)"/.exec(step.prompt.User_prompt);
+    const quote = m ? m[1] : null;
+    const action = resp && typeof resp === "object" ? resp.action || "?" : "(unparsed)";
+    return quote ? `“${quote}” · ${action}` : action;
+  }
+  if (step.module === "ReportConsolidator") {
+    if (resp && typeof resp === "object") {
+      const kept = Array.isArray(resp.kept) ? resp.kept.length : 0;
+      const retr = Array.isArray(resp.retracted) ? resp.retracted.length : 0;
+      return `${kept} kept · ${retr} retracted`;
+    }
+    return "(unparsed response)";
+  }
+  return step.module;
+}
+
+function renderTraceDrawer() {
+  const st = state.audit;
+  const steps = st.steps || [];
+  const open = st.traceOpen;
+  let rows = "";
+  if (open) {
+    rows = steps.map((s, i) => {
+      const color = s.module === "ReportConsolidator" ? "var(--color-accent-2-700)" : "var(--color-accent-700)";
+      const isOpen = st.openStep === i;
+      const usage = s.usage ? `${s.usage.in} in / ${s.usage.out} out` : "";
+      const detail = isOpen ? `<div style="display:flex;flex-wrap:wrap;gap:26px;padding:6px 0 18px 36px">
+        <div style="flex:1 1 300px;min-width:260px">
+          <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 50%,transparent)">prompt.System_prompt</div>
+          <pre style="font-size:11px;line-height:1.6;margin:6px 0 0;color:color-mix(in srgb,var(--color-text) 70%,transparent)">${esc(s.prompt.System_prompt)}</pre>
+        </div>
+        <div style="flex:1 1 300px;min-width:260px">
+          <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 50%,transparent)">prompt.User_prompt</div>
+          <pre style="font-size:11px;line-height:1.6;margin:6px 0 0;color:color-mix(in srgb,var(--color-text) 70%,transparent)">${esc(s.prompt.User_prompt)}</pre>
+        </div>
+        <div style="flex:1 1 300px;min-width:260px">
+          <div style="font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-700)">response</div>
+          <pre style="font-size:11px;line-height:1.6;margin:6px 0 0;color:var(--color-accent-800)">${esc(typeof s.response === "string" ? s.response : JSON.stringify(s.response, null, 2))}</pre>
+        </div>
+      </div>` : "";
+      return `<div style="border-top:1px solid var(--color-divider)">
+        <div id="stepbtn-${i}" role="button" tabindex="0" aria-expanded="${isOpen}" style="cursor:pointer;display:flex;flex-wrap:wrap;gap:14px;align-items:baseline;padding:10px 0" onclick="UI.toggleStep(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();UI.toggleStep(${i})}">
+          <span style="font-size:11px;font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--color-text) 45%,transparent);width:22px;flex:none">${String(i + 1).padStart(2, "0")}</span>
+          <span style="font-family:var(--font-heading);font-weight:600;font-size:14px;color:${color};flex:none">${esc(s.module)}</span>
+          <span style="font-size:12.5px;color:color-mix(in srgb,var(--color-text) 55%,transparent);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(stepSummary(s))}</span>
+          <span style="margin-left:auto;font-size:11px;font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--color-text) 42%,transparent);flex:none">${esc(usage)}</span>
+        </div>
+        ${detail}
+      </div>`;
+    }).join("") + `<div style="border-top:1px solid var(--color-divider)"></div>`;
+  }
+  return `<div class="trace-drawer">
+    <div id="tracebtn" role="button" tabindex="0" style="cursor:pointer;max-width:1280px;margin:0 auto;padding:13px 32px;display:flex;flex-wrap:wrap;gap:16px;align-items:baseline" onclick="UI.toggleTrace()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();UI.toggleTrace()}">
+      <span style="font-family:var(--font-heading);font-weight:600;font-size:16px">Reasoning trace</span>
+      <span style="font-size:12.5px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">steps[] — ${steps.length} LLM calls across DocumentAuditor, EvidenceInvestigator, ReportConsolidator</span>
+      <span style="margin-left:auto;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent)">${open ? "Close" : "Open trace"}</span>
+    </div>
+    ${open ? `<div style="max-width:1280px;margin:0 auto;padding:0 32px 24px;max-height:52vh;overflow:auto">${rows}</div>` : ""}
+  </div>`;
+}
+
+function renderSummaryStrip(report, ui, stepsLen) {
+  const s = report.summary;
+  const cells = [
+    ["windows", s.windows], ["candidates", s.candidates], ["confirmed", s.confirmed],
+    ["rejected", s.rejected], ["retracted", s.retracted], ["needs human review", s.needs_human_review],
+    ["patterns", s.patterns], ["LLM calls", stepsLen], ["wall clock", ui.duration_s.toFixed(1) + " s"],
+  ];
+  if (ui.tokens_in != null || ui.tokens_out != null) cells.push(["tokens", `${ui.tokens_in} in / ${ui.tokens_out} out`]);
+  return cells.map(([label, value]) => `<span><span style="color:color-mix(in srgb,var(--color-text) 50%,transparent)">${esc(label)}</span> <strong style="font-family:var(--font-heading)">${esc(String(value))}</strong></span>`).join("");
+}
+
+function renderAuditReport() {
+  const st = state.audit;
+  const report = st.report, ui = st.ui, steps = st.steps || [];
+  const kept = report.findings.filter((f) => !f.retracted);
+  const summary = report.summary;
+
+  const subParts = [];
+  if (summary.retracted) subParts.push(`${summary.retracted} retracted during review`);
+  if (summary.needs_human_review) subParts.push(`${summary.needs_human_review} needs human review`);
+  const subLine = subParts.join(" · ");
+
+  const ranges = buildSourceRanges(ui, report.findings);
+  const sourceHtml = renderSourceSpans(st.text, ranges);
+
+  const findingsHtml = kept.length
+    ? kept.map((f) => renderFindingCard(f)).join("")
+    : `<p class="text-muted" style="font-size:14.5px">No inclusivity issues were confirmed in this document.</p>`;
+
+  return `
+  <div style="padding:40px 0 0">
+    <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-end;padding-bottom:26px">
+      <div style="display:flex;gap:22px;align-items:flex-end">
+        <span class="cmyk-num" style="font-family:var(--font-heading);font-weight:600;font-size:92px">
+          <span class="paper">${summary.confirmed}</span>
+          <span class="plate plate-c" aria-hidden="true">${summary.confirmed}</span>
+          <span class="plate plate-m" aria-hidden="true">${summary.confirmed}</span>
+          <span class="plate plate-y" aria-hidden="true">${summary.confirmed}</span>
+        </span>
+        <div style="padding-bottom:10px">
+          <div style="font-family:var(--font-heading);font-weight:600;font-size:26px;line-height:1.1">findings confirmed</div>
+          ${subLine ? `<div style="font-size:13px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">${esc(subLine)}</div>` : ""}
+        </div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="UI.resetAudit()">New audit</button>
+        <button class="btn btn-secondary" id="copyjsonbtn" onclick="UI.copyReportJson()">${st.jsonCopied ? "Copied report JSON" : "Copy report JSON"}</button>
+      </div>
+    </div>
+
+    <div style="height:1px;background:var(--color-text)"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:0 26px;padding:11px 0;font-size:12.5px;font-variant-numeric:tabular-nums">${renderSummaryStrip(report, ui, steps.length)}</div>
+    <div style="height:1px;background:var(--color-divider)"></div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:48px;padding-top:32px;align-items:flex-start">
+      <div class="source-panel" style="flex:1 1 400px;min-width:300px;position:sticky;top:20px">
+        <div class="kicker text-muted" style="margin-bottom:14px">Source · ${st.text.length} chars · ${summary.windows} window${summary.windows === 1 ? "" : "s"}</div>
+        <p style="font-size:19px;line-height:1.85;margin:0;white-space:pre-wrap">${sourceHtml}</p>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:24px;font-size:11.5px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">
+          <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:8px;background:var(--color-accent-100);box-shadow:inset 0 -2px 0 var(--color-accent)"></span>confirmed</span>
+          <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:8px;background:var(--color-accent-2-100);box-shadow:inset 0 -2px 0 var(--color-accent-2)"></span>retracted</span>
+          <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:8px;box-shadow:inset 0 -1px 0 var(--color-neutral-400)"></span>rejected at verification</span>
+        </div>
+        ${renderPatternBlocks(report)}
+      </div>
+
+      <div style="flex:1.35 1 520px;min-width:320px">
+        <div class="kicker text-muted" style="margin-bottom:6px">Findings — severity order</div>
+        ${findingsHtml}
+        ${renderRetractedAndRejected(report, ui)}
+        ${renderCaveats()}
+      </div>
+    </div>
+  </div>
+  ${renderTraceDrawer()}`;
+}
+
+/* ============================== UI: delegated handlers ============================== */
+
+const UI = {
+  nav(tab) { showTab(tab); },
+
+  onTextInput(el) {
+    state.audit.text = el.value;
+    const meta = document.getElementById("meta-line");
+    if (meta) meta.textContent = metaLineText(el.value);
+  },
+  fillExample(i) {
+    const ex = state.agentInfo && state.agentInfo.prompt_examples[i];
+    if (ex) setText(ex.prompt);
+  },
+  fillFixture() { setText(FIXTURE_TEXT); },
+  run() { startRun(); },
+  resetAudit() {
+    state.audit.phase = "idle";
+    state.audit.error = null;
+    renderAudit();
+  },
+
+  copyReportJson() {
+    const st = state.audit;
+    copyText(JSON.stringify(st.report, null, 2));
+    st.jsonCopied = true;
+    rerenderReport();
+    setTimeout(() => { st.jsonCopied = false; rerenderReport(); }, 1600);
+  },
+  copyRewrite(id) {
+    const f = findFinding(id);
+    if (!f) return;
+    copyText(f.rewrite);
+    const st = state.audit;
+    st.copied[id] = true;
+    rerenderReport();
+    setTimeout(() => { st.copied[id] = false; rerenderReport(); }, 1600);
+  },
+
+  selectFinding(id) {
+    const st = state.audit;
+    st.sel = id;
+    st.open = st.open === id ? null : id;
+    rerenderReport();
+    scrollToId("finding-" + id);
+  },
+  selectOnly(kind, id) {
+    state.audit.sel = id;
+    rerenderReport();
+    scrollToId((kind === "retracted" ? "finding-" : "rejected-") + id);
+  },
+  pickSpan(kind, id) {
+    if (kind === "kept") UI.selectFinding(id);
+    else UI.selectOnly(kind, id);
+  },
+
+  toggleWhy(id) {
+    const st = state.audit;
+    if (st.whyOpen[id]) { st.whyOpen[id] = false; rerenderReport(); return; }
+    st.whyOpen[id] = true;
+    if (st.whyCache[id]) { rerenderReport(); return; } // cached — no refetch
+    st.whyLoading[id] = true;
+    rerenderReport();
+    const f = findFinding(id);
+    fetch("/api/why", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ span: f.quote, category: f.category, reason: f.explanation }),
+    }).then((r) => r.json()).then((data) => {
+      st.whyLoading[id] = false;
+      st.whyCache[id] = data;
+      rerenderReport();
+    }).catch((err) => {
+      st.whyLoading[id] = false;
+      st.whyCache[id] = { status: "error", error: "Could not reach the agent: " + err.message };
+      rerenderReport();
+    });
+  },
+
+  toggleTrace() { state.audit.traceOpen = !state.audit.traceOpen; rerenderReport(); },
+  toggleStep(i) { state.audit.openStep = state.audit.openStep === i ? null : i; rerenderReport(); },
+};
+window.UI = UI;
+
+/* ============================== init ============================== */
+
+function init() {
+  document.getElementById("nav-audit").setAttribute("aria-current", "page");
+  renderAudit();
+  renderMetrics();
+  loadHealth();
+  loadAgentInfo();
+  loadTeamInfo();
+}
+document.addEventListener("DOMContentLoaded", init);
 </script>
 </body>
 </html>
