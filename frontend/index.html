@@ -305,7 +305,7 @@ const TEAM_STACK = [
   { role: "Embeddings", what: "hash offline · text-embedding-3-small live" },
   { role: "Vector store", what: "in-memory / Chroma offline · Pinecone (ERIC, 21,870 chunks) live" },
   { role: "Persistence", what: "null offline · Supabase audit_runs with the token ledger" },
-  { role: "Serving", what: "FastAPI on Vercel · 60 s cap, window guard well inside it" },
+  { role: "Serving", what: "FastAPI on Vercel · 300 s cap, window guard well inside it" },
 ];
 
 // ponytail: this is copy, not a live metric (no endpoint reports a test count) --
@@ -651,7 +651,7 @@ function renderAuditIdle() {
       <div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:14px">
         <button class="btn btn-primary" style="font-size:15px;padding:11px 22px" onclick="UI.run()">Run audit</button>
         <span id="meta-line" style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">${esc(metaLineText(st.text))}</span>
-        <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-left:auto">English only · ≤40 windows · 60 s deploy cap</span>
+        <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-left:auto">English only · ≤40 windows · 300 s deploy cap</span>
       </div>
 
       <div style="margin-top:38px">
@@ -948,7 +948,7 @@ function renderFindingCard(f) {
         <span style="flex:none;font-size:12px;color:var(--color-accent);padding-top:2px">[${i + 1}]</span>
         <div>
           <div style="font-size:14.5px;font-family:var(--font-heading);font-weight:600;line-height:1.35">${esc(e.title || "(untitled)")}</div>
-          <div style="font-size:12.5px;line-height:1.6;color:color-mix(in srgb,var(--color-text) 62%,transparent);margin-top:2px;text-wrap:pretty">${esc(e.snippet)}</div>
+          <div style="font-size:12.5px;line-height:1.6;color:color-mix(in srgb,var(--color-text) 62%,transparent);margin-top:2px;text-wrap:pretty">${esc(e.snippet)}${e.snippet && e.snippet.length >= 300 ? "…" : ""}</div>
           <div style="font-size:11px;margin-top:5px;display:flex;flex-wrap:wrap;gap:10px;font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--color-text) 48%,transparent)">
             <span>${esc(e.source || "")}</span><span>${e.year != null ? esc(String(e.year)) : ""}</span><span>score ${Number(e.score).toFixed(2)}</span>
             ${e.url ? `<a href="${escAttr(safeHref(e.url))}" target="_blank" rel="noreferrer" style="font-size:11px">${esc(hostOf(e.url))}</a>` : ""}
@@ -1104,7 +1104,7 @@ function renderSummaryStrip(report, ui, stepsLen) {
     ["rejected", s.rejected], ["retracted", s.retracted], ["needs human review", s.needs_human_review],
     ["patterns", s.patterns], ["LLM calls", stepsLen], ["wall clock", ui.duration_s.toFixed(1) + " s"],
   ];
-  if (ui.tokens_in != null || ui.tokens_out != null) cells.push(["tokens", `${ui.tokens_in} in / ${ui.tokens_out} out`]);
+  if (ui.tokens_in != null || ui.tokens_out != null) cells.push(["tokens", `${Number(ui.tokens_in ?? 0).toLocaleString()} in / ${Number(ui.tokens_out ?? 0).toLocaleString()} out`]);
   return cells.map(([label, value]) => `<span><span style="color:color-mix(in srgb,var(--color-text) 50%,transparent)">${esc(label)}</span> <strong style="font-family:var(--font-heading)">${esc(String(value))}</strong></span>`).join("");
 }
 
