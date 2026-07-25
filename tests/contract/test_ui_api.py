@@ -158,3 +158,5 @@ def test_gui_served_is_the_new_broadsheet_page():
     for label in (">Audit<", ">Agent<", ">Metrics<", ">Team<"):
         assert label in html
     assert "/api/execute?ui=1" in html  # spec §3: the Run button posts to /api/execute
+    assert "Run Agent" in html  # spec §3's literal button label
+    assert "Raw response" in html  # the exact /api/execute response string is viewable

@@ -58,6 +58,9 @@ def test_execute_ok_contract():
     assert isinstance(body["steps"], list) and body["steps"]
     for step in body["steps"]:
         _assert_step_schema(step)
+        # Bare /api/execute steps are EXACTLY the spec schema; the usage superset
+        # key lives on ?ui=1 (the GUI's ledger) only.
+        assert set(step.keys()) == {"module", "prompt", "response"}
 
 
 def test_execute_logs_every_llm_call():
@@ -79,6 +82,47 @@ def test_execute_empty_prompt_errors():
     assert body["error"]
     assert body["response"] is None
     assert body["steps"] == []
+
+
+def test_execute_malformed_body_returns_error_envelope():
+    """Spec §C: even a malformed request body gets the in-band error envelope,
+    never FastAPI's default 422 {"detail": ...} — a grader POSTing garbage must
+    see the same four keys as any other agent error."""
+    cases = [
+        dict(),                                                # no body at all
+        dict(content=b"this is not json",
+             headers={"Content-Type": "application/json"}),   # invalid JSON
+        dict(json={"wrong_key": "x"}),                         # missing "prompt"
+        dict(json="just a string"),                            # non-object JSON body
+    ]
+    for kwargs in cases:
+        r = client.post("/api/execute", **kwargs)
+        assert r.status_code == 200, kwargs
+        body = r.json()
+        assert set(body.keys()) == {"status", "error", "response", "steps"}, kwargs
+        assert body["status"] == "error"
+        assert isinstance(body["error"], str) and body["error"]
+        assert body["response"] is None
+        assert body["steps"] == []
+
+
+def test_validation_envelope_scoped_to_execute_routes():
+    # Non-spec routes keep FastAPI's default validation behavior (422 + detail).
+    r = client.post("/api/why", json={"no_span_here": 1})
+    assert r.status_code == 422
+
+
+def test_spec_steps_strips_usage_superset():
+    """The wire strip that keeps bare /api/execute steps exactly {module, prompt,
+    response} when a live metered provider adds per-call usage."""
+    from inclusify_agent.server.app import _spec_steps
+
+    metered = [{"module": "DocumentAuditor",
+                "prompt": {"System_prompt": "s", "User_prompt": "u"},
+                "response": {"ok": True}, "usage": {"in": 10, "out": 2}}]
+    assert _spec_steps(metered) == [{"module": "DocumentAuditor",
+                                     "prompt": {"System_prompt": "s", "User_prompt": "u"},
+                                     "response": {"ok": True}}]
 
 
 def test_why_ok_contract():
