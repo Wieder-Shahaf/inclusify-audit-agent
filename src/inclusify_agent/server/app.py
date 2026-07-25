@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -86,12 +87,17 @@ def _shared_rag() -> tuple[Any, Any]:
 
 
 # ----------------------------------------------------------------------------- agent
-def execute_prompt(prompt: str) -> dict[str, Any]:
+def execute_prompt(prompt: str, *, capture: dict[str, Any] | None = None) -> dict[str, Any]:
     """Run one v2 audit (DocumentAuditor -> EvidenceInvestigator -> ReportConsolidator)
     and shape it into the required {status,error,response,steps}, plus two
     caller-only `tokens_in`/`tokens_out` keys (course req #1c budget ledger) --
     `api_execute` reads them for persistence logging and strips them before the
-    HTTP response goes out, so the wire contract stays exactly the four spec fields."""
+    HTTP response goes out, so the wire contract stays exactly the four spec fields.
+
+    `capture`, when given a dict, gets the raw `run_v2` result stashed into it under
+    `"result"` -- nothing else about this function's behavior or return value changes.
+    `/api/ui/execute` uses this to build its report/span payload without re-running
+    the pipeline a second time."""
     if not prompt or not prompt.strip():
         return {"status": "error", "error": "prompt is required and must be non-empty",
                 "response": None, "steps": [], "tokens_in": None, "tokens_out": None}
@@ -100,6 +106,8 @@ def execute_prompt(prompt: str) -> dict[str, Any]:
         llm = RecordingLLM(config.build_llm(), steps)
         embedder, store = _shared_rag()
         result = run_v2(prompt, llm=llm, store=store, embedder=embedder)
+        if capture is not None:
+            capture["result"] = result
         validate_v2(result["report"])
 
         response = result["markdown"]
@@ -136,6 +144,57 @@ def api_execute(body: ExecuteIn) -> dict[str, Any]:
     # Wire contract is exactly {status, error, response, steps} (spec §C) -- tokens_*
     # were for the log_run call above only.
     return {k: result[k] for k in ("status", "error", "response", "steps")}
+
+
+@app.post("/api/ui/execute")
+def api_ui_execute(body: ExecuteIn) -> dict[str, Any]:
+    """The GUI's structured superset of `/api/execute`: identical status/error/response/
+    steps semantics (same `execute_prompt` call, same persistence logging -- this IS a
+    real audit, not a preview), plus the validated v2 report and the span/stat sugar
+    the frontend needs to render highlights and the fanout view without re-deriving
+    them from the markdown."""
+    cap: dict[str, Any] = {}
+    t0 = time.monotonic()
+    result = execute_prompt(body.prompt, capture=cap)
+    duration_s = round(time.monotonic() - t0, 1)
+    _persistence.log_run(
+        prompt=body.prompt, status=result["status"],
+        response=result["response"], steps=result["steps"],
+        tokens_in=result["tokens_in"], tokens_out=result["tokens_out"],
+    )
+    base = {k: result[k] for k in ("status", "error", "response", "steps")}
+    v2 = cap.get("result")
+    if result["status"] != "ok" or v2 is None:
+        return {**base, "report": None, "ui": None}
+
+    investigations = v2.get("investigations", [])
+    occurrences = {
+        inv.candidate.id: [list(occ) for occ in inv.candidate.occurrences]
+        for inv in investigations if inv.verdict == "confirmed"
+    }
+    rejected = [
+        {
+            "quote": inv.candidate.quote,
+            "offsets": [inv.candidate.char_start, inv.candidate.char_end],
+            "occurrences": [list(occ) for occ in inv.candidate.occurrences],
+            "category": inv.category,
+            "explanation": inv.explanation,
+            "confidence": inv.confidence,
+        }
+        for inv in investigations if inv.verdict != "confirmed"
+    ]
+    return {
+        **base,
+        "report": v2["report"],
+        "ui": {
+            "occurrences": occurrences,
+            "rejected": rejected,
+            "stats": v2.get("stats", {}),
+            "duration_s": duration_s,
+            "tokens_in": result["tokens_in"],
+            "tokens_out": result["tokens_out"],
+        },
+    }
 
 
 class WhyIn(BaseModel):
@@ -294,5 +353,14 @@ def index() -> HTMLResponse:
 
 
 @app.get("/api/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "llm": config.get_llm_provider_name()}
+def health() -> dict[str, Any]:
+    # String getters only -- never build the store/LLM here (spec: cheap + crash-proof).
+    return {
+        "status": "ok",
+        "llm": config.get_llm_provider_name(),
+        "model": config.get_llm_model_name(),
+        "embeddings": config.get_embeddings_provider_name(),
+        "vector_store": config.get_vector_store_name(),
+        "persistence": _persistence.name,
+        "eric_live": eric_live_enabled(),
+    }
