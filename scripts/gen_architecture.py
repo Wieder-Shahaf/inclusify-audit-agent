@@ -1,19 +1,21 @@
-"""Generate the v2 architecture diagram PNG served by GET /api/model_architecture.
+"""Generate THE architecture diagram — served by GET /api/model_architecture.
 
 Run: python scripts/gen_architecture.py
-Writes: src/inclusify_agent/static/architecture.png (committed; Docker/Vercel just serve it).
+Writes: src/inclusify_agent/static/architecture.png (committed; bundled into the Vercel
+function via vercel.json includeFiles src/**; docs/ is excluded from the bundle, which is
+why the file must live here).
 
-Fixed pixel layout (no timestamps, no randomness) so the PNG is byte-for-byte
-reproducible across runs. The three LLM module names are pulled straight from
-MODULE_BY_TASK so this diagram can never drift from the `steps[].module` log
-(assignment §C: names must be consistent across diagram / steps / agent_info).
-
-ponytail: Pillow box-drawing, same renderer the v1 diagram already used (pyproject's
-[dev] extra already carries Pillow; nothing new to install). One PNG, regenerated
-only when the pipeline shape changes.
+Module names are pulled from server/recording_llm.py's MODULE_BY_TASK so the diagram can
+never drift from steps[].module (course spec §C). Deterministic Pillow render (fixed
+layout, 4x supersample + LANCZOS; no timestamps/randomness) — the __main__ self-check
+asserts two runs are byte-identical. Shows the full v2 flow: guards, perceive,
+DocumentAuditor, the EvidenceInvestigator tool loop (plan -> search -> review ->
+sufficiency -> finalize, with revise/live-search branches), ReportConsolidator, report,
+provider panels, and a legend.
 """
 from __future__ import annotations
 
+import io
 import math
 import sys
 from pathlib import Path
@@ -23,77 +25,34 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from inclusify_agent.server.recording_llm import MODULE_BY_TASK  # noqa: E402
 
-DOCUMENT_AUDITOR = MODULE_BY_TASK["audit"]
-EVIDENCE_INVESTIGATOR = MODULE_BY_TASK["investigate"]
-REPORT_CONSOLIDATOR = MODULE_BY_TASK["consolidate"]
+AUDITOR_NAME = MODULE_BY_TASK["audit"]
+INVESTIGATOR_NAME = MODULE_BY_TASK["investigate"]
+CONSOLIDATOR_NAME = MODULE_BY_TASK["consolidate"]
 
-# ---- canvas + palette (spec: landscape ~1500x950, white bg) -----------------------------------
+# ---- palette (spec hex values) -----------------------------------------------------
 BG = (255, 255, 255)
-INK = (28, 32, 38)
-MUTED = (105, 111, 120)
-LINE = (105, 111, 120)
+INK = (26, 35, 50)              # #1A2332
+MUTED = (95, 102, 112)
+NEUTRAL_FILL = (237, 239, 242)  # ink-border boxes (not LLM/deterministic/data)
+DIVIDER = (206, 210, 216)
 
-GREY_FILL, GREY_BORDER = (231, 235, 240), (91, 107, 124)      # deterministic code
-AMBER_FILL, AMBER_BORDER = (245, 217, 168), (122, 78, 16)     # LLM call
-VIOLET_FILL, VIOLET_BORDER = (217, 204, 242), (94, 67, 165)   # vector retrieval
-RUST_FILL, RUST_BORDER = (239, 201, 184), (140, 59, 27)       # live API, env-gated
+PURPLE_BORDER, PURPLE_FILL = (108, 75, 184), (240, 234, 251)   # #6C4BB8 / #F0EAFB
+GREEN_BORDER, GREEN_FILL = (47, 111, 87), (230, 242, 236)      # #2F6F57 / #E6F2EC
+BLUE_BORDER, BLUE_FILL = (59, 110, 168), (234, 241, 249)       # #3B6EA8 / #EAF1F9
+RED = (192, 58, 43)                                             # #C03A2B
 
-PAD = 40
-COL_W = 220
-# Gap AFTER column i. Most inter-column arrows carry no label and sit fine in a tight
-# 20px gap; the two that DO carry an inline label ("windows + hints" after col 1,
-# "candidates (fan-out)" after col 2) need a gap wide enough for that label's text to
-# clear both neighboring boxes entirely, not just float on top of them. This pushes
-# the canvas a bit past the spec's approximate "~1500" width -- legible labels over a
-# nominally-exact width (see module docstring / PR notes for the tradeoff).
-COL_GAPS = [20, 130, 170, 20, 20]
+SS = 4  # supersample factor; see gen_architecture.py's SS docstring for the rationale
+
+OUT_PATH = (
+    Path(__file__).resolve().parents[1] / "src" / "inclusify_agent" / "static" / "architecture.png"
+)
 
 
-def _col_edges() -> list[tuple[int, int]]:
-    edges = []
-    x = PAD
-    for i in range(len(COL_GAPS) + 1):
-        edges.append((x, x + COL_W))
-        x += COL_W + (COL_GAPS[i] if i < len(COL_GAPS) else 0)
-    return edges
-
-
-_COLS = _col_edges()
-
-
-def _col_x(i: int) -> tuple[int, int]:
-    return _COLS[i]
-
-
-W, H = _COLS[-1][1] + PAD, 950
-
-# Pillow's ImageDraw has no anti-aliasing for shapes/lines/rounded corners -- every
-# diagonal arrow and rounded box would render visibly jagged at 1x. Standard fix:
-# rasterize everything at SS times the target resolution, then downsample with a
-# LANCZOS filter (a real low-pass filter, i.e. free anti-aliasing) before saving.
-# `_ScaledDraw` below multiplies every coordinate/width by SS transparently, so all
-# the layout code above and below keeps working in plain "logical" 1x pixels.
-SS = 4
-
-
-def _vstack(x0: int, x1: int, y_center: float, heights: list[int], gaps: list[int]) -> list[tuple]:
-    """Boxes of the given heights, stacked with the given gaps between them,
-    vertically centered as a group on `y_center`. Pure arithmetic -- deterministic,
-    no hand-picked absolute y's to keep in sync when a height changes."""
-    total = sum(heights) + sum(gaps)
-    y = y_center - total / 2
-    boxes = []
-    for i, h in enumerate(heights):
-        boxes.append((x0, y, x1, y + h))
-        y += h
-        if i < len(gaps):
-            y += gaps[i]
-    return boxes
-
+# ============================================================================
+# low-level render primitives (ported from gen_architecture.py's approach)
+# ============================================================================
 
 def _font(size: int, bold: bool = False):
-    """Requested size is in LOGICAL px; the actual glyph is rasterized at SS times
-    that (matching the supersampled canvas) so downsampling anti-aliases text too."""
     candidates = [
         "/System/Library/Fonts/Supplemental/Arial Bold.ttf" if bold
         else "/System/Library/Fonts/Supplemental/Arial.ttf",
@@ -111,12 +70,9 @@ def _font(size: int, bold: bool = False):
 
 
 class _ScaledDraw:
-    """Wraps an `ImageDraw.Draw`, multiplying every coordinate/width by SS so the
-    rest of the script can keep laying things out in plain logical pixels while
-    everything actually rasterizes at SS times the resolution (see SS's docstring
-    above). `textbbox` is the mirror image: scale the query point up, then divide
-    the measured box back down, so the caller's logical-space wrap/center math
-    (already written and visually verified against the 1x layout) needs no changes."""
+    """See gen_architecture.py: wraps ImageDraw, multiplying every coordinate/width by
+    SS so layout code stays in plain logical pixels while everything rasterizes at SS×
+    for a later LANCZOS downsample (free anti-aliasing on shapes Pillow can't AA itself)."""
 
     def __init__(self, draw, scale: int) -> None:
         self._d = draw
@@ -138,6 +94,9 @@ class _ScaledDraw:
             kw["width"] = max(1, round(kw["width"] * self._s))
         self._d.rectangle(self._pt(box), **kw)
 
+    def polygon(self, points, **kw):
+        self._d.polygon(self._pts(points), **kw)
+
     def line(self, points, **kw):
         if "width" in kw:
             kw["width"] = max(1, round(kw["width"] * self._s))
@@ -157,25 +116,47 @@ def _line_h(draw, font) -> float:
     return (tb[3] - tb[1]) + 5
 
 
+def _text_size(draw, text, font) -> tuple[float, float]:
+    tb = draw.textbbox((0, 0), text, font=font)
+    return tb[2] - tb[0], tb[3] - tb[1]
+
+
 def _wrap(draw, text: str, font, max_width: float) -> list[str]:
-    words = text.split()
+    """Word-wrap, respecting explicit '\\n' as a hard break (used to force an exact
+    two-line name like 'single-finding' / 'EvidenceInvestigator')."""
     lines: list[str] = []
-    cur = ""
-    for w in words:
-        trial = f"{cur} {w}".strip()
-        if draw.textbbox((0, 0), trial, font=font)[2] <= max_width or not cur:
-            cur = trial
-        else:
+    for para in text.split("\n"):
+        words = para.split()
+        if not words:
+            lines.append("")
+            continue
+        cur = ""
+        for w in words:
+            trial = f"{cur} {w}".strip()
+            if draw.textbbox((0, 0), trial, font=font)[2] <= max_width or not cur:
+                cur = trial
+            else:
+                lines.append(cur)
+                cur = w
+        if cur:
             lines.append(cur)
-            cur = w
-    if cur:
-        lines.append(cur)
     return lines
 
 
-def _center_text(draw, cx: float, y: float, text: str, font, fill) -> None:
+def _center_text(draw, cx: float, y: float, text: str, font, fill) -> float:
     tb = draw.textbbox((0, 0), text, font=font)
-    draw.text((cx - (tb[2] - tb[0]) / 2, y), text, font=font, fill=fill)
+    w = tb[2] - tb[0]
+    draw.text((cx - w / 2, y), text, font=font, fill=fill)
+    return w
+
+
+def _center_multicolor(draw, cx: float, y: float, parts: list[tuple[str, object, tuple]]) -> None:
+    """One line, several (text, font, fill) runs concatenated, whole line centered."""
+    widths = [_text_size(draw, t, f)[0] for t, f, _ in parts]
+    x = cx - sum(widths) / 2
+    for (t, f, fill), w in zip(parts, widths):
+        draw.text((x, y), t, font=f, fill=fill)
+        x += w
 
 
 def _dashed_line(draw, p, q, *, color, width=2, dash=9, gap=6) -> None:
@@ -193,43 +174,21 @@ def _dashed_line(draw, p, q, *, color, width=2, dash=9, gap=6) -> None:
         draw.line([p0, p1], fill=color, width=width)
 
 
-def _dashed_rect_border(draw, box, *, color, width=2) -> None:
-    """Approximate a dashed rounded-rect border with dashed straight edges --
-    close enough for the small radius used here, and far simpler than dashing
-    along an actual arc."""
+def _dashed_rect_border(draw, box, *, color, width=2, radius=14) -> None:
     x0, y0, x1, y1 = box
-    r = 14
+    r = radius
     _dashed_line(draw, (x0 + r, y0), (x1 - r, y0), color=color, width=width)
     _dashed_line(draw, (x1, y0 + r), (x1, y1 - r), color=color, width=width)
     _dashed_line(draw, (x1 - r, y1), (x0 + r, y1), color=color, width=width)
     _dashed_line(draw, (x0, y1 - r), (x0, y0 + r), color=color, width=width)
 
 
-def _box(draw, box, *, fill, border, dashed=False, width=2) -> None:
+def _box(draw, box, *, fill, border, dashed=False, width=2, radius=14) -> None:
     if dashed:
-        draw.rounded_rectangle(box, radius=14, fill=fill)
-        _dashed_rect_border(draw, box, color=border, width=width)
+        draw.rounded_rectangle(box, radius=radius, fill=fill)
+        _dashed_rect_border(draw, box, color=border, width=width, radius=radius)
     else:
-        draw.rounded_rectangle(box, radius=14, fill=fill, outline=border, width=width)
-
-
-def _box_label(draw, box, name, sub, *, f_name, f_sub, name_fill=INK, sub_fill=None) -> None:
-    x0, y0, x1, y1 = box
-    cx, inner_w = (x0 + x1) / 2, (x1 - x0) - 20
-    sub_fill = sub_fill or MUTED
-    name_lines = _wrap(draw, name, f_name, inner_w)
-    sub_lines = _wrap(draw, sub, f_sub, inner_w) if sub else []
-    lh_name, lh_sub = _line_h(draw, f_name), _line_h(draw, f_sub)
-    total_h = len(name_lines) * lh_name + (6 if sub_lines else 0) + len(sub_lines) * lh_sub
-    y = (y0 + y1) / 2 - total_h / 2
-    for line in name_lines:
-        _center_text(draw, cx, y, line, f_name, name_fill)
-        y += lh_name
-    if sub_lines:
-        y += 6
-        for line in sub_lines:
-            _center_text(draw, cx, y, line, f_sub, sub_fill)
-            y += lh_sub
+        draw.rounded_rectangle(box, radius=radius, fill=fill, outline=border, width=width)
 
 
 def _arrowhead(draw, p, q, *, color, width) -> None:
@@ -240,20 +199,15 @@ def _arrowhead(draw, p, q, *, color, width) -> None:
 
 
 def _path_arrow(
-    draw, points: list[tuple[float, float]], *, color=LINE, width=3, dashed=False,
-    both_heads=False, label=None, label_pos=None, font=None,
+    draw, points: list[tuple[float, float]], *, color=MUTED, width=3, dashed=False,
+    label=None, label_pos=None, font=None, label_fill=None,
 ) -> None:
-    """A (poly)line from points[0] through points[-1] with an arrowhead at the end
-    (and, if `both_heads`, at the start too) -- covers both plain 2-point arrows
-    and the multi-segment "bypass" elbows the same way."""
     for p, q in zip(points, points[1:]):
         if dashed:
             _dashed_line(draw, p, q, color=color, width=width)
         else:
             draw.line([p, q], fill=color, width=width)
     _arrowhead(draw, points[-2], points[-1], color=color, width=width)
-    if both_heads:
-        _arrowhead(draw, points[1], points[0], color=color, width=width)
     if label and font:
         if label_pos is None:
             label_pos = ((points[0][0] + points[-1][0]) / 2, (points[0][1] + points[-1][1]) / 2)
@@ -266,7 +220,7 @@ def _path_arrow(
             lx + tw / 2 + pad, ly + th / 2 + pad - tb[1],
         )
         draw.rectangle(knockout, fill=BG)
-        draw.text((lx - tw / 2, ly - th / 2 - tb[1]), label, font=font, fill=MUTED)
+        draw.text((lx - tw / 2, ly - th / 2 - tb[1]), label, font=font, fill=label_fill or color)
 
 
 def _mid(box, side: str) -> tuple[float, float]:
@@ -277,161 +231,750 @@ def _mid(box, side: str) -> tuple[float, float]:
     }[side]
 
 
-def main() -> None:
-    img = Image.new("RGB", (W * SS, H * SS), BG)
+def _diamond_points(cx: float, cy: float, half_w: float, half_h: float):
+    return [(cx, cy - half_h), (cx + half_w, cy), (cx, cy + half_h), (cx - half_w, cy)]
+
+
+def _diamond(draw, cx, cy, half_w, half_h, *, fill, border, width=2) -> None:
+    pts = _diamond_points(cx, cy, half_w, half_h)
+    draw.polygon(pts, fill=fill)
+    for p, q in zip(pts, pts[1:] + pts[:1]):
+        draw.line([p, q], fill=border, width=width)
+
+
+def _fits_or_raise(what: str, needed: float, available: float) -> None:
+    """The anti-gibberish guarantee: raise loudly at build time rather than silently
+    clipping text that doesn't fit its box."""
+    if needed > available:
+        raise ValueError(
+            f"{what}: wrapped content needs {needed:.0f}px but box only has "
+            f"{available:.0f}px -- widen the box or shorten the text"
+        )
+
+
+def _measure_label_h(draw, width: float, name: str, sub: str, f_name, f_sub, *, gap=6) -> float:
+    inner_w = width - 24
+    name_lines = _wrap(draw, name, f_name, inner_w)
+    sub_lines = _wrap(draw, sub, f_sub, inner_w) if sub else []
+    lh_n, lh_s = _line_h(draw, f_name), _line_h(draw, f_sub)
+    return len(name_lines) * lh_n + (gap if sub_lines else 0) + len(sub_lines) * lh_s
+
+
+def _draw_label(draw, box, name: str, sub: str, *, f_name, f_sub,
+                name_fill=INK, sub_fill=None, gap=6, what="") -> None:
+    x0, y0, x1, y1 = box
+    cx, inner_w = (x0 + x1) / 2, (x1 - x0) - 24
+    sub_fill = sub_fill or MUTED
+    name_lines = _wrap(draw, name, f_name, inner_w)
+    sub_lines = _wrap(draw, sub, f_sub, inner_w) if sub else []
+    lh_n, lh_s = _line_h(draw, f_name), _line_h(draw, f_sub)
+    total = len(name_lines) * lh_n + (gap if sub_lines else 0) + len(sub_lines) * lh_s
+    _fits_or_raise(what or name, total, (y1 - y0) - 10)
+    y = (y0 + y1) / 2 - total / 2
+    for line in name_lines:
+        _center_text(draw, cx, y, line, f_name, name_fill)
+        y += lh_n
+    if sub_lines:
+        y += gap
+        for line in sub_lines:
+            _center_text(draw, cx, y, line, f_sub, sub_fill)
+            y += lh_s
+
+
+def _diamond_label(draw, cx, cy, half_w, half_h, name, sub, *, f_name, f_sub,
+                    name_fill=INK, sub_fill=None) -> None:
+    sub_fill = sub_fill or MUTED
+    usable = half_w * 2 * 0.56
+    name_lines = _wrap(draw, name, f_name, usable)
+    sub_lines = _wrap(draw, sub, f_sub, usable) if sub else []
+    lh_n, lh_s = _line_h(draw, f_name), _line_h(draw, f_sub)
+    total = len(name_lines) * lh_n + (4 if sub_lines else 0) + len(sub_lines) * lh_s
+    _fits_or_raise(f"diamond {name!r}", total, half_h * 1.5)
+    y = cy - total / 2
+    for line in name_lines:
+        _center_text(draw, cx, y, line, f_name, name_fill)
+        y += lh_n
+    if sub_lines:
+        y += 4
+        for line in sub_lines:
+            _center_text(draw, cx, y, line, f_sub, sub_fill)
+            y += lh_s
+
+
+def _divider(draw, x0, x1, y) -> None:
+    draw.line([(x0 + 10, y), (x1 - 10, y)], fill=DIVIDER, width=1)
+
+
+def _chip(draw, cx, y, text, font, *, border) -> tuple:
+    """Auto-sized pill; returns its box. White fill so it reads against any parent
+    box's tinted fill; border color ties it to the parent's theme."""
+    w, h = _text_size(draw, text, font)
+    pad_x, pad_y = 10, 6
+    box = (cx - w / 2 - pad_x, y, cx + w / 2 + pad_x, y + h + 2 * pad_y)
+    draw.rounded_rectangle(box, radius=9, fill=BG, outline=border, width=2)
+    draw.text((cx - w / 2, y + pad_y), text, font=font, fill=INK)
+    return box
+
+
+def _chip_row(draw, cx, y, texts, font, *, border, gap=14) -> float:
+    """Row of auto-sized chips, centered as a group on cx. Returns bottom y."""
+    sizes = [_text_size(draw, t, font) for t in texts]
+    widths = [w + 20 for w, _h in sizes]
+    total = sum(widths) + gap * (len(texts) - 1)
+    x = cx - total / 2
+    bottom = y
+    for t, w, (_, h) in zip(texts, widths, sizes):
+        chip_box = _chip(draw, x + w / 2, y, t, font, border=border)
+        bottom = chip_box[3]
+        x += w + gap
+    return bottom
+
+
+def _bullets(draw, x0, x1, y, items, font, *, fill=INK, line_gap=5) -> float:
+    lh = _line_h(draw, font)
+    max_w = (x1 - x0) - 20
+    for item in items:
+        lines = _wrap(draw, item, font, max_w)
+        for i, line in enumerate(lines):
+            prefix = "•  " if i == 0 else "    "
+            draw.text((x0, y), prefix + line, font=font, fill=fill)
+            y += lh
+        y += line_gap
+    return y - line_gap
+
+
+def _centered_box(x0, x1, cy, h) -> tuple:
+    return (x0, cy - h / 2, x1, cy + h / 2)
+
+
+def _hspan(x_start: float, widths: list[float], gaps: list[float]) -> list[tuple]:
+    xs = []
+    x = x_start
+    for i, w in enumerate(widths):
+        xs.append((x, x + w))
+        x += w + (gaps[i] if i < len(gaps) else 0)
+    return xs
+
+
+# ============================================================================
+# build
+# ============================================================================
+
+def build() -> Image.Image:
+    # Generous provisional canvas; trimmed to actual content extent at the end so the
+    # PNG has no dead margin (deterministic -- purely a function of the fixed layout
+    # below, no measurement of drawn pixels).
+    PROVISIONAL_W, PROVISIONAL_H = 1900, 1500
+    img = Image.new("RGB", (PROVISIONAL_W * SS, PROVISIONAL_H * SS), BG)
     d = _ScaledDraw(ImageDraw.Draw(img), SS)
-    f_title = _font(28, bold=True)
-    f_subtitle = _font(14)
-    f_name = _font(17, bold=True)
+
+    f_title = _font(34, bold=True)
+    f_subtitle = _font(15)
+    f_section = _font(12, bold=True)
+    f_name = _font(16, bold=True)
+    f_container_h = _font(19, bold=True)
     f_sub = _font(12)
+    f_chip = _font(12)
     f_label = _font(12)
-    f_legend = _font(14)
+    f_label_b = _font(12, bold=True)
+    f_legend = _font(13)
+    f_diamond = _font(15, bold=True)
 
-    # ---- title (top-left, per spec) ------------------------------------------------------
-    d.text((PAD, 20), "Inclusify Audit Agent — v2 (Auditor → Investigators → Consolidator)",
-           font=f_title, fill=INK)
-    d.text((PAD, 62),
-           "steps[] logs every LLM call; module names below match steps[].module exactly",
-           font=f_subtitle, fill=MUTED)
+    PAD = 32
+    W = PROVISIONAL_W
 
-    diagram_cy = 490.0
+    # ---- TITLE (top-left) --------------------------------------------------------
+    title_y = 26
+    d.text((PAD, title_y), "Inclusify Audit Agent — v2 Architecture (shipped)",
+            font=f_title, fill=INK)
+    subtitle_y = title_y + _line_h(d, f_title) + 6
+    d.text((PAD, subtitle_y), "Orchestrator–Workers · Agentic RAG · English-only",
+            font=f_subtitle, fill=BLUE_BORDER)
+    title_block_bottom = subtitle_y + _line_h(d, f_subtitle)
 
-    # ---- column 0: inputs -----------------------------------------------------------------
-    x0, x1 = _col_x(0)
-    execute_box, why_box = _vstack(x0, x1, diagram_cy, [110, 110], [70])
-    _box(d, execute_box, fill=GREY_FILL, border=GREY_BORDER)
-    _box_label(d, execute_box, "POST /api/execute", "{prompt}", f_name=f_name, f_sub=f_sub)
-    _box(d, why_box, fill=GREY_FILL, border=GREY_BORDER, dashed=True)
-    _box_label(d, why_box, "POST /api/why", "(on-demand)", f_name=f_name, f_sub=f_sub)
+    # ---- OPTIONAL ENTRY inset (top-right, dashed container) -----------------------
+    inset_w = 360
+    inset_x1 = W - PAD
+    inset_x0 = inset_x1 - inset_w
+    inset_y0 = title_y
+    label_h = _line_h(d, f_section)
+    why_h = _measure_label_h(d, inset_w - 40, "POST /api/why", "", f_name, f_sub) + 14
+    inv_h = _measure_label_h(d, inset_w - 40, "single-finding\nEvidenceInvestigator", "",
+                              f_name, f_sub) + 14
+    plain_h = _line_h(d, f_sub)
+    arrow_gap = 30
+    inset_content_top = inset_y0 + 14 + label_h + 8
+    why_box = _centered_box(inset_x0 + 20, inset_x1 - 20,
+                             inset_content_top + why_h / 2, why_h)
+    inv_top = why_box[3] + arrow_gap
+    inv_box = _centered_box(inset_x0 + 20, inset_x1 - 20, inv_top + inv_h / 2, inv_h)
+    plain_y = inv_box[3] + arrow_gap - 6
+    inset_y1 = plain_y + plain_h + 16
 
-    # ---- column 1: deterministic pre-pass ---------------------------------------------------
-    # `_vstack` centers the whole 3-box GROUP on its y_center, which puts the middle box
-    # (Chunker) on that line, not the last one. LexiconScanner is the box whose outgoing
-    # arrow must land as a clean horizontal on the Auditor, so its own center needs to be
-    # diagram_cy: shift the group's center up by (one box height + one gap) to compensate.
-    x0, x1 = _col_x(1)
-    box_h, box_gap = 100, 50
-    guards_box, chunker_box, lexicon_box = _vstack(
-        x0, x1, diagram_cy - (box_h + box_gap), [box_h, box_h, box_h], [box_gap, box_gap],
+    d.text((inset_x0 + 16, inset_y0 + 14), "OPTIONAL ENTRY", font=f_section, fill=MUTED)
+    _box(d, why_box, fill=GREEN_FILL, border=GREEN_BORDER)
+    _draw_label(d, why_box, "POST /api/why", "", f_name=f_name, f_sub=f_sub)
+    _box(d, inv_box, fill=PURPLE_FILL, border=PURPLE_BORDER)
+    _draw_label(d, inv_box, "single-finding\nEvidenceInvestigator", "", f_name=f_name, f_sub=f_sub)
+    _center_text(d, (inset_x0 + inset_x1) / 2, plain_y,
+                 "{explanation, citations, steps[]}", f_sub, MUTED)
+    _path_arrow(d, [_mid(why_box, "bottom"), _mid(inv_box, "top")])
+    _path_arrow(d, [_mid(inv_box, "bottom"), ((inv_box[0] + inv_box[2]) / 2, plain_y - 4)])
+    _dashed_rect_border(d, (inset_x0, inset_y0, inset_x1, inset_y1), color=MUTED, width=2)
+
+    # ================================================================================
+    # MAIN ROW: execute -> Guards -> Perceive -> DocumentAuditor -> Candidates? -> Clean report
+    # ================================================================================
+    row2_top = max(title_block_bottom, inset_y1) + 34
+
+    execute_w, guards_w, perceive_w, auditor_w = 190, 168, 258, 236
+    diamond_hw, diamond_hh = 92, 60
+    clean_w = 190
+    gaps2 = [34, 34, 34, 40, 62]
+    widths2 = [execute_w, guards_w, perceive_w, auditor_w, diamond_hw * 2]
+    spans2 = _hspan(PAD, widths2, gaps2)
+    execute_span, guards_span, perceive_span, auditor_span, diamond_span = spans2
+    clean_x0 = diamond_span[1] + gaps2[4]
+    clean_span = (clean_x0, clean_x0 + clean_w)
+
+    # heights: measure each, take the max for a uniform rectangular-box row height,
+    # diamond sized independently (smaller) but centered on the same row axis.
+    execute_h = _measure_label_h(d, execute_w, "POST /api/execute", "{prompt}", f_name, f_sub)
+    guards_h = _measure_label_h(d, guards_w, "[0] Guards", "empty · English-only · ≤ 40 windows",
+                                 f_name, f_sub)
+    auditor_h = _measure_label_h(
+        d, auditor_w, f"[2] {AUDITOR_NAME}",
+        "LLM · 1 call/window · adjudicates every lexicon hint (flag/clean per term)",
+        f_name, f_sub,
     )
-    for box, name, sub in (
-        (guards_box, "Guards", "English check · size cap"),
-        (chunker_box, "Chunker", "blocks · sentences · windows (offset-exact)"),
-        (lexicon_box, "LexiconScanner", "1,530-term scan → sensor hints"),
-    ):
-        _box(d, box, fill=GREY_FILL, border=GREY_BORDER)
-        _box_label(d, box, name, sub, f_name=f_name, f_sub=f_sub)
+    clean_h = _measure_label_h(d, clean_w, "Clean report", "", f_name, f_sub)
+    # Perceive: name + chip row + divider + sub -- measured by hand below (compound box).
+    perceive_name_h = _line_h(d, f_name)
+    perceive_chip_h = _text_size(d, "Chunker", f_chip)[1] + 12 + 8
+    perceive_sub_lines = _wrap(d, "blocks · sentences · 1.8k-token windows · exact offsets",
+                                f_sub, perceive_w - 24)
+    perceive_sub_h = len(perceive_sub_lines) * _line_h(d, f_sub)
+    perceive_h = perceive_name_h + 8 + perceive_chip_h + 10 + perceive_sub_h + 8
 
-    # ---- column 2: DocumentAuditor ----------------------------------------------------------
-    x0, x1 = _col_x(2)
-    (auditor_box,) = _vstack(x0, x1, diagram_cy, [190], [])
-    _box(d, auditor_box, fill=AMBER_FILL, border=AMBER_BORDER)
-    _box_label(d, auditor_box, DOCUMENT_AUDITOR,
-               "LLM × N windows · adjudicates every hint · finds implied bias",
-               f_name=f_name, f_sub=f_sub)
+    row2_h = max(execute_h, guards_h, auditor_h, clean_h, perceive_h) + 26
+    row2_cy = row2_top + max(row2_h, diamond_hh * 2) / 2
 
-    # ---- column 3: EvidenceInvestigator (stacked = parallel instances) ----------------------
-    x0, x1 = _col_x(3)
-    (investigator_box,) = _vstack(x0, x1, diagram_cy, [190], [])
-    # Two "ghost" copies offset down-right, drawn first so the real (unshifted) box
-    # occludes their top-left corner -- reads as a stack of parallel instances peeking
-    # out bottom-right, front card = the one everything actually connects to.
-    for dx in (40, 20):
-        ghost = (investigator_box[0] + dx, investigator_box[1] + dx,
-                 investigator_box[2] + dx, investigator_box[3] + dx)
-        _box(d, ghost, fill=AMBER_FILL, border=AMBER_BORDER)
-    _box(d, investigator_box, fill=AMBER_FILL, border=AMBER_BORDER)
-    _box_label(d, investigator_box, EVIDENCE_INVESTIGATOR,
-               "LLM × K findings · parallel ≤5 · ≤4 turns · confirm/reject",
-               f_name=f_name, f_sub=f_sub)
+    execute_box = _centered_box(*execute_span, row2_cy, row2_h)
+    guards_box = _centered_box(*guards_span, row2_cy, row2_h)
+    perceive_box = _centered_box(*perceive_span, row2_cy, row2_h)
+    auditor_box = _centered_box(*auditor_span, row2_cy, row2_h)
+    clean_box = _centered_box(*clean_span, row2_cy, row2_h)
+    diamond_cx = (diamond_span[0] + diamond_span[1]) / 2
 
-    # ---- column 4: evidence tools -----------------------------------------------------------
-    x0, x1 = _col_x(4)
-    corpus_box, live_box = _vstack(x0, x1, diagram_cy, [110, 110], [110])
-    _box(d, corpus_box, fill=VIOLET_FILL, border=VIOLET_BORDER)
-    _box_label(d, corpus_box, "CorpusSearch", "Pinecone · ERIC corpus (42MB)",
-               f_name=f_name, f_sub=f_sub)
-    _box(d, live_box, fill=RUST_FILL, border=RUST_BORDER, dashed=True)
-    _box_label(d, live_box, "LiveSearch", "ERIC API Lucene ladder (env-gated)",
-               f_name=f_name, f_sub=f_sub)
+    _box(d, execute_box, fill=NEUTRAL_FILL, border=INK)
+    _draw_label(d, execute_box, "POST /api/execute", "{prompt}", f_name=f_name, f_sub=f_sub)
 
-    # ---- column 5: ReportConsolidator -> Report ---------------------------------------------
-    x0, x1 = _col_x(5)
-    consolidator_box, report_box = _vstack(x0, x1, diagram_cy, [170, 170], [70])
-    _box(d, consolidator_box, fill=AMBER_FILL, border=AMBER_BORDER)
-    _box_label(d, consolidator_box, REPORT_CONSOLIDATOR,
-               "LLM × 1 · retract/patterns/severity · skipped if none confirmed",
-               f_name=f_name, f_sub=f_sub)
-    _box(d, report_box, fill=GREY_FILL, border=GREY_BORDER)
-    _box_label(
-        d, report_box, "Report",
-        "per finding: quote · category · why · evidence · rewrite (+ patterns, steps[])",
-        f_name=f_name, f_sub=f_sub,
-    )
+    _box(d, guards_box, fill=GREEN_FILL, border=GREEN_BORDER)
+    _draw_label(d, guards_box, "[0] Guards", "empty · English-only · ≤ 40 windows",
+                f_name=f_name, f_sub=f_sub)
 
-    # ---- arrows -----------------------------------------------------------------------------
+    _box(d, perceive_box, fill=GREEN_FILL, border=GREEN_BORDER)
+    px0, py0, px1, py1 = perceive_box
+    pcx = (px0 + px1) / 2
+    py = py0 + 13
+    _center_text(d, pcx, py, "[1] Perceive", f_name, INK)
+    py += perceive_name_h + 8
+    chip_bottom = _chip_row(d, pcx, py, ["Chunker", "LexiconScanner"], f_chip, border=GREEN_BORDER)
+    py = chip_bottom + 10
+    _divider(d, px0, px1, py)
+    py += 10
+    for line in perceive_sub_lines:
+        _center_text(d, pcx, py, line, f_sub, MUTED)
+        py += _line_h(d, f_sub)
+    _fits_or_raise("[1] Perceive", py - py0, (py1 - py0))
+
+    _box(d, auditor_box, fill=PURPLE_FILL, border=PURPLE_BORDER)
+    _draw_label(d, auditor_box, f"[2] {AUDITOR_NAME}",
+                "LLM · 1 call/window · adjudicates every lexicon hint (flag/clean per term)",
+                f_name=f_name, f_sub=f_sub)
+
+    _diamond(d, diamond_cx, row2_cy, diamond_hw, diamond_hh, fill=GREEN_FILL, border=GREEN_BORDER)
+    _diamond_label(d, diamond_cx, row2_cy, diamond_hw, diamond_hh, "Candidates?", "",
+                   f_name=f_diamond, f_sub=f_sub)
+
+    _box(d, clean_box, fill=GREEN_FILL, border=GREEN_BORDER)
+    _draw_label(d, clean_box, "Clean report", "", f_name=f_name, f_sub=f_sub)
+
+    # arrows: main row chain
     _path_arrow(d, [_mid(execute_box, "right"), _mid(guards_box, "left")])
-    _path_arrow(d, [_mid(guards_box, "bottom"), _mid(chunker_box, "top")])
-    _path_arrow(d, [_mid(chunker_box, "bottom"), _mid(lexicon_box, "top")])
-    _path_arrow(d, [_mid(lexicon_box, "right"), _mid(auditor_box, "left")],
-               label="windows + hints", font=f_label)
-    _path_arrow(d, [_mid(auditor_box, "right"), _mid(investigator_box, "left")],
-               label="candidates (fan-out)", font=f_label)
-    _path_arrow(d, [_mid(investigator_box, "right"), _mid(corpus_box, "left")], both_heads=True)
-    _path_arrow(d, [_mid(investigator_box, "right"), _mid(live_box, "left")], both_heads=True)
-    _path_arrow(d, [_mid(consolidator_box, "bottom"), _mid(report_box, "top")])
+    _path_arrow(d, [_mid(guards_box, "right"), _mid(perceive_box, "left")])
+    _path_arrow(d, [_mid(perceive_box, "right"), _mid(auditor_box, "left")])
+    _path_arrow(d, [_mid(auditor_box, "right"), (diamond_cx - diamond_hw, row2_cy)])
+    _path_arrow(d, [(diamond_cx + diamond_hw, row2_cy), _mid(clean_box, "left")],
+                color=RED, label="NO", font=f_label_b, label_fill=RED,
+                label_pos=((diamond_cx + diamond_hw + clean_box[0]) / 2, row2_cy - 16))
 
-    # investigators -> Consolidator: routed ABOVE the tools column (elbow) so the
-    # straight-line path never cuts through CorpusSearch/LiveSearch.
-    inv_top = _mid(investigator_box, "top")
-    cons_top = _mid(consolidator_box, "top")
-    bend_y = 230.0
+    # ================================================================================
+    # [3] CONTAINER: EvidenceInvestigator x N
+    # ================================================================================
+    container_top = row2_cy + diamond_hh + 74
+    container_x0 = PAD
+    header_name = f"[3] {INVESTIGATOR_NAME} × N"
+    header_sub = "parallel workers, ≤5 concurrent · one per distinct framing"
+
+    plan_w, corpus_w, review_w = 168, 196, 196
+    suff_hw, suff_hh = 100, 66
+    finalize_w = 320
+    row3_gaps = [34, 34, 34, 54]
+    row3_widths = [plan_w, corpus_w, review_w, suff_hw * 2]
+    header_h = _line_h(d, f_container_h) + 6 + _line_h(d, f_sub) + 18
+    row3_top = container_top + header_h
+    row3_spans = _hspan(container_x0 + 26, row3_widths, row3_gaps)
+    plan_span, corpus_span, review_span, suff_span = row3_spans
+    finalize_x0 = suff_span[1] + 60
+    finalize_span = (finalize_x0, finalize_x0 + finalize_w)
+    container_x1 = finalize_span[1] + 26
+
+    plan_h = _measure_label_h(d, plan_w, "Plan evidence query", "", f_name, f_sub)
+    corpus_h = _measure_label_h(d, corpus_w, "CorpusSearch", "over-fetch ×5 · dedupe · top 3",
+                                 f_name, f_sub)
+    review_h = _measure_label_h(d, review_w, "Review returned evidence", "", f_name, f_sub)
+    finalize_sub = ("confirmed requires cited evidence — an evidence-free confirm is bounced "
+                    "once, then accepted only with confidence capped to low + needs_human_review")
+    finalize_name_h = _line_h(d, f_name)
+    finalize_sub_lines = _wrap(d, finalize_sub, f_sub, finalize_w - 24)
+    finalize_h = finalize_name_h + 8 + 10 + len(finalize_sub_lines) * _line_h(d, f_sub) + 8
+
+    row3_h = max(plan_h, corpus_h, review_h, finalize_h) + 26
+    row3_cy = row3_top + max(row3_h, suff_hh * 2) / 2
+
+    plan_box = _centered_box(*plan_span, row3_cy, row3_h)
+    corpus_box = _centered_box(*corpus_span, row3_cy, row3_h)
+    review_box = _centered_box(*review_span, row3_cy, row3_h)
+    finalize_box = _centered_box(*finalize_span, row3_cy, row3_h)
+    suff_cx = (suff_span[0] + suff_span[1]) / 2
+
+    corpus_chip_y = corpus_box[3] + 8
+    corpus_chip_box = _chip(d, (corpus_box[0] + corpus_box[2]) / 2, corpus_chip_y,
+                             "ERIC vector index", f_chip, border=BLUE_BORDER)
+
+    row3_bottom_extent = corpus_chip_box[3]
+    bypass_y = row3_bottom_extent + 34
+
+    live_w = 340
+    live_cx = (review_span[0] + suff_span[1]) / 2
+    live_sub = ("env-gated (ERIC_LIVE_SEARCH) · Lucene ladder: strict → relaxed → broad "
+                "(stops at first rung with ≥3 hits), then embed re-rank of the results")
+    live_name_h = _line_h(d, f_name)
+    live_sub_lines = _wrap(d, live_sub, f_sub, live_w - 24)
+    live_h = live_name_h + 8 + len(live_sub_lines) * _line_h(d, f_sub) + 22
+    live_top = bypass_y + 26
+    live_box = (live_cx - live_w / 2, live_top, live_cx + live_w / 2, live_top + live_h)
+
+    container_content_bottom = live_box[3]
+    container_y1 = container_content_bottom + 30
+    container_box = (container_x0, container_top, container_x1, container_y1)
+
+    _box(d, container_box, fill=BG, border=PURPLE_BORDER, width=3, radius=14)
+    d.text((container_x0 + 30, container_top + 20), header_name, font=f_container_h,
+           fill=PURPLE_BORDER)
+    d.text((container_x0 + 30, container_top + 20 + _line_h(d, f_container_h) + 4),
+           header_sub, font=f_sub, fill=MUTED)
+
+    # Candidates? YES -> down into the [3] container's top edge (fan-out to parallel
+    # investigators). Drawn after the container so the arrowhead sits on top of its border.
     _path_arrow(
-        d,
-        [(inv_top[0] + 30, inv_top[1]), (inv_top[0] + 30, bend_y),
-         (cons_top[0], bend_y), cons_top],
-        label="verdicts", font=f_label, label_pos=((inv_top[0] + 30 + cons_top[0]) / 2, bend_y),
+        d, [(diamond_cx, row2_cy + diamond_hh), (diamond_cx, container_top)],
+        color=GREEN_BORDER, label="YES | candidates (fan-out)", font=f_label_b,
+        label_fill=GREEN_BORDER,
+        label_pos=(diamond_cx, (row2_cy + diamond_hh + container_top) / 2),
     )
 
-    # /api/why -> EvidenceInvestigator: dashed bypass routed above the pre-pass/auditor
-    # chain entirely (visual cue: this path skips them), exiting the why box on its
-    # right edge (clear of the execute box directly above it in the same column).
-    why_right = _mid(why_box, "right")
-    bypass_y = 110.0
-    inv_left_x = inv_top[0] - 30
+    _box(d, plan_box, fill=PURPLE_FILL, border=PURPLE_BORDER)
+    _draw_label(d, plan_box, "Plan evidence query", "", f_name=f_name, f_sub=f_sub)
+
+    _box(d, corpus_box, fill=BLUE_FILL, border=BLUE_BORDER)
+    _draw_label(d, corpus_box, "CorpusSearch", "over-fetch ×5 · dedupe · top 3",
+                f_name=f_name, f_sub=f_sub)
+    # corpus_chip was drawn earlier purely to MEASURE its height for the row3/bypass_y
+    # layout math below; container_box + corpus_box are drawn after that (on top of
+    # it), so redraw it now that it's the topmost thing at this position.
+    _chip(d, (corpus_box[0] + corpus_box[2]) / 2, corpus_chip_y, "ERIC vector index",
+          f_chip, border=BLUE_BORDER)
+
+    _box(d, review_box, fill=PURPLE_FILL, border=PURPLE_BORDER)
+    _draw_label(d, review_box, "Review returned evidence", "", f_name=f_name, f_sub=f_sub)
+
+    _diamond(d, suff_cx, row3_cy, suff_hw, suff_hh, fill=PURPLE_FILL, border=PURPLE_BORDER)
+    _diamond_label(d, suff_cx, row3_cy, suff_hw, suff_hh, "Evidence sufficient?",
+                   "(model's judgment)", f_name=f_diamond, f_sub=f_sub)
+
+    _box(d, finalize_box, fill=PURPLE_FILL, border=PURPLE_BORDER, width=3)
+    fx0, fy0, fx1, fy1 = finalize_box
+    fcx = (fx0 + fx1) / 2
+    fy = fy0 + (row3_h - finalize_h) / 2 + 6
+    _center_multicolor(d, fcx, fy, [
+        ("Finalize: confirm / ", f_name, INK), ("reject", f_name, RED),
+    ])
+    fy += finalize_name_h + 8
+    _divider(d, fx0, fx1, fy)
+    fy += 10
+    for line in finalize_sub_lines:
+        _center_text(d, fcx, fy, line, f_sub, MUTED)
+        fy += _line_h(d, f_sub)
+    _fits_or_raise("Finalize box", fy - fy0, (fy1 - fy0))
+
+    _box(d, live_box, fill=BLUE_FILL, border=BLUE_BORDER, dashed=True)
+    lx0, ly0, lx1, ly1 = live_box
+    lcx = (lx0 + lx1) / 2
+    ly = ly0 + 10
+    _center_text(d, lcx, ly, "LiveSearch", f_name, INK)
+    ly += live_name_h + 8
+    for line in live_sub_lines:
+        _center_text(d, lcx, ly, line, f_sub, MUTED)
+        ly += _line_h(d, f_sub)
+    _fits_or_raise("LiveSearch box", ly - ly0, (ly1 - ly0))
+
+    # ---- container-internal arrows -------------------------------------------------
+    _path_arrow(d, [_mid(plan_box, "right"), _mid(corpus_box, "left")])
+    _path_arrow(d, [_mid(corpus_box, "right"), _mid(review_box, "left")])
+    _path_arrow(d, [_mid(review_box, "right"), (suff_cx - suff_hw, row3_cy)])
+    _path_arrow(d, [(suff_cx + suff_hw, row3_cy), _mid(finalize_box, "left")],
+                color=GREEN_BORDER, label="YES", font=f_label_b, label_fill=GREEN_BORDER,
+                label_pos=((suff_cx + suff_hw + finalize_box[0]) / 2, row3_cy - 16))
+
+    # NO: solid bypass below the row, back into Plan evidence query
+    plan_cx = (plan_box[0] + plan_box[2]) / 2
     _path_arrow(
         d,
-        [why_right, (why_right[0], bypass_y), (inv_left_x, bypass_y), (inv_left_x, inv_top[1])],
-        dashed=True, label="single finding", font=f_label,
-        label_pos=((why_right[0] + inv_left_x) / 2, bypass_y),
+        [(suff_cx, row3_cy + suff_hh), (suff_cx, bypass_y), (plan_cx, bypass_y),
+         (plan_cx, plan_box[3])],
+        color=MUTED, label="revise query · ≤4 LLM turns total (incl. finalize)",
+        font=f_label, label_fill=MUTED, label_pos=((suff_cx + plan_cx) / 2 + 40, bypass_y - 12),
+    )
+    # NO: dashed blue tap -> LiveSearch, then solid LiveSearch -> Review
+    _path_arrow(
+        d, [(suff_cx, row3_cy + suff_hh), (suff_cx, bypass_y - 14), (lcx, bypass_y - 14),
+            (lcx, live_box[1])],
+        color=BLUE_BORDER, dashed=True, label="weak local evidence", font=f_label,
+        label_fill=BLUE_BORDER, label_pos=(lcx + 20, bypass_y - 26),
+    )
+    review_cx = (review_box[0] + review_box[2]) / 2
+    live_top_mid = _mid(live_box, "top")
+    live_elbow_y = (review_box[3] + live_box[1]) / 2
+    _path_arrow(
+        d, [(live_top_mid[0], live_box[1]), (live_top_mid[0], live_elbow_y),
+            (review_cx, live_elbow_y), (review_cx, review_box[3])],
+        color=MUTED,
     )
 
-    # ---- legend -------------------------------------------------------------------------------
-    ly0, ly1 = H - 95, H - 95 + 26
-    chip_w = 26
-    legend = [
-        (AMBER_FILL, AMBER_BORDER, False, "LLM call (appears in steps[])"),
-        (GREY_FILL, GREY_BORDER, False, "deterministic code"),
-        (VIOLET_FILL, VIOLET_BORDER, False, "vector retrieval"),
-        (RUST_FILL, RUST_BORDER, True, "live API, env-gated"),
+    # ================================================================================
+    # RIGHT of container: [4] ReportConsolidator -> [5] Report
+    # ================================================================================
+    right_x0 = container_x1 + 40
+    right_w = 320
+    right_x1 = right_x0 + right_w
+
+    cons_sub1 = "LLM · one call, only if ≥1 finding confirmed (skipped otherwise)"
+    cons_sub2 = "merge · retract · group patterns · severity"
+    cons_name_h = _line_h(d, f_name)
+    cons_sub1_lines = _wrap(d, cons_sub1, f_sub, right_w - 24)
+    cons_sub2_lines = _wrap(d, cons_sub2, f_sub, right_w - 24)
+    cons_h = (cons_name_h + 8 + len(cons_sub1_lines) * _line_h(d, f_sub) + 10 + 10
+              + len(cons_sub2_lines) * _line_h(d, f_sub) + 14)
+
+    cons_top = row3_cy - cons_h / 2  # align with Finalize's row (arrow lands horizontal)
+    consolidator_box = (right_x0, cons_top, right_x1, cons_top + cons_h)
+
+    report_top = consolidator_box[3] + 34
+    report_bullets = [
+        "Quoted text + offsets", "Classification", "Grounded explanation [n]",
+        "Evidence snippet + source", "Inclusive alternative",
     ]
-    lx = PAD
-    for fill, border, dashed, text in legend:
-        chip = (lx, ly0, lx + chip_w, ly1)
-        _box(d, chip, fill=fill, border=border, dashed=dashed, width=2)
-        tb = d.textbbox((0, 0), text, font=f_legend)
-        d.text((lx + chip_w + 10, ly0 + (ly1 - ly0 - (tb[3] - tb[1])) / 2 - tb[1]),
-               text, font=f_legend, fill=INK)
-        lx += chip_w + 10 + (tb[2] - tb[0]) + 46
+    report_sub2 = "confidence · human review · document patterns"
+    report_name_h = _line_h(d, f_name)
+    bullets_h = len(report_bullets) * _line_h(d, f_sub) + (len(report_bullets)) * 5
+    report_sub2_lines = _wrap(d, report_sub2, f_sub, right_w - 24)
+    report_h = (report_name_h + 8 + bullets_h + 6 + 10
+                + len(report_sub2_lines) * _line_h(d, f_sub) + 14)
+    report_box = (right_x0, report_top, right_x1, report_top + report_h)
 
-    img = img.resize((W, H), Image.LANCZOS)  # the actual anti-aliasing step
+    # API/GUI and Run logging: side by side, spanning under container+right column
+    out_top = max(container_y1, report_box[3]) + 44
+    out_w = 340
+    out_gap = 50
+    total_out_w = out_w * 2 + out_gap
+    out_center = (container_x0 + report_box[2]) / 2
+    api_x0 = out_center - total_out_w / 2
+    api_span = (api_x0, api_x0 + out_w)
+    run_span = (api_span[1] + out_gap, api_span[1] + out_gap + out_w)
 
-    out = Path(__file__).resolve().parents[1] / "src" / "inclusify_agent" / "static"
-    out.mkdir(parents=True, exist_ok=True)
-    path = out / "architecture.png"
-    img.save(path, "PNG")
-    print(f"wrote {path} ({path.stat().st_size} bytes)")
+    api_sub = ("response = markdown report (+ token-usage footer) · steps[] = every "
+               "LLM call {module, prompt, response}")
+    api_name_h = _line_h(d, f_name)
+    api_sub_lines = _wrap(d, api_sub, f_sub, out_w - 24)
+    api_h = api_name_h + 8 + len(api_sub_lines) * _line_h(d, f_sub) + 20
+
+    run_name_h = _line_h(d, f_name)
+    run_chip_h = _text_size(d, "Supabase · steps[] · token usage · pending RLS", f_chip)[1] + 12
+    run_h = run_name_h + 8 + run_chip_h + 8 + run_chip_h + 16
+
+    out_h = max(api_h, run_h)
+    api_box = _centered_box(*api_span, out_top + out_h / 2, out_h)
+    run_box = _centered_box(*run_span, out_top + out_h / 2, out_h)
+
+    _box(d, consolidator_box, fill=PURPLE_FILL, border=PURPLE_BORDER)
+    ccx = (right_x0 + right_x1) / 2
+    sub_lh = _line_h(d, f_sub)
+    cons_content_h = (cons_name_h + 8 + len(cons_sub1_lines) * sub_lh
+                       + 10 + 10 + len(cons_sub2_lines) * sub_lh)
+    cy_ = consolidator_box[1] + (cons_h - cons_content_h) / 2
+    _center_text(d, ccx, cy_, f"[4] {CONSOLIDATOR_NAME}", f_name, INK)
+    cy_ += cons_name_h + 8
+    for line in cons_sub1_lines:
+        _center_text(d, ccx, cy_, line, f_sub, MUTED)
+        cy_ += _line_h(d, f_sub)
+    cy_ += 6
+    _divider(d, right_x0, right_x1, cy_)
+    cy_ += 10
+    for line in cons_sub2_lines:
+        _center_text(d, ccx, cy_, line, f_sub, MUTED)
+        cy_ += _line_h(d, f_sub)
+    _fits_or_raise("[4] ReportConsolidator", cy_ - consolidator_box[1], cons_h)
+
+    _box(d, report_box, fill=GREEN_FILL, border=GREEN_BORDER)
+    rcx = (right_x0 + right_x1) / 2
+    ry = report_box[1] + 12
+    _center_text(d, rcx, ry, "[5] Report", f_name, INK)
+    ry += report_name_h + 8
+    ry = _bullets(d, right_x0 + 14, right_x1 - 14, ry, report_bullets, f_sub) + 6
+    _divider(d, right_x0, right_x1, ry)
+    ry += 10
+    for line in report_sub2_lines:
+        _center_text(d, rcx, ry, line, f_sub, MUTED)
+        ry += _line_h(d, f_sub)
+    _fits_or_raise("[5] Report", ry - report_box[1], report_h)
+
+    _box(d, api_box, fill=BLUE_FILL, border=BLUE_BORDER)
+    _draw_label(d, api_box, "API / GUI", api_sub, f_name=f_name, f_sub=f_sub, what="API / GUI")
+
+    _box(d, run_box, fill=BLUE_FILL, border=BLUE_BORDER)
+    rx0, ry0, rx1, ry1 = run_box
+    rcx2 = (rx0 + rx1) / 2
+    ry2 = ry0 + 12
+    _center_text(d, rcx2, ry2, "Run logging", f_name, INK)
+    ry2 += run_name_h + 8
+    chip1_box = _chip(d, rcx2, ry2, "Null (offline)", f_chip, border=BLUE_BORDER)
+    ry2 = chip1_box[3] + 8
+    chip2_box = _chip(d, rcx2, ry2, "Supabase · steps[] · token usage · pending RLS",
+                       f_chip, border=BLUE_BORDER)
+    _fits_or_raise("Run logging box", chip2_box[3] - ry0, (ry1 - ry0))
+
+    # arrows: Finalize -> [4] -> [5] -> {API/GUI, Run logging}; Clean report -> both outputs
+    _path_arrow(d, [_mid(finalize_box, "right"), _mid(consolidator_box, "left")])
+    _path_arrow(d, [_mid(consolidator_box, "bottom"), _mid(report_box, "top")])
+    api_cx = (api_box[0] + api_box[2]) / 2
+    run_cx = (run_box[0] + run_box[2]) / 2
+    report_bottom_mid = _mid(report_box, "bottom")
+    out_elbow_y = (report_box[3] + api_box[1]) / 2
+    _path_arrow(
+        d, [report_bottom_mid, (report_bottom_mid[0], out_elbow_y),
+            (api_cx, out_elbow_y), (api_cx, api_box[1])],
+    )
+    _path_arrow(
+        d, [report_bottom_mid, (report_bottom_mid[0], out_elbow_y + 14),
+            (run_cx, out_elbow_y + 14), (run_cx, run_box[1])],
+    )
+
+    clean_cx = (clean_box[0] + clean_box[2]) / 2
+    detour_x1, detour_x2 = clean_cx + 14, clean_cx - 14
+    corridor_y = max(container_y1, report_box[3]) + 20
+    _path_arrow(
+        d, [(detour_x1, clean_box[3]), (detour_x1, corridor_y), (api_cx + 26, corridor_y),
+            (api_cx + 26, api_box[1])],
+        color=MUTED,
+    )
+    _path_arrow(
+        d, [(detour_x2, clean_box[3]), (detour_x2, corridor_y - 12), (run_cx - 26, corridor_y - 12),
+            (run_cx - 26, run_box[1])],
+        color=MUTED,
+    )
+
+    # ================================================================================
+    # BOTTOM PANELS: LLM providers / Embeddings / Vector stores
+    # ================================================================================
+    panels_top = max(api_box[3], run_box[3]) + 56
+
+    def _panel_size(title: str, chips: list[str]) -> tuple[float, float]:
+        chip_w = sum(_text_size(d, c, f_chip)[0] + 20 for c in chips) + 14 * (len(chips) - 1)
+        title_w = _text_size(d, title, f_name)[0]
+        w = max(chip_w, title_w) + 48
+        h = _line_h(d, f_name) + 10 + (_text_size(d, chips[0], f_chip)[1] + 12) + 26
+        return w, h
+
+    llm_chips = ["MockLLM (offline)", "LLMod.ai · gpt-5.4-mini"]
+    emb_chips = ["Hash (offline)", "text-embedding-3-small", "local-ST (offline, optional)"]
+    vec_chips = ["In-memory · Chroma · Pinecone"]
+
+    llm_w, llm_h = _panel_size("LLM providers", llm_chips)
+    emb_w, emb_h = _panel_size("Embeddings", emb_chips)
+    vec_w, vec_h = _panel_size("Vector stores", vec_chips)
+    panel_h = max(llm_h, emb_h, vec_h)
+
+    panel_gap = 40
+    panel_spans = _hspan(PAD, [llm_w, emb_w, vec_w], [panel_gap, panel_gap])
+    llm_span, emb_span, vec_span = panel_spans
+    llm_box = (llm_span[0], panels_top, llm_span[1], panels_top + panel_h)
+    emb_box = (emb_span[0], panels_top, emb_span[1], panels_top + panel_h)
+    vec_box = (vec_span[0], panels_top, vec_span[1], panels_top + panel_h)
+
+    def _draw_panel(box, title, chips, border_for_chips=BLUE_BORDER):
+        _box(d, box, fill=BLUE_FILL, border=BLUE_BORDER)
+        x0, y0, x1, y1 = box
+        d.text((x0 + 18, y0 + 14), title, font=f_name, fill=INK)
+        cy = y0 + 14 + _line_h(d, f_name) + 10
+        _chip_row(d, (x0 + x1) / 2, cy, chips, f_chip, border=border_for_chips)
+
+    _draw_panel(llm_box, "LLM providers", llm_chips)
+    _draw_panel(emb_box, "Embeddings", emb_chips)
+    _draw_panel(vec_box, "Vector stores", vec_chips)
+
+    # dashed taps rising from panels into the diagram above -- routed through row3's
+    # column gaps and the clear bands below the container / beside the output boxes,
+    # so a dashed line never cuts through a box (crossing another arrow is fine;
+    # crossing a box reads as a rendering bug, so these deliberately avoid it).
+    llm_cx = (llm_box[0] + llm_box[2]) / 2
+    band_lo = (max(api_box[3], run_box[3]) + panels_top) / 2  # between outputs & panels
+    mid_gap_x = (api_box[2] + run_box[0]) / 2  # clear lane between API/GUI and Run logging
+    row3_gap_xs = [
+        (plan_box[2] + corpus_box[0]) / 2,
+        (corpus_box[2] + review_box[0]) / 2,
+        (review_box[2] + suff_span[0]) / 2,
+        (suff_span[1] + finalize_box[0]) / 2,
+    ]
+    auditor_cx = _mid(auditor_box, "bottom")[0]
+    gap_to_auditor = min(row3_gap_xs, key=lambda gx: abs(gx - auditor_cx))
+    above_container_y = container_top - 20
+    below_container_y = container_y1 + 12
+
+    tap1_x = llm_box[0] + 40
+    _path_arrow(
+        d,
+        [(tap1_x, llm_box[1]), (tap1_x, band_lo), (mid_gap_x, band_lo),
+         (mid_gap_x, below_container_y), (gap_to_auditor, below_container_y),
+         (gap_to_auditor, above_container_y), (auditor_cx, above_container_y),
+         (auditor_cx, auditor_box[3])],
+        color=PURPLE_BORDER, dashed=True,
+    )
+    tap2_x = llm_cx
+    _path_arrow(d, [(tap2_x, llm_box[1]), (tap2_x, container_y1)],
+                color=PURPLE_BORDER, dashed=True)
+
+    right_gap_x = (container_x1 + right_x0) / 2
+    # offset from dead-center so this arrowhead doesn't land on top of the [4]->[5]
+    # connector, which uses the exact center-bottom point.
+    cons_cx2 = consolidator_box[0] + (consolidator_box[2] - consolidator_box[0]) * 0.25
+    tap3_x = llm_box[2] - 40
+    _path_arrow(
+        d,
+        [(tap3_x, llm_box[1]), (tap3_x, band_lo), (right_gap_x, band_lo),
+         (right_gap_x, consolidator_box[3] + 14), (cons_cx2, consolidator_box[3] + 14),
+         (cons_cx2, consolidator_box[3])],
+        color=PURPLE_BORDER, dashed=True,
+    )
+
+    corpus_chip_cx = (corpus_chip_box[0] + corpus_chip_box[2]) / 2
+    live_cx2 = (live_box[0] + live_box[2]) / 2
+
+    # tap: Embeddings -> "ERIC vector index" chip. emb_box[0]+60 is clear of both
+    # output boxes (api_box/run_box) for its whole rise, so no jog needed.
+    emb_chip_x, chip_land_y = emb_box[0] + 60, corpus_chip_box[3] + 30
+    _path_arrow(
+        d, [(emb_chip_x, emb_box[1]), (emb_chip_x, chip_land_y),
+            (corpus_chip_cx - 18, chip_land_y), (corpus_chip_cx - 18, corpus_chip_box[3])],
+        color=BLUE_BORDER, dashed=True,
+    )
+    # tap: Embeddings -> LiveSearch. emb_box[2]-60 falls inside api_box's span, so this
+    # one needs the same below-container jog through mid_gap_x that the LLM taps use.
+    _path_arrow(
+        d,
+        [(emb_box[2] - 60, emb_box[1]), (emb_box[2] - 60, band_lo), (mid_gap_x, band_lo),
+         (mid_gap_x, below_container_y), (live_cx2, below_container_y), (live_cx2, live_box[3])],
+        color=BLUE_BORDER, dashed=True,
+    )
+
+    # tap: Vector stores -> "ERIC vector index" chip. vec_cx falls inside run_box's
+    # span, so route the same way: jog through mid_gap_x below the output-box layer.
+    vec_cx = (vec_box[0] + vec_box[2]) / 2
+    _path_arrow(
+        d,
+        [(vec_cx, vec_box[1]), (vec_cx, band_lo), (mid_gap_x, band_lo),
+         (mid_gap_x, below_container_y), (corpus_chip_cx + 18, below_container_y),
+         (corpus_chip_cx + 18, corpus_chip_box[3])],
+        color=BLUE_BORDER, dashed=True,
+    )
+
+    # ================================================================================
+    # LEGEND (bottom-left, dashed border)
+    # ================================================================================
+    legend_top = panels_top + panel_h + 44
+    swatches = [
+        (PURPLE_FILL, PURPLE_BORDER, "LLM judgment"),
+        (GREEN_FILL, GREEN_BORDER, "Deterministic code"),
+        (BLUE_FILL, BLUE_BORDER, "Evidence / data / tools"),
+        (NEUTRAL_FILL, RED, "Rejection / retraction"),
+    ]
+    chip_dim = 22
+    x = PAD + 20
+    y = legend_top + 20
+    item_gap = 34
+    for fill, border, text in swatches:
+        _box(d, (x, y, x + chip_dim, y + chip_dim), fill=fill, border=border, radius=5)
+        tw, _ = _text_size(d, text, f_legend)
+        d.text((x + chip_dim + 10, y + (chip_dim - _line_h(d, f_legend)) / 2 + 2), text,
+               font=f_legend, fill=INK)
+        x += chip_dim + 10 + tw + item_gap
+
+    arrow_w = 46
+    line_y = y + chip_dim / 2
+    d.line([(x, line_y), (x + arrow_w, line_y)], fill=INK, width=3)
+    _arrowhead(d, (x, line_y), (x + arrow_w, line_y), color=INK, width=3)
+    tw, _ = _text_size(d, "Primary flow", f_legend)
+    d.text((x + arrow_w + 10, y + (chip_dim - _line_h(d, f_legend)) / 2 + 2), "Primary flow",
+           font=f_legend, fill=INK)
+    x += arrow_w + 10 + tw + item_gap
+
+    _dashed_line(d, (x, line_y), (x + arrow_w, line_y), color=INK, width=3)
+    _arrowhead(d, (x, line_y), (x + arrow_w, line_y), color=INK, width=3)
+    tw, _ = _text_size(d, "Optional / conditional", f_legend)
+    d.text((x + arrow_w + 10, y + (chip_dim - _line_h(d, f_legend)) / 2 + 2),
+           "Optional / conditional", font=f_legend, fill=INK)
+    x += arrow_w + 10 + tw + 16
+
+    legend_x1 = x + 16
+    legend_y1 = y + chip_dim + 18
+    _dashed_rect_border(d, (PAD, legend_top, legend_x1, legend_y1), color=MUTED, width=2)
+
+    # ---- trim canvas to actual content extent --------------------------------------
+    content_w = max(legend_x1, panels_top and vec_box[2], inset_x1) + PAD
+    content_h = legend_y1 + PAD
+    img = img.crop((0, 0, int(content_w * SS), int(content_h * SS)))
+    img = img.resize((int(content_w), int(content_h)), Image.LANCZOS)
+    return img
+
+
+def main() -> Path:
+    img = build()
+    OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    img.save(OUT_PATH, "PNG")
+    return OUT_PATH
 
 
 if __name__ == "__main__":
-    main()
+    path = main()
+    size = path.stat().st_size
+    print(f"wrote {path} ({path.stat().st_size} bytes, {Image.open(path).size})")
+    assert path.exists(), "output PNG missing"
+    assert size > 100_000, f"output PNG suspiciously small: {size} bytes"
+
+    buf1, buf2 = io.BytesIO(), io.BytesIO()
+    build().save(buf1, "PNG")
+    build().save(buf2, "PNG")
+    assert buf1.getvalue() == buf2.getvalue(), "render is not deterministic across in-memory runs"
+    assert path.read_bytes() == buf1.getvalue(), "saved PNG differs from a fresh in-memory render"
+    print("self-check OK: >100KB, deterministic, byte-identical across renders")
