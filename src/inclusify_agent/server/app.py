@@ -89,6 +89,41 @@ def _shared_rag() -> tuple[Any, Any]:
     return embedder, store
 
 
+# ------------------------------------------------------------------- error envelope
+# A provider-side safety filter (Azure OpenAI content management via the LLMod.ai /
+# LiteLLM proxy raises ContentPolicyViolationError -> BadRequestError) fails with ~2 KB
+# of nested provider JSON. Dumping that into `error` is useless to a lecturer pasting a
+# paper: the actionable fact is that THEIR text tripped a filter upstream, before the
+# model ever ran. Matched here, at the single funnel every LLM/embedding/live-search
+# exception passes through, rather than per call-site.
+_REFUSAL_MARKERS = (
+    "content_filter", "content_policy", "contentpolicyviolation",
+    "content management policy", "responsibleaipolicy",
+)
+
+REFUSAL_MESSAGE = (
+    "The model provider's safety filter blocked this text, so the audit never ran. "
+    "Filters reject passages such as quoted slurs or graphic descriptions before "
+    "Inclusify sees them — this is not a verdict on your document. Remove or paraphrase "
+    "that passage, then run the audit again."
+)
+
+
+def _friendly_error(e: BaseException) -> str:
+    """Error-envelope text for an unexpected exception: an upstream safety refusal gets
+    a plain-language, actionable sentence; anything else keeps the diagnostic
+    `TypeName: message` so a real bug stays debuggable from the response alone."""
+    raw = f"{type(e).__name__}: {e}"
+    lowered = raw.lower()
+    # ponytail: substring sniff on the rendered exception, not `isinstance` --
+    # openai/litellm are optional imports here and the same policy error also arrives
+    # wrapped by embeddings and live-ERIC calls. Add a marker if a provider words it
+    # differently; a miss degrades to the old raw text, never to a wrong message.
+    if any(m in lowered for m in _REFUSAL_MARKERS):
+        return REFUSAL_MESSAGE
+    return raw
+
+
 # ----------------------------------------------------------------------------- agent
 def execute_prompt(prompt: str, *, capture: dict[str, Any] | None = None) -> dict[str, Any]:
     """Run one v2 audit (DocumentAuditor -> EvidenceInvestigator -> ReportConsolidator)
@@ -127,7 +162,7 @@ def execute_prompt(prompt: str, *, capture: dict[str, Any] | None = None) -> dic
         return {"status": "error", "error": str(e), "response": None, "steps": [],
                 "tokens_in": None, "tokens_out": None}
     except Exception as e:  # surface a human-readable error, never 500 the agent
-        return {"status": "error", "error": f"{type(e).__name__}: {e}",
+        return {"status": "error", "error": _friendly_error(e),
                 "response": None, "steps": [], "tokens_in": None, "tokens_out": None}
 
 
@@ -280,7 +315,7 @@ def api_why(body: WhyIn) -> dict[str, Any]:
             "steps": steps,
         }
     except Exception as e:  # same contract as /api/execute: never 500 the agent
-        result = {"status": "error", "error": f"{type(e).__name__}: {e}",
+        result = {"status": "error", "error": _friendly_error(e),
                   "explanation": None, "citations": [], "steps": []}
     _persistence.log_run(
         prompt=f"[why] {body.span}", status=result["status"],
