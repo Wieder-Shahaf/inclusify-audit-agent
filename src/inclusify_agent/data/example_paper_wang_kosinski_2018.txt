@@ -1,0 +1,716 @@
+INNOVATIONS IN SOCIAL PSYCHOLOGY
+Deep Neural Networks Are More Accurate Than Humans at Detecting
+Sexual Orientation From Facial Images
+Yilun Wang and Michal Kosinski
+Stanford University
+We show that faces contain much more information about sexual orientation than can be perceived or
+interpreted by the human brain. We used deep neural networks to extract features from 35,326 facial
+images. These features were entered into a logistic regression aimed at classifying sexual orientation.
+Given a single facial image, a classifier could correctly distinguish between gay and heterosexual men
+in 81% of cases, and in 71% of cases for women. Human judges achieved much lower accuracy: 61%
+for men and 54% for women. The accuracy of the algorithm increased to 91% and 83%, respectively,
+given five facial images per person. Facial features employed by the classifier included both fixed (e.g.,
+nose shape) and transient facial features (e.g., grooming style). Consistent with the prenatal hormone
+theory of sexual orientation, gay men and women tended to have gender-atypical facial morphology,
+expression, and grooming styles. Prediction models aimed at gender alone allowed for detecting gay
+males with 57% accuracy and gay females with 58% accuracy. Those findings advance our understanding
+of the origins of sexual orientation and the limits of human perception. Additionally, given that
+companies and governments are increasingly using computer vision algorithms to detect people’s
+intimate traits, our findings expose a threat to the privacy and safety of gay men and women.
+Keywords: sexual orientation, facial morphology, prenatal hormone theory, computational social science,
+privacy
+Supplemental materials: http://dx.doi.org/10.1037/pspa0000098.supp
+The science of judging one’s character from their facial char-
+acteristics, or physiognomy, dates back to ancient China and
+Greece (Jenkinson, 1997). Aristotle and Pythagoras were among
+its disciples, and the latter is said to have selected his students
+based on their facial features (Riedweg, 2005). Such beliefs have
+persisted and grown in popularity over the centuries. Robert Fitz-
+Roy, the captain of the Beagle, believed that Darwin’s nose re-
+vealed a lack of energy and determination, and was close to barring
+him from the historic voyage (Glaser, 2002). Cesare Lombroso, the
+founder of criminal anthropology, believed that criminals could be
+identified by their facial features. He claimed, for example, that
+arsonists have a “softness of skin, an almost childlike appearance,
+and an abundance of thick straight hair that is almost feminine”
+(Lombroso, 1911, p. 51). By the 18th century, physiognomy “was
+not merely a popular fad but also the subject of intense academic
+debate about the promises it held for future progress” (Porter,
+2003, p. 497).
+Physiognomy is now universally, and rightly, rejected as a mix
+of superstition and racism disguised as science (Jenkinson, 1997).
+Due to its legacy, studying or even discussing the links between
+facial features and character became taboo, leading to a wide-
+spread presumption that no such links exist. However, there are
+many demonstrated mechanisms that imply the opposite. Such
+mechanisms can be arranged into three groups. First, there is much
+evidence that character can influence one’s facial appearance (e.g.,
+Lõhmus, Sundström, & Björklund, 2009; Zebrowitz & Collins,
+1997). For example, women that scored high on extroversion early
+in life tend to become more attractive with age (Zebrowitz, Col-
+lins, & Dutta, 1998). Second, facial appearance can alter one’s
+character. Facial appearance drives first impressions of others,
+influencing our expectations and behavior toward them, which, in
+turn, shapes their character (Berry, 1991; Berry & Brownlow,
+1989; Penton-Voak, Pound, Little, & Perrett, 2006; Todorov, Said,
+Engell, & Oosterhof, 2008; Zebrowitz & Collins, 1997; Zebrowitz
+Yilun Wang and Michal Kosinski, Graduate School of Business, Stan-
+ford University.
+Author notes are available at https://goo.gl/9b2aR2. Yilun Wang and
+Michal Kosinski contributed equally to this work. Yilun Wang and Michal
+Kosinski collected the data and conducted the analysis; Michal Kosinski
+wrote the article.
+The study has been approved by Stanford University’s IRB.
+We thank Samuel Gosling, Robert Sternberg, Raphael Silberzahn, Mar-
+tie Haselton, Amir Goldberg, Poruz Khambatta, Anonymous Gabriella,
+Jason Rentfrow, Kai Ruggeri, Pierre Dechant, Brent Roberts, David Mack,
+and Nicole Paulk for their critical reading of the earlier version of this
+article. Also, we thank Isabelle Abraham for proofreading and Mariia
+Vorobiova for graphical design. Finally, we would like to thank the
+creators of Face for allowing us to use their software free of charge.
+Correspondence concerning this article should be addressed to Michal
+Kosinski, Graduate School of Business, Stanford University, 655 Knight
+Way, Stanford, CA 94305. E-mail: michalk@stanford.edu
+This document is copyrighted by the American Psychological Association or one of its allied publishers.
+This article is intended solely for the personal use of the individual user and is not to be disseminated broadly.
+Journal of Personality and Social Psychology
+© 2018 American Psychological Association
+2018, Vol. 114, No. 2, 246–257
+0022-3514/18/$12.00
+http://dx.doi.org/10.1037/pspa0000098
+246
+All rights, including for text and data mining, AI training, and similar technologies, are reserved.
+
+
+et al., 1998). Good-looking people, for example, receive more
+positive social feedback, and thus tend to become even more
+extroverted (Lukaszewski & Roney, 2011). Finally, there is a
+broad range of factors affecting both facial appearance and one’s
+traits. Those include prenatal and postnatal hormonal levels (Jones
+et al., 2015; Lefevre, Lewis, Perrett, & Penke, 2013; Whitehouse
+et al., 2015), developmental history (Astley, Stachowiak, Clarren,
+& Clausen, 2002), environmental factors, and gene expression
+(Ferry et al., 2014). Testosterone levels, for instance, significantly
+affect both: behavior (e.g., dominance) and facial appearance (e.g.,
+facial-width-to-height-ratio; Lefevre et al., 2014).
+The existence of such links between facial appearance and
+character is supported by the fact that people can accurately judge
+others’ character, psychological states, and demographic traits
+from their faces (Zebrowitz, 1997). For example, we can easily and
+accurately identify others’ gender, age, race, or emotional state—
+even from a glimpse of their faces (Brown & Perrett, 1993; Macrae
+& Bodenhausen, 2000; Roberts & Bruce, 1988). People also judge,
+with some minimal accuracy, others’ political views (e.g., Rule &
+Ambady, 2010; Samochowiec, Wänke, & Fiedler, 2010), honesty
+(e.g., Bond, Berry, & Omar, 1994), personality (e.g., Borkenau,
+Brecke, Möttig, & Paelecke, 2009), sexual orientation (e.g., Rule
+& Ambady, 2008), or even the likelihood of winning an election
+(e.g., Ballew & Todorov, 2007; Little, Burriss, Jones, & Roberts,
+2007; Todorov, Mandisodza, Goren, & Hall, 2005). Such judg-
+ments are not very accurate, but are common and spontaneous.
+Importantly, the low accuracy of humans when judging character
+from others’ faces does not necessarily mean that relevant cues are
+not prominently displayed. Instead, people may lack the ability to
+detect or interpret them. It is possible that some of our intimate
+traits are prominently displayed on the face, even if others cannot
+perceive them. Here, we test this hypothesis using modern com-
+puter vision algorithms.
+Recent progress in artificial intelligence (AI) and computer
+vision has been largely driven by the widespread adoption of deep
+neural networks (DNN), or neural networks composed of a large
+number of hidden layers (LeCun, Bengio, & Hinton, 2015). DNNs
+mimic the neocortex by simulating large, multilevel networks of
+interconnected neurons. DNNs excel at recognizing patterns in
+large, unstructured data such as digital images, sound, or text, and
+analyzing such patterns to make predictions. DNNs are increas-
+ingly outperforming humans in visual tasks such as image classi-
+fication, facial recognition, or diagnosing skin cancer (Esteva et
+al., 2017; LeCun et al., 2015; Lu & Tang, 2014). The superior
+performance of DNNs offers an opportunity to identify links
+between characteristics and facial features that might be missed or
+misinterpreted by the human brain.
+We tested our hypothesis on a specific intimate trait: sexual
+orientation. We chose this trait for three main reasons. First, it is
+an intimate psycho-demographic trait that cannot be easily de-
+tected by others. While people can detect others’ sexual orientation
+from both neutral and expressive faces (Rule & Ambady, 2008;
+Tskhay & Rule, 2015), or even from a single facial feature such as
+the mouth, eyes, or hair (Lyons, Lynch, Brewer, & Bruno, 2014;
+Rule, MacRae, & Ambady, 2009), the accuracy of such judgments
+is very limited, ranging from 55% to 65% (where a random choice
+offers an accuracy of 50%; Ambady, Hallahan, & Conner, 1999;
+Lyons et al., 2014; Rule et al., 2009). The links between facial
+features and sexual orientation, however, may be stronger than
+what meets the human eye. Recent evidence shows that gay men
+and lesbians,1 who arguably have more experience and motivation
+to detect the sexual orientation of others, are marginally more
+accurate than heterosexuals (Brambilla, Riva, & Rule, 2013).
+Second, the widely accepted prenatal hormone theory (PHT) of
+sexual orientation predicts the existence of links between facial
+appearance and sexual orientation. According to the PHT, same-
+gender sexual orientation stems from the underexposure of male
+fetuses or overexposure of female fetuses to androgens that are
+responsible for sexual differentiation (Allen & Gorski, 1992; Jan-
+nini, Blanchard, Camperio-Ciani, & Bancroft, 2010; Udry &
+Chantala, 2006). As the same androgens are responsible for the
+sexual dimorphism of the face, the PHT predicts that gay people
+will tend to have gender-atypical facial morphology (Bulygina,
+Mitteroecker, & Aiello, 2006; Rhodes, 2006; Whitehouse et al.,
+2015). According to the PHT, gay men should tend to have more
+feminine facial features than heterosexual men, while lesbians
+should tend to have more masculine features than heterosexual
+women. Thus, gay men are predicted to have smaller jaws and
+chins, slimmer eyebrows, longer noses, and larger foreheads; the
+opposite should be true for lesbians. Furthermore, as prenatal
+androgen levels also drive the sexual differentiation of behaviors
+and preferences during adulthood (Meyer-Bahlburg, 1984; Udry,
+2000), the PHT predicts that gay people may tend to adopt gender-
+atypical facial adornments, expressions, and grooming styles. Such
+gender-atypical behaviors and preferences might also be encoded
+in gay culture, further amplifying the effect of the prenatal andro-
+gen levels.
+Previous empirical evidence provides mixed support for the
+gender typicality of facial features of gay men and women. Hughes
+and Bremme (2011) studied a sample of 60 images of gay men and
+concluded that gay men had, on average, more feminine facial
+features. Lyons, Lynch, Brewer, and Bruno (2014) asked 120
+human judges to rate the masculinity and femininity of 80 faces of
+men and women. They found that on average, heterosexual women
+and gay men were rated as more feminine and less masculine than
+lesbians and heterosexual men. However, Skorska, Geniole, Vrysen,
+McCormick, and Bogaert (2015) used a sample of 390 photographs of
+men and women, and found that both lesbians and gay men had more
+masculine faces than heterosexual women and men, respectively.
+Valentova, Kleisner, Havlícˇek, and Neustupa (2014, p. 353) used a
+sample of facial images of 40 gay and 40 heterosexual men, and found
+that on average, gay men had relatively wider and shorter faces,
+smaller and shorter noses, and larger and more rounded jaws, or “a
+mosaic of both feminine and masculine features.” Such mixed find-
+ings might be attributed to the difficulty of precisely defining and
+measuring facial femininity. They might also be attributed to the fact
+that the difference between gay and heterosexual faces may be too
+subtle to be reliably detected in the small samples employed in these
+studies. This study aims to address those limitations by using a much
+larger sample size and data-driven methods, including an algorithm-
+based measure of facial femininity.
+Finally, and perhaps most importantly, the predictability of
+sexual orientation could have serious and even life-threatening
+implications to gay men and women and the society as a whole. In
+1 Following the APA’s recommendation, the term gay is used to refer to
+same-gender sexual orientation.
+This document is copyrighted by the American Psychological Association or one of its allied publishers.
+This article is intended solely for the personal use of the individual user and is not to be disseminated broadly.
+247
+ALGORITHM CAN DETECT SEXUAL ORIENTATION FROM FACES
+All rights, including for text and data mining, AI training, and similar technologies, are reserved.
+
+
+some cultures, gay men and women still suffer physical and
+psychological abuse at the hands of governments, neighbors, and
+even their own families. Perhaps due to discrimination and stig-
+matization, gay people are also at a higher risk of depression,
+suicide, self-harm, and substance abuse (King et al., 2008). Con-
+sequently, their well-being and safety may depend on their ability
+to control when and to whom to reveal their sexual orientation.
+Press reports suggest that governments and corporations are de-
+veloping and deploying face-based prediction tools aimed at inti-
+mate psycho–demographic traits, such as the likelihood of com-
+mitting a crime, or being a terrorist or pedophile (Chin & Lin,
+2017; Lubin, 2016). The laws in many countries criminalize same-
+gender sexual behavior, and in eight countries—including Iran,
+Mauritania, Saudi Arabia, and Yemen—it is punishable by death
+(United Nations Human Rights Council, 2015). It is thus critical to
+inform policymakers, technology companies and, most impor-
+tantly, the gay community, of how accurate face-based predictions
+might be.
+This work examines whether an intimate psycho–demographic
+trait, sexual orientation, is displayed on human faces beyond what
+can be perceived by humans. We address this question using a
+data-driven approach. A DNN was used to extract features from
+the facial images of 35,326 gay and heterosexual men and women.
+These features were entered (separately for each gender) as inde-
+pendent variables into a cross-validated logistic regression model
+aimed at predicting self-reported sexual orientation. The resulting
+classification accuracy offers a proxy for the amount of informa-
+tion relevant to the sexual orientation displayed on human faces.
+We also explore the features employed by the classifier and
+examine whether, as predicted by the PHT, the faces of gay men
+and women tend to be gender atypical. Furthermore, we compare
+the accuracy of the computer algorithm with that of human judges.
+Human accuracy does not only provide a baseline for interpreting
+the algorithm’s accuracy, but it also helps to examine whether the
+nonstandardized facial images used here are not more revealing of
+sexual orientation than standardized facial images taken in a con-
+trolled environment. Finally, using an independent sample of gay
+men’s facial images, we test the external predictive validity of the
+classifier developed here.
+Study 1a: Using Deep Neural Networks to Detect
+Sexual Orientation
+In Study 1a, we show that a DNN can be used to identify sexual
+orientation from facial images. Previous studies linking facial
+features with sexual orientation used either images of neutral2
+faces taken in a laboratory (e.g., Skorska et al., 2015; Valentova et
+al., 2014) or self-taken images obtained from online dating web-
+sites (e.g., Hughes & Bremme, 2011; Lyons et al., 2014; Rule &
+Ambady, 2008; Rule, Ambady, Adams, & Macrae, 2008). We
+employed the latter approach, as such images can be collected in
+large numbers, from more representative samples, and at a lower
+cost (from the perspective of both the participants and researchers).
+Larger and more representative samples, in turn, enable the dis-
+covery of phenomena that might not have been apparent in the
+smaller, lab-based samples. Additionally, using self-taken, easily
+accessible digital facial images increases the ecological validity of
+our results, which is particularly important given their critical
+privacy implications.
+Images taken and uploaded by the participants have a number of
+potential drawbacks. They may vary in quality, facial expression,
+head orientation, and background. Furthermore, given that they
+were originally posted on a dating website, they might be espe-
+cially revealing of sexual orientation. We take several steps to
+mitigate the influence of such factors. First, the facial features are
+extracted using a DNN that was specifically developed to focus on
+nontransient facial features, disregarding the head’s orientation
+and the background. Second, Study 1b investigates the areas of the
+face employed by the classifier and shows that the classifier
+focuses on the face and does not rely on the background. Third,
+Studies 1c and 2 explore the facial features used by the classifier
+and shows that they are consistent with PHT, a widely accepted
+theory explaining the origins of sexual orientation. Fourth, Studies
+3 and 4 show that the images used here were not substantially more
+revealing of sexual orientation than images of neutral faces taken
+in a controlled setting or images obtained from Facebook.
+Method
+Facial images.
+We obtained facial images from public pro-
+files posted on a U.S. dating website. We recorded 130,741 images
+of 36,630 men and 170,360 images of 38,593 women between the
+ages of 18 and 40, who reported their location as the United States.
+Gay and heterosexual people were represented in equal numbers.
+Their sexual orientation was established based on the gender of the
+partners that they were looking for (according to their profiles).
+The location of the face in the image, outlines of its elements,
+and the head’s orientation were extracted using a widely used
+face-detection software: Face.3 Figure 1 shows the output of
+Face in a graphical format. The colored dots (Panel A) indicate
+the location of the facial landmarks outlining the contour and
+elements of the face. Additionally, Face provided the estimates
+of the head’s yaw, pitch, and roll (Panel B).
+Based on the Face results, we removed images containing
+multiple faces, partially hidden faces (i.e., with one or more
+landmarks missing), and overly small faces (i.e., where the dis-
+tance between the eyes was below 40 pixels). We also removed
+faces that were not facing the camera directly (i.e., with a yaw
+greater than 15 degrees and a pitch greater than 10 degrees).
+Next, we employed Amazon Mechanical Turk (AMT) workers
+to verify that the faces were adult, Caucasian, fully visible, and of
+a gender that matched the one reported on the user’s profile. We
+limited the task to the workers from the U.S., who had previously
+completed at least 1,000 tasks and obtained an approval rate of at
+least 98%. Only faces approved by four out of six workers were
+retained (see Figure S1 in supplemental materials, for the instruc-
+tions presented to the workers).
+Finally, we randomly removed some users to balance the age
+distribution of the sexual orientation subsamples and their size—
+separately for each gender. The final sample contained 35,326
+facial images of 14,776 gay and heterosexual (50/50%) men and
+2 We believe that no face can be truly “neutral.” People may systemat-
+ically differ in the expression that they adopt when instructed to “adopt a
+neutral expression.” Furthermore, even an image of a perfectly neutral face
+(e.g., taken under anesthesia) would still contain traces of typically adopted
+expressions (e.g., laugh lines), grooming style (e.g., skin health), and one’s
+environment (e.g., tan).
+3 Face can be accessed at http://www.faceplusplus.com.
+This document is copyrighted by the American Psychological Association or one of its allied publishers.
+This article is intended solely for the personal use of the individual user and is not to be disseminated broadly.
+248
+WANG AND KOSINSKI
+All rights, including for text and data mining, AI training, and similar technologies, are reserved.
+
+
+women (53/47%; see Table 1 for details). Facial images were
+cropped using the facial frame provided by Face (the blue box
+in Figure 1), and resized to 224  224 pixels.
+Extracting facial features using a deep neural network.
+Facial features were extracted from the images using a widely
+employed DNN called VGG-Face (Parkhi, Vedaldi, & Zisserman,
+2015). VGG-Face was originally developed (or trained) using a
+sample of 2.6 million images for the purpose of facial recognition
+(i.e., recognizing a given person across different images). VGG-
+Face is similar to traditional scoring keys accompanying psychomet-
+ric tests. A traditional scoring key can be used to convert responses to
+test questions into one or more psychometric scores, such as a single
+IQ score, or a set of five Big Five personality scores. VGG-Face
+translates a facial image into 4,096 scores subsuming its core features.
+Unfortunately, unlike psychometric scores, VGG-Face scores are not
+easily interpretable. A single score might subsume differences in
+multiple facial features typically considered to be distinct by humans
+(e.g., nose shape, skin tone, or eye color).
+VGG-Face offers two main advantages in the context of this study.
+First, successful facial recognition depends on the DNN’s ability to
+detect facial features that are unlikely to vary across images. Thus,
+VGG-Face aims at representing a given face as a vector of scores that
+are as unaffected as possible by facial expression, background, light-
+ing, head orientation, image properties such as brightness or contrast,
+and other factors that can vary across different images of the same
+person. Consequently, employing VGG-Face scores enabled us to
+minimize the role of such transient features when distinguishing
+between gay and heterosexual faces. Second, employing a DNN
+trained on a different sample and for a different purpose reduces the
+risk of overfitting (i.e., discovering differences between gay and
+heterosexual faces that are specific to our sample rather than univer-
+sal). We also tried training a custom DNN directly on the images in
+our sample; its accuracy was somewhat higher, but it exposed us to
+the risk of overfitting.
+Training classifiers.
+We used a simple prediction model,
+logistic regression, combined with a standard dimensionality-
+reduction approach: singular value decomposition (SVD). SVD is
+similar to principal component analysis (PCA), a dimensionality-
+reduction approach widely used by social scientists. The models
+were trained separately for each gender.
+Self-reported sexual orientation (gay/heterosexual) was used as
+a dependent variable; 4,096 scores, extracted using VGG-Face,
+were used as independent variables. To prevent overfitting, we
+used a 20-fold cross-validation when estimating the predictions.
+The users were split into 20 subsamples; one of the subsamples
+(test set) was put aside, while the remaining 19 subsamples (train-
+ing sets) were used to train the prediction model. As the number of
+independent variables was relatively large (4,096) when compared
+with the number of cases (7,083 in the smallest training set), we
+used SVD to extract n  500 dimensions4 from the independent
+variables. This helped to reduce the number of independent vari-
+ables and eliminate redundant information.
+A logistic regression model was trained to classify sexual ori-
+entation (a dependent variable) using 500 singular values extracted
+from VGG-Face scores (independent variables). Least absolute
+shrinkage and selection operator (LASSO; Hastie, Tibshirani, &
+Friedman, 2009) was used for variable selection and regularization
+when training the regression model. The LASSO penalty param-
+eter  was set to 1; the regularization parameter  was automati-
+cally estimated using 10-fold cross-validation.
+Finally, the model built on the training set, combining the SVD
+dimensionality reduction and logistic regression, was used to pre-
+dict the sexual orientation of the participants in the test set. This
+procedure was repeated 20 times to assign a probability (ranging
+from 0 to 1) of being gay to all images in the sample.
+For many users, more than one facial image was available. This
+enabled us to examine how the accuracy changes with the number
+of facial images available. To produce an aggregate probability of
+being gay based on n images, the probabilities associated with a
+randomly selected set of n images (ranging from 1 to 5) of a given
+participant were averaged.5 Thus, a participant with three facial
+images was described by three probabilities of being gay: one
+based on a single randomly selected image, one based on two
+randomly selected images, and one based on all three images.
+Results
+The accuracy of predicting sexual orientation from facial images
+is presented in Figure 2. Across this article, the accuracy is
+expressed using the area under receiver operating characteristic
+curve (AUC) coefficient. AUC represents the likelihood of a
+classifier being correct when presented with the faces of two
+randomly selected participants—one gay and one heterosexual.
+The AUC  .50 (or 50%) indicates that the classifier is correct
+only half of the time, which is no better than a random draw. The
+AUC  1.00 (or 100%) indicates that the classifier is always
+correct. AUC is an equivalent of the Wilcoxon signed-ranks test
+coefficient, used more widely in social sciences.
+4 Dimensions extracted by SVD are referred to as singular values; they
+are an equivalent of principal components in the context of PCA.
+5 Logit transformation is used whenever the probabilities are averaged in
+this work. This means that the probabilities are logit transformed and
+averaged, and the resulting values are converted back into probabilities
+using an inverse-logit transformation.
+Figure 1.
+Graphical illustration of the outcome produced by Face.
+Panel A illustrates facial landmarks (colored dots, n  83) and facial frame
+(blue box). Panel B illustrates pitch, roll, and yaw parameters that describe
+the head’s orientation in space.
+This document is copyrighted by the American Psychological Association or one of its allied publishers.
+This article is intended solely for the personal use of the individual user and is not to be disseminated broadly.
+249
+ALGORITHM CAN DETECT SEXUAL ORIENTATION FROM FACES
+All rights, including for text and data mining, AI training, and similar technologies, are reserved.
+
+
+Among men, the classification accuracy equaled AUC  .81
+when provided with one image per person. This means that in 81%
+of randomly selected pairs—composed of one gay and one het-
+erosexual man—gay men were correctly ranked as more likely to
+be gay. The accuracy grew significantly with the number of images
+available per person, reaching 91% for five images. The accuracy
+was somewhat lower for women, ranging from 71% (one image) to
+83% (five images per person).
+Study 1b: Elements of the Facial Image Employed by
+the Classifier
+The high accuracy of the classifier developed in Study 1a
+indicates that facial images contained much information related to
+sexual orientation, and that much of this was captured by the facial
+features extracted using VGG-Face. This section examines which
+parts of the facial image enabled the classification. We address this
+question by masking parts of a facial image and measuring the
+degree to which the prediction has changed. If a given area of the
+image is important to the classifier, masking it is likely to signif-
+icantly alter the prediction (and vice versa).
+Method
+Facial images.
+The results were produced separately for each
+gender. Facial images of 100 male and 100 female users were
+randomly drawn from the sample used in Study 1a. The faces were
+adjusted to ascertain that a given facial feature (e.g., the mouth)
+was in exactly the same place in all of the images. This was
+achieved by warping images (using piecewise linear two-
+dimensional [2D] transformation) to align them along nine land-
+marks (the left and right eye corners, left and right mouth corners,
+nose tip, and left and right nose corners).
+Sexual orientation classifier.
+We used the remaining images
+from Study 1a to train the sexual orientation classifiers (separately for
+men and women) following the procedure described in Study 1a.
+Analysis.
+We used the sexual orientation classifiers to esti-
+mate the probability of being gay for the faces in the samples used
+here. Next, an area of 7  7 pixels in the top-left corner was
+masked in all 100 images and the probability of being gay was
+estimated again. The procedure was repeated 1,024 times while
+sliding the mask across the grid covering the entire image, com-
+posed of 32  32 squares (each sized at 7  7 pixels). The average
+absolute change in the probability of being gay, resulting from
+masking a given area of the image, was used as a proxy for the
+importance of a given area to the prediction of sexual orientation.
+Results
+The results are presented in Figure 3 as heat maps showing the
+degree to which masking a given part of an image changes the
+classification outcome. The color scale ranges from blue (no
+change) to red (substantial change). Heat maps reveal that, for both
+genders, classification mainly relied on the facial area and ignored
+the background. The most informative facial areas among men
+included the nose, eyes, eyebrows, cheeks, hairline, and chin;
+Table 1
+Frequencies of Users and Facial Images, and the Age
+Distribution in the Final Sample Used in Study 1
+Variable
+Men
+Women
+Gay
+Heterosexual
+Lesbian
+Heterosexual
+Unique users
+3,947
+3,947
+3,441
+3,441
+Median age (IQR)
+33 (30–36)
+33 (30–36)
+29 (25–34)
+29 (25–34)
+Total images
+8,996
+8,645
+7,457
+10,228
+Users with at least:
+1 image
+3,947
+3,947
+3,441
+3,441
+2 images
+2,438
+2,439
+2,037
+2,878
+3 images
+1,363
+1,367
+1,058
+1,951
+4 images
+562
+731
+494
+1,114
+5 images
+219
+327
+223
+491
+Note.
+IQR stands for interquartile range.
+Figure 2.
+The accuracy of the DNN-based sexual orientation classifier
+against the number of images used in the classification.
+Figure 3.
+Heat maps showing the degree to which masking a given part
+of an image changes the (absolute) classification outcome, which is a proxy
+for the importance of that region in classification. The color scale ranges
+from blue (no change) to red (substantial change). The color-coded squares
+were smoothed using 2D Gaussian filtering.
+This document is copyrighted by the American Psychological Association or one of its allied publishers.
+This article is intended solely for the personal use of the individual user and is not to be disseminated broadly.
+250
+WANG AND KOSINSKI
+All rights, including for text and data mining, AI training, and similar technologies, are reserved.
+
+
+informative areas among women included the nose, mouth corners,
+hair, and neckline. The heat maps are not symmetrical because
+duplicated facial features, such as eyes, may prompt the classifier
+to focus on only one of them and ignore the other as redundant.
+The results presented here confirm that the VGG-Face scores
+extracted here focus on the facial features rather than on other parts
+of the image.
+Study 1c: Facial Features Predictive of Sexual
+Orientation
+Having established that the classification is based on facial
+features (as opposed to other elements of the image), we turn our
+attention to the differences between gay and heterosexual faces
+that enabled the classification. We examine this question by ag-
+gregating images classified as most and least likely to be gay in
+Study 1a.
+Method
+Facial images.
+The results were produced separately for each
+gender. We used facial images and accompanying probabilities of
+being gay from Study 1a and retained those containing faces facing
+the camera directly (the head’s pitch and yaw, as estimated by
+Face, was lower than two degrees). Next, we selected a
+subset of images classified as most likely to be gay and a subset
+of images classified as least likely to be gay. We used subsets
+of 500 images per set to generate average landmarks’ locations
+and 100 images per set to generate composite faces.
+Average landmarks’ location.
+The distances between facial
+landmarks, extracted using Face (see Figure 1), were normal-
+ized by setting the distance between the pupils to 1. The faces were
+centered and rotated to align the eyes horizontally, and the land-
+mark coordinates were averaged.
+Composite face.
+To obtain clearer composite faces, the im-
+ages were warped using a piecewise linear 2D transformation
+along the average location of Face landmarks (the pixels of
+each image were transformed using bicubic interpolation). The
+values of corresponding pixels were averaged across images to
+produce composite faces.
+Results
+Figure 4 shows the average landmark locations and aggregate
+appearance of the faces classified as most and least likely to be
+gay. Consistent with the PHT, gay faces tended to be gender
+atypical. Average landmark locations revealed that gay men had
+narrower jaws and longer noses, while lesbians had larger jaws.
+Composite faces suggest that gay men had larger foreheads than
+heterosexual men, while lesbians had smaller foreheads than het-
+erosexual women. The differences between the outlines of faces
+and facial features of gay and heterosexual individuals are further
+explored in Study 3.
+The gender atypicality of gay faces extended beyond morphol-
+ogy. Gay men had less facial hair, suggesting differences in
+androgenic hair growth, grooming style, or both. They also had
+lighter skin, suggesting potential differences in grooming, sun
+Figure 4.
+Composite faces and the average facial landmarks built by averaging faces classified as most and
+least likely to be gay.
+This document is copyrighted by the American Psychological Association or one of its allied publishers.
+This article is intended solely for the personal use of the individual user and is not to be disseminated broadly.
+251
+ALGORITHM CAN DETECT SEXUAL ORIENTATION FROM FACES
+All rights, including for text and data mining, AI training, and similar technologies, are reserved.
+
+
+exposure, and/or testosterone levels.6 Lesbians tended to use less
+eye makeup, had darker hair, and wore less revealing clothes (note
+the higher neckline), indicating less gender-typical grooming and
+style. Furthermore, although women tend to smile more in general
+(Halberstadt, Hayes, & Pike, 1988), lesbians smiled less than their
+heterosexual counterparts. Additionally, consistent with the asso-
+ciation between baseball caps and masculinity in American culture
+(Skerski, 2011), heterosexual men and lesbians tended to wear
+baseball caps (see the shadow on their foreheads; this was also
+confirmed by a manual inspection of individual images). The
+gender atypicality of the faces of gay men and lesbians is further
+explored in Study 2.
+Study 2: Gender Atypicality of Gay People’s Faces
+The qualitative analysis of the composite faces and average
+landmarks’ locations for gay and heterosexual faces presented in
+Study 1c suggest that the faces of gay men and lesbians tend to be
+gender atypical. We test this hypothesis by using a data-driven
+measure of facial femininity: the DNN-based gender classifier.
+Method
+Facial images.
+We used facial images and accompanying
+probabilities of being gay estimated in Study 1a.
+Facial femininity.
+We measured facial femininity by using a
+gender classifier that assigns a probability of being female to each
+facial image. This gender classifier was developed on an indepen-
+dent sample of 2,891,355 facial images of Facebook users obtained
+from the myPersonality.org project (Kosinski, Matz, Gosling,
+Popov, & Stillwell, 2015). We used the same approach to prepro-
+cess facial images and train the classifier, as described in Study 1a.
+This time, however, we used gender as the dependent variable.
+This gender classifier was applied to all facial images in the
+sample used in Study 1a. The accuracy of this classifier, when
+predicting gender, equaled AUC  .98.
+Results
+The results show that the faces of gay men were more feminine
+and the faces of lesbians were more masculine than those of their
+respective heterosexual counterparts. Among men, the data-driven
+measure of facial femininity positively correlated with the proba-
+bility of being gay (r  .20; p  .001; 95% CI [0.19, 0.21]).7 The
+opposite was true for women (r  0.21; p  .001; 95% CI
+[0.21, 0.20]).
+Facial femininity alone allowed for classifying gay and hetero-
+sexual faces with some accuracy: AUC  .57 for men and AUC 
+.58 for women (based on one facial image).
+Study 3: Morphology-Based Classifier
+Study 1c shows the differences between the outlines of faces
+and facial features of gay and heterosexual individuals. The current
+study shows that such basic nontransient morphological features,
+such as the outline of the nose or facial contour, provide enough
+information to accurately classify sexual orientation.
+Method
+Facial images.
+We used the same sample as in Study 1a.
+Extracting morphological features.
+We extracted morpho-
+logical features from the coordinates of the 83 landmarks outlining
+important facial features provided by Face (see Figure 1). To
+subsume the shape of a given facial feature, such as the nose, we
+computed Euclidean distances between the landmarks belonging to
+that feature. For example, as there are 10 landmarks outlining the
+nose (see Figure 1), its morphology was subsumed by a vector of
+10  9  90 Euclidean distances. To account for the differing
+sizes of the faces in facial images, the distances were normalized
+by dividing them by the distance between the pupils.
+This approach was applied to the following facial elements:
+nose, eyes, eyebrows, mouth, contour of the face, and entire face
+(see Figure 1 for the mapping between landmarks and facial
+elements).
+Training classifiers.
+The classifiers were trained, separately
+for each facial element and for all facial landmarks combined,
+following a procedure similar to the one used in Study 1a. Here,
+however, we used Euclidean distances instead of the VGG-Face
+scores as independent variables. If the number of distances de-
+scribing a given facial element was higher than 500, we used SVD
+to reduce their number to 500 (in the same way as SVD was used
+to reduce the number of VGG-Face scores in Study 1a).
+Results
+The accuracies of the landmark-based classifiers based on five
+images per person are presented in Figure 5. The results show that
+the shape of individual facial elements enabled high classification
+accuracy for both genders. A notably high accuracy was provided
+by facial contour alone (red landmarks in Figure 1): 75% for men
+and 63% for women. This provides additional support for the link
+between jaw shape between gay and heterosexual faces observed
+in Study 1c (see Figure 4). While the outline of the eyes, eyebrows,
+and mouth is—to some extent—affected by facial expression and
+grooming, facial contour is relatively inflexible, emphasizing the
+predictive power of fixed morphological traits.
+The high performance of the contour-based classifiers, and fair
+performance of the nose-based ones, suggest that the shape of
+these (relatively fixed) facial elements is sufficient to detect sexual
+orientation. Overall, the performance of the landmark-based clas-
+sifiers is remarkable given how little information from the original
+image is retained in the landmarks’ locations.

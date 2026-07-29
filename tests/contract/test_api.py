@@ -48,6 +48,41 @@ def test_agent_info_shape():
         assert set(step.keys()) == {"module", "prompt", "response"}
 
 
+def test_every_shipped_example_prompt_passes_the_guards():
+    """An example prompt the guards would reject is worse than no example — a reviewer
+    who pastes it into /api/execute gets a rejection instead of an audit. This is the
+    invariant behind the cut points in scripts/gen_example_inputs.py: the two bundled
+    papers are trimmed to fit `max_windows()`, and nothing may quietly grow past it.
+    """
+    from inclusify_agent.server.app import _EXAMPLE_PROMPTS
+    from inclusify_agent.tools.chunk import parse
+    from inclusify_agent.tools.guards import is_probably_english, max_windows
+
+    multi_window = 0
+    for prompt in _EXAMPLE_PROMPTS:
+        assert prompt.strip(), "an empty example prompt would fail the [0] guard"
+        assert is_probably_english(prompt)
+        windows = parse(prompt)[2]
+        assert len(windows) <= max_windows(), (
+            f"example ({len(prompt)} chars) needs {len(windows)} windows, "
+            f"over the {max_windows()} cap — re-cut it in gen_example_inputs.py"
+        )
+        multi_window += len(windows) > 1
+    assert multi_window >= 1, (
+        "at least one example must be a real multi-window document: the agent claims to "
+        "audit academic papers, and one-sentence examples alone don't show that"
+    )
+
+
+def test_precomputed_examples_match_the_source_prompts():
+    """`_examples()` serves a committed JSON blob, so editing `_EXAMPLE_PROMPTS` without
+    re-running scripts/gen_examples.py would make /api/agent_info advertise a prompt
+    alongside another prompt's report. Catch the drift here, not in a demo."""
+    from inclusify_agent.server.app import _EXAMPLE_PROMPTS, _examples
+
+    assert [e["prompt"] for e in _examples()] == _EXAMPLE_PROMPTS
+
+
 def test_execute_ok_contract():
     r = client.post("/api/execute",
                     json={"prompt": "The chairman told the freshmen manpower was short."})
