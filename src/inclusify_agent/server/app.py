@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import time
 from functools import lru_cache
 from pathlib import Path
@@ -339,34 +340,78 @@ def api_team_info() -> dict[str, Any]:
 
 _PROMPT_TEMPLATE = {
     "template": (
-        "Paste the course material (a sentence, paragraph, syllabus excerpt, or slide "
-        "text) you want audited for non-inclusive language:\n\n<your text here>"
+        "Paste the English course material you want audited for non-inclusive language — "
+        "a sentence, a syllabus excerpt, slide text, or a whole paper (up to "
+        "~10 windows of ~1800 tokens; longer input is rejected rather than truncated):"
+        "\n\n<your text here>"
     ),
     "example": "The chairman told the freshmen that manpower was short this semester.",
 }
 
-_EXAMPLE_PROMPTS = [
+# Two one-sentence snippets (a positive and a clean negative) plus two real published
+# papers. The snippets alone would let a reviewer testing only the HTTP API conclude the
+# agent is a sentence classifier -- the papers are what show the claim on the tin
+# (auditing *academic* text: multi-window, recurring-pattern grouping, real citations).
+# Both are cut to pass `max_windows()`; see scripts/gen_example_inputs.py for the sources,
+# the cut points, and each paper's licence.
+_PAPER_EXAMPLES = (
+    "example_paper_wang_kosinski_2018.txt",   # 6 windows; the gold paper, 23 expert flags
+    "example_paper_cohn_2025.txt",            # 8 windows; CC BY 4.0, whole minus references
+)
+
+
+def _paper_prompts() -> list[str]:
+    """The bundled paper example inputs. A missing file is skipped, not fatal: examples
+    are a nice-to-have on `/api/agent_info`, and importing the app must never fail over
+    one absent data file (same degrade-don't-crash rule as the persistence + store)."""
+    out = []
+    for name in _PAPER_EXAMPLES:
+        path = _PKG_ROOT / "data" / name
+        if path.exists():
+            out.append(path.read_text(encoding="utf-8"))
+        else:
+            print(f"[examples] missing bundled paper input: {name}", file=sys.stderr)
+    return out
+
+
+_SNIPPET_PROMPTS = [
     "The chairman told the freshmen that manpower was short this semester.",
     "The Stonewall Uprising marked a critical juncture in LGBTQ+ rights.",
 ]
+
+_EXAMPLE_PROMPTS = [*_SNIPPET_PROMPTS, *_paper_prompts()]
 
 
 @lru_cache(maxsize=1)
 def _examples() -> list[dict[str, Any]]:
     """Precomputed on disk by `scripts/gen_examples.py` (PRD §8: a Vercel cold
     start shouldn't re-run the audit pipeline on every request). Falls back to
-    computing them on first request when the file isn't there yet."""
+    computing them on first request when the file isn't there yet.
+
+    The fallback covers the SNIPPETS ONLY, never the papers: auditing all four prompts
+    live is ~14 windows (~250 s+), which would blow Vercel's 300 s cap on the very first
+    `/api/agent_info` of a cold start -- a metadata GET must not be able to time out. The
+    papers are served from the committed file or not at all."""
     if _EXAMPLES_PATH.exists():
         return json.loads(_EXAMPLES_PATH.read_text(encoding="utf-8"))
     out = []
-    for p in _EXAMPLE_PROMPTS:
+    for p in _SNIPPET_PROMPTS:
         r = execute_prompt(p)
         out.append({"prompt": p, "full_response": r["response"], "steps": r["steps"]})
     return out
 
 
 @app.get("/api/agent_info")
-def api_agent_info() -> dict[str, Any]:
+def api_agent_info(slim: bool = False) -> dict[str, Any]:
+    """`?slim=1` drops each example's `full_response` + `steps`, keeping only `prompt`.
+
+    The two bundled paper examples carry complete traces (57 and 125 LLM calls), which is
+    ~2.1 MB of the response -- worth it for a reviewer reading the trace, wasted on the
+    GUI, which reads nothing but `prompt` and would re-download it on every page load.
+    The bare call is unchanged and stays the spec's full-fat response."""
+    examples = _examples()
+    if slim:
+        examples = [{"prompt": e["prompt"]} for e in examples]
     return {
         "description": (
             "Inclusify is an autonomous curriculum-inclusivity auditor for higher "
@@ -387,7 +432,7 @@ def api_agent_info() -> dict[str, Any]:
             "losing technical accuracy."
         ),
         "prompt_template": _PROMPT_TEMPLATE,
-        "prompt_examples": _examples(),
+        "prompt_examples": examples,
     }
 
 

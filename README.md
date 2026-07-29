@@ -30,7 +30,7 @@ the assignment spec):
 | Endpoint | Returns |
 |---|---|
 | `GET /api/team_info` | team + students |
-| `GET /api/agent_info` | description, purpose, prompt_template, prompt_examples |
+| `GET /api/agent_info` | description, purpose, prompt_template, prompt_examples — 4 precomputed examples: two one-sentence snippets (a flagged one and a clean one) and **two real published papers** audited end to end (6 and 8 windows). Sources + licences: [`src/inclusify_agent/data/EXAMPLE_PAPERS.md`](src/inclusify_agent/data/EXAMPLE_PAPERS.md) |
 | `GET /api/model_architecture` | architecture diagram (PNG) |
 | `POST /api/execute` | `{prompt}` → `{status, error, response, steps}` — `steps` traces every LLM call (`module`, `prompt.{System_prompt,User_prompt}`, `response`) |
 | `POST /api/execute?ui=1` | `{prompt}` → the GUI's structured superset of the same run: `{status, error, response, steps}` plus the validated v2 `report` and a `ui` block (span offsets, rejected candidates, stats, wall-clock, tokens) for rendering highlights without re-deriving them from markdown. `POST /api/ui/execute` is a back-compat alias |
@@ -193,7 +193,9 @@ data/gold/                   # Achva expert review set (gitignored — expert da
 tests/{unit,contract,e2e}/   # all offline; `live`-marked tests are opt-in
 eval/                        # v2 gold harness (run.py, doc_gold.py, gold.py) + baseline.py
                              #   ablation (v1 fixed pipeline) + achva.py classifier eval
-scripts/                     # fetch_eric.py, gen_architecture.py
+scripts/                     # fetch_eric.py, gen_architecture.py, gen_examples.py,
+                             #   gen_example_inputs.py (cuts the two bundled paper inputs
+                             #   down to the max_windows() budget)
 docs/course/                 # submitted course deliverables (slides, project brief)
 ```
 

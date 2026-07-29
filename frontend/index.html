@@ -258,7 +258,7 @@ const STAGES = [
 
 const ENDPOINTS = [
   { path: "GET /api/team_info", returns: "team + students" },
-  { path: "GET /api/agent_info", returns: "description, purpose, prompt_template, prompt_examples" },
+  { path: "GET /api/agent_info", returns: "description, purpose, prompt_template, prompt_examples — 4 precomputed runs incl. two real papers, full traces; ?slim=1 returns prompts only" },
   { path: "GET /api/model_architecture", returns: "architecture diagram (image/png)" },
   { path: "POST /api/execute", returns: "{status, error, response, steps} — response is the markdown report; steps traces every LLM call" },
   { path: "POST /api/execute?ui=1", returns: "the GUI's structured superset of the same run — adds report JSON + span offsets (alias: /api/ui/execute)" },
@@ -412,12 +412,21 @@ function loadHealth() {
   fetch("/api/health").then((r) => r.json()).then((h) => { state.health = h; setProviderChip(h); }).catch(() => setProviderChip(null));
 }
 
+// Two of the four agent_info examples are whole papers (~40k and ~56k chars), so the row
+// label is the opening line collapsed to one line + the size, not the prompt itself.
+// Clicking still loads the full text into the textarea.
+function exampleLabel(prompt) {
+  if (prompt.length <= 140) return esc(prompt);
+  const head = prompt.slice(0, 400).replace(/\s+/g, " ").trim().slice(0, 92);
+  return `${esc(head)}…<span style="color:color-mix(in srgb,var(--color-text) 50%,transparent)"> — full paper · ${prompt.length.toLocaleString()} chars</span>`;
+}
+
 function examplesListHtml() {
   const examples = (state.agentInfo && state.agentInfo.prompt_examples) || [];
   const rows = examples.map((ex, i) => `
     <button onclick="UI.fillExample(${i})" style="text-align:left;background:transparent;border:0;border-top:1px solid var(--color-divider);padding:13px 2px;font:inherit;font-size:15px;color:var(--color-text);cursor:pointer;display:flex;gap:14px;align-items:baseline;width:100%">
       <span style="font-size:11px;letter-spacing:.1em;color:var(--color-accent);flex:none">${String(i + 1).padStart(2, "0")}</span>
-      <span style="text-wrap:pretty">${esc(ex.prompt)}</span>
+      <span style="text-wrap:pretty">${exampleLabel(ex.prompt)}</span>
     </button>`).join("");
   const fixtureN = String(examples.length + 1).padStart(2, "0");
   const fixtureRow = `
@@ -429,7 +438,9 @@ function examplesListHtml() {
 }
 
 function loadAgentInfo() {
-  fetch("/api/agent_info").then((r) => r.json()).then((info) => {
+  // ?slim=1 — the two paper examples carry full traces (~2.1 MB); this page reads only
+  // `prompt`, so the bare call would re-download all of it on every load.
+  fetch("/api/agent_info?slim=1").then((r) => r.json()).then((info) => {
     state.agentInfo = info;
     const list = document.getElementById("examples-list");
     if (list) list.innerHTML = examplesListHtml();      // targeted update — never touches the textarea

@@ -1,0 +1,794 @@
+Article
+
+Censorship of Essential Debate in Gender
+Medicine Research
+J. Cohn
+Society for Evidence-Based Gender Medicine, Twin Falls, ID 83301, USA;
+jaycohn77@gmail.com
+Submitted: 8 March 2025, accepted: 18 September 2025, published: 27 October 2025
+
+Abstract: The integrity of the gender medicine research literature has been compromised,
+not only by censorship of correct articles, but also by censorship of critiques of articles
+with unsupported (for instance exaggerated), misleading or erroneous statements. Many
+such statements concern the evidence base, which can be evaluated rigorously using
+a key component of evidence-based medicine, systematic reviews of the evidence.
+These reviews currently find there is limited to very little confidence that estimates of
+benefit from (and sometimes harm from) medical gender intervention, that is, puberty
+blockers, hormones and/or surgeries, are likely to match true outcomes. Several medical
+societies and articles in medical journals have been claiming otherwise, misrepresenting
+the evidence base as a whole and/or relying upon unsupported or non-representative
+individual study findings or conclusions. For example, high likelihood of benefit and
+low risk of adverse outcomes from medical gender interventions are often claimed,
+while less invasive alternative treatment options are either omitted or mischaracterized.
+Other unsupported, erroneous or misleading statements occur when studies minimize
+or omit mention of significant limitations, or report findings or conclusions not supported
+by their own data; these are then sometimes quoted by others as well. In addition,
+correctly reported studies are sometimes misrepresented. Critiques which attempt to
+rectify such statements are frequently rejected. Some examples are presented here.
+Such rejections have stifled scientific debate, interfering with the continual scrutiny and
+cross checks needed to maintain accuracy in the research literature. Currently, erroneous
+and unsupported statements circulate and repeat between journals and medical society
+guidelines and statements, misinforming researchers, clinicians, patients and the general
+public.
+Keywords: gender dysphoria; censorship; debate in medicine; gender-affirming;
+transgender; exploratory therapy
+How to cite: Cohn, J. Censorship of Essential Debate in Gender Medicine Research.
+Journal of Controversial Ideas 2025, 5(Special Issue on Censorship in the Sciences), 3;
+doi:10.63466/jci05020003.
+©2025 Copyright by the author. This article is an open access article distributed under the terms and
+conditions of the Creative Commons Attribution (CC BY 4.0) license.
+
+1
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+1. Introduction
+Gender medicine (puberty blockers, hormones, and surgeries) is one way to treat gender
+dysphoria, a kind of distress with one’s sexed body (Drescher, 2025). These medical
+interventions are sometimes collectively referred to as “gender-affirming” medical care
+(Rafferty et al., 2018), and in the US, treatment for gender dysphoria includes puberty
+blockers for some eight-year-olds, double mastectomies for some twelve-year-olds, and
+genital surgeries on some minors (Olson-Kennedy et al., 2025; Tang et al., 2022; Terhune
+et al., 2022); in many states there is no minimum recommended age for medical gender
+interventions aside from phalloplasty (Coleman et al., 2022). Minors are sometimes
+offered puberty blockers or hormones on their first clinic visit (Terhune et al., 2022) or
+after a 2-hour appointment (Damiano, 2024), while for those above the age of consent,
+hormones are available online (without prior mental health assessment, a model of
+care called “informed consent” [Cavanaugh et al., 2016; Plume Clinic, 2024]). In 2021
+alone, over 4000 US minors started hormones (intended to be taken lifelong), and at
+least hundreds undergo gender surgeries each year (Terhune et al., 2022). Including
+adults, over 50,000 gender-affirming surgeries were performed in the US from 2016 to
+2020: 57% of the patients had breast/chest surgeries and over a third (35%) had genital
+surgeries (including hysterectomy 9%, orchiectomy 7%, vaginoplasty 7%) (Wright et al.,
+2023). A medical letter of support for surgery with one appointment and one-to-two week
+turnaround time is advertised online (Plume Clinic, n.d.).
+These interventions are being provided in a setting of considerable expert
+disagreement regarding both the use of medical interventions for gender dysphoria (Block,
+2023; Kozlowska et al., 2024; Vrouenraets et al., 2015) and how to best treat gender
+dysphoria more generally. There is no consensus. In addition, although one of the
+key aims in treating gender dysphoria is to relieve its associated distress and improve
+psychological functioning (Baker et al., 2021; Gorin, 2024), evidence of benefit from the
+above gender medicine interventions is “remarkably weak” for minors (Cass, 2024) and
+numerous rigorous systematic reviews also find low and very low certainty evidence of
+benefit of these interventions for patients under 21 and under 26 (Brignardello-Petersen &
+Wiercioch, 2022; Department of Health and Human Services, 2025, Chapter 5; McDeavitt
+et al., 2025a, Table 3; Miroshnychenko et al., 2025a). There are similar findings of low
+quality or very low quality/insufficient evidence of benefit for all ages (Baker et al., 2021;
+Georgas et al., 2018). Well conducted systematic reviews of the evidence1 follow specific
+steps (Brignardello-Petersen et al., 2025) to arrive at an assessment of the certainty of
+the evidence as a whole, and along with meta-analyses they comprise the most reliable
+form of evidence in evidence-based medicine, which is current best medical practice
+(Evidence-Based Medicine Working Group, 1992; McDeavitt et al., 2025a). Findings
+of low/very low certainty evidence of benefit for gender medicine means that there is
+
+1
+
+Those conducting a systematic review to evaluate a body of evidence first determine the question(s)
+and eligibility (inclusion and exclusion) criteria, then search for and select studies using a predetermined
+(repeatable because explicitly stated) search strategy, abstract data of included studies and assess for
+bias, summarize the studies’ data, and then assess the certainty of the evidence as a whole and draw
+conclusions. They are not always well-conducted – see, for instance, Clayton et al. (2022). There are
+specific reporting steps and assessment tools for systematic reviews (Page et al., 2021; Shea et al.,
+2017).
+
+2
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+limited/very little (respectively) confidence that estimates of effects of these interventions
+will match true effects (Balshem et al., 2011).
+Medical interventions for gender dysphoria have thus not been shown likely to be
+beneficial long term (including to relieve gender dysphoria), nor, more specifically, have
+they been shown to lower suicide risk (Baker et al., 2021; Christensen et al., 2025;
+Miroshnychenko et al., 2025a, 2025b; Ruuska et al., 2024). Importantly, their benefits
+have also not been shown to be likely to outweigh risks of adverse outcomes such
+as regret (sometimes associated with detransition [Cohn, 2023; Feigerlova, 2025]) or
+associated but not yet sufficiently studied serious physical harms (Department of Health
+and Human Services, 2025, ch. 7; Miroshnychenko et al., 2025b; Schwartz et al.,
+2025), including infertility and other harms to reproductive organs, bone density, and the
+cardiovascular system (Cheng et al., 2019; De Roo et al., 2016; Ludvigsson et al., 2023;
+Nota et al., 2019). In fact, the group who pioneered gender interventions in minors recently
+called for “an explicit discussion on the objectives of [medical gender interventions] for
+adolescents,” saying: “The linear narrative of improvement in GAMT [gender-affirming
+medical treatment] for adolescents is limited and …” [Oosthoek et al., 2024]).
+Also unknown are gender dysphoria’s etiology (Levine et al., 2022), for whom gender
+dysphoria might endure (Byrne, 2024; Cass, 2024, p. 22), and likely outcomes with
+alternative treatments (e.g., “watchful waiting” [de Vries & Cohen-Kettenis, 2012] or
+other psychological support [Churcher Clarke & Spiliadis, 2019; Evans & Evans, 2021;
+Heathcote et al., 2024; Hutchinson, 2025; Withers, 2020]) or without interventions (natural
+history). The evidence underlying psychosocial support without medical intervention is
+also low certainty; however, it has many fewer risks than medical intervention (Heathcote
+et al., 2024). For youth: “Confirming [a] young person’s self-diagnosis of gender dysphoria
+or gender incongruence is easy. Clarifying the developmental forces that have influenced
+it and determining an appropriate intervention are not” (Levine et al., 2022). There is
+currently “no reliable way to accurately predict which young people might benefit from a
+medical transition and which might benefit from alternative pathway(s) or interventions(s)”
+(Cass, 2024, p. 134). Reasons that so little is known include (Cass, 2024, p. 34) the lack
+of systematic studies of long-term outcomes (at least a decade of follow-up appears to
+be required [Cass, 2024; Cohn, 2023]), inadequacies of available shorter-term studies
+(Abbruzzese et al., 2023; McDeavitt, 2024; McDeavitt et al., 2025a), and insufficient
+(mostly non-existent) randomized controlled trials comparing those who were and weren’t
+treated.
+
+2. Unsupported, Misleading or Erroneous Statements
+However, in addition to these many unknowns, the field of gender medicine is also
+suffering from erroneous information (Levine et al., 2022) and censorship. There
+is censorship of attempts to publish (Bailey, 2024; Baxendale, 2024; Block, 2024a;
+“Research into Trans Medicine Has Been Manipulated”, 2024; Selin Davis, 2024a) or
+otherwise disseminate correct information (e.g., within medical societies, Johnson, 2024;
+Nainggolan, 2021; Ryan, 2024; Selin Davis, 2024b). The focus here is instead on
+censorship of attempts to correct unsupported, misleading, or erroneous claims regarding
+medical gender interventions, i.e. censorship of debate.
+Unsupported, misleading or erroneous statements regarding gender medicine have
+appeared in many authoritative US medical journals, including JAMA (found, for example,
+
+3
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+in Barbee et al., 2024; Lepore et al., 2022; Tordoff et al., 2022), New England Journal
+of Medicine (NEJM) (McNamara et al., 2022) Pediatrics (Georges et al., 2024; Turban
+et al., 2020b), Journal of Adolescent Health (Budge et al., 2024; Hughes et al., 2021;
+Kidd & Sequeira, 2024), Annual Review of Medicine (Lee & Rosenthal, 2023), and
+Nature Reviews Endocrinology (Lopez & Kuper, 2023; Rosenthal, 2021); more examples
+are below. Such statements include exaggerations of how well the evidence is known,
+e.g., stating, in spite of the abovementioned low/very low certainty evidence, that these
+interventions are known to be likely beneficial or even “lifesaving” (this last statement risks
+creating a nocebo effect [Appleby, 2024; Clayton, 2023] by implying that not receiving the
+interventions would be life-threatening, and suicide is socially contagious). The inaccurate
+claim of established benefit is also often used to conclude that randomized controlled
+trials would be unethical. There is also the inaccurate (Balshem et al., 2011) claim or
+implication that only randomized controlled trials can improve the evidence base. Another
+frequent incorrect claim is that the regret rate is known and that it is low or rare: the rate
+is not known (Cohn, 2023). Bustos et al. (2021) is a low-quality (Brignardello-Petersen
+& Wiercioch, 2022) systematic review often quoted for a low regret rate (<1%), but its
+authors acknowledge that “limitations … and moderate-to-high risk of bias in some studies
+represent a big barrier for generalization of the results of this study,” where “some studies”
+is 23 of its 27 studies – 97% of the included participants (Expósito-Campos & D’Angelo,
+2021), and all the included studies suffer from premature follow-up, significant loss to
+follow up, or both (Cohn, 2023, Appendix). Similarly unsupported (Cheung et al., 2025;
+Clayton et al., 2024; McDeavitt et al., 2025b, Table 3c) is the claim that treatments with
+similar low-quality evidence of benefit and comparable risks (infertility, etc.) are common
+in pediatric medicine, nor has it been shown (Byrne, 2024)2 that gender dysphoria in
+adolescence is likely to be enduring or that (D’Angelo, 2025) any treatment to address
+gender distress besides gender affirming therapy and social and medical interventions to
+alter physical characteristics is harmful. A false choice is sometimes presented between
+only two options: “gender affirming therapy,” i.e., “a therapeutic stance that focuses on
+affirming a patient’s gender identity and does not try to ‘repair’ it” (Yarbrough et al., 2017) or
+conversion/other harmful “therapy.” Some who advocate for gender affirming care do not
+even mention alternatives to gender affirmation besides no treatment (Rosenthal, 2021).
+Another frequent claim is that there is expert consensus regarding best practice; as noted
+earlier, there is considerable expert disagreement.
+Often results are quoted from studies which have continued to be frequently cited
+in spite of their errors (such as conclusions not supported by their data3 ) or (often
+unmentioned) serious limitations (see discussion of some examples in Abbruzzese et al.,
+2023; Clayton et al., 2022); another example is the regret review mentioned above.
+The misstatements tend to be in one direction, that is, tending to assert stronger
+likelihood of benefit and lower risk of adverse gender medicine outcomes than the
+
+2
+
+3
+
+Gender dysphoria before puberty was seen in studies to resolve in the majority of cases absent social
+and medical transition (Singh et al., 2021).
+For example, studies inferring a causal relationship from a cross-sectional study, studies only considering
+minority stress as a possible cause for poor treatment outcomes (not also, e.g., the possibility that the
+medical treatment might have itself caused the harm), studies neglecting confounders, and studies with
+insufficient follow up time, follow up percentage, inappropriate measurement instruments and/or study
+inclusion criteria, or other study design flaws.
+
+4
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+evidence supports, while omitting or mischaracterizing less invasive alternative treatment
+options. The erroneous, misleading and unsupported claims have propagated through the
+research literature, and as described below, into medical society guidelines and policies
+(Wikipedia, based upon the research literature, thus has many erroneous, misleading,
+and unsupported statements on this topic as well).
+
+3. Examples of Censored Rebuttals
+Critiques pointing out errors or unsupported statements in medical articles often take the
+form of letters to the editor, which, if accepted (at the editor’s discretion), may appear
+alongside the article, allowing readers to see what is being debated. Critiques can also
+be published on PubPeer, a post publication peer-review website, or in another journal; for
+these, people need to seek critiques of a paper outside of the original journal. Possible
+outcomes of a critique include correction or retraction of the original article. Although
+critiques of statements such as described above are sometimes accepted for publication,
+often they are rejected, leaving the claims unchallenged in the journal and, if the critique
+does not appear elsewhere, in the research literature more generally.
+This section describes several examples of critiques rejected by the original journal.
+The next section considers broader trends in the published corpus and rejections by a
+third-party post-publication peer-review platform.
+The first example is a paper whose conclusions were unsupported by its data and
+analysis: “Pubertal Suppression for Transgender Youth and Risk of Suicidal Ideation,”
+by Turban et al. (2020b), which appeared in Pediatrics, the journal of the American
+Academy of Pediatrics (AAP). From their analysis of an anonymous online survey, the
+authors reported an association between receiving puberty blockers and lower odds of
+lifetime suicidal ideation. They concluded, “This study strengthens recommendations
+by the Endocrine Society and WPATH for [puberty blockers] to be made available for
+transgender adolescents who want it” (Turban et al., 2020b, p. 7); WPATH, the World
+Professional Association for Transgender Health, is a gender specialist organization which
+includes clinicians, patients, and others. However, the findings were based on a question
+known to have “elicited unreliable answers about puberty blockers” (Biggs, 2020), the
+survey was nonrepresentative, and the authors’ inference of possible cause and effect
+might have been reversed, i.e., it might have been that that those with higher lifetime odds
+of suicidal ideation were less likely to be offered puberty blockers (the study was rated
+low quality in a rigorous systematic review [Taylor et al., 2024b]). Pediatrics rejected M.
+Biggs’ comment noting these objections, giving no reason in their letter,4 but his critique
+was compelling enough to later be accepted and published by Archives of Sexual Behavior
+(Biggs, 2020).5 The Turban et al. (2020b) paper continues to be highly cited (416 citations
+according to Google Scholar at the end of February 2025), often for implying that medical
+gender interventions are likely to be beneficial (Endocrine Society, 2020) or that lack of
+them increases suicidal ideation6 or risk (Rapaport, 2020).
+
+4
+5
+
+6
+
+M. Biggs (private communication).
+Surprisingly, the AAP subsequently then did publish M. Biggs’ comment, without informing him (Biggs,
+private communication).
+“Gender-affirming medical interventions improve social and mental health outcomes, such as decreased
+suicidal ideation and improved peer relations that last into adulthood” (Hughes et al., 2021); “Studies
+
+5
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+Another article led by J. Turban in 2020, in JAMA Psychiatry, “Association Between
+Recalled Exposure to Gender Identity Conversion Efforts and Psychological Distress
+and Suicide Attempts Among Transgender Adults“ (Turban et al., 2020a), used the
+same nonrepresentative online survey to assert that recalled lifetime exposure [“gender
+identity conversion efforts,” defined by one survey question7 ] was associated with severe
+psychological distress in the previous month, and higher odds of reported lifetime suicide
+attempts. The authors stated: “These results support policy statements from several
+professional organizations that have discouraged this practice” and two of the authors
+also wrote an op-ed: “It’s time for conversion efforts to be illegal in every state, before
+more people die” (Turban & Keuroghlian, 2019), emphasizing a tie between suicide risk
+and conversion therapy. However, as noted earlier, many who advocate for the US
+gender-affirming model consider any therapy besides affirmation as harmful: the lead
+author J. Turban stated in a later interview:
+There’s no psychiatric intervention for gender dysphoria. There are medical
+interventions for gender dysphoria, if you will. And it’s not the rule like right, how
+the psychiatrist’s going to treat gender dysphoria, they’re not like they’re not going to
+make that go away. [...] The only way that it’s ever been proposed that psychiatry can
+do that was through conversion therapy, which obviously doesn’t work. (Webberly,
+2021).
+A longer version of one rejected response, later published in Archives of Sexual Behavior
+(“One Size Does Not Fit All: In Support of Psychotherapy for Gender Dysphoria”) noted:
+To the best of our knowledge, all of the letters written to the Editor of JAMA Psychiatry,
+many by respected academics and clinicians who outlined the serious problems in
+the study, have been rejected (some of them were later submitted as non-indexed
+comments in the online publication) (D’Angelo et al., 2021).
+Again, psychotherapy is not conversion therapy (D’Angelo, 2025), and again, it has not
+been shown that gender-affirming interventions reduce the risk of suicide or that not
+providing them increases it, either in systematic reviews (Baker et al., 2021; Christensen
+et al., 2025) or in a recent several-decade Finnish national record study (Ruuska et al.,
+2024). Nonetheless the article had 234 citations in late February 2025 in Google Scholar.
+A third example is from the NEJM. “Protecting Transgender Health and Challenging
+Science Denialism in Policy,” by McNamara et al. (2022), was a Perspective summarizing
+legal disagreements about the evidence regarding medical interventions associated with
+gender-affirming care. It claimed that there was “no way” for a randomized controlled
+trial to have clinical equipoise, i.e., uncertainty regarding likely benefit of treatment,
+“since evidence demonstrates mental health benefits, reduced suicidality … associated
+with this care.”8 They also claimed “studies of those who have undergone medical
+
+7
+
+8
+
+also find that transgender youth who receive transition-related care report less suicidal ideation than
+transgender youth who want transition care but do not receive it. Access to transition-related care is not
+just a boon to the health of transgender youth, but also a lifesaving resource” (Barbee et al., 2022).
+“Did any professional (such as a psychologist, counselor, or religious advisor) try to make you identify
+only with your sex assigned at birth (in other words, try to stop you being trans)?” quoted in D’Angelo
+et al. (2021).
+Their claimed loss of equipoise implicitly extended “associated with this care” to imply causality.
+6
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+transition have typically found rates of regret of less than 1%” without noting that these
+studies were unreliable, implied puberty blockers were safe (“Witnesses … claimed that
+puberty blockers cause irreversible bone changes and infertility, despite their established
+safety for the treatment of precocious puberty”), and described “statements that gender
+dysphoria should be treated with psychotherapy alone” as “inflammatory.”
+NEJM rejected my Letter to the Editor pointing out these and other misleading
+or unsupported statements (my submitted letter is in the Appendix A). In response to
+follow-up questions, the editor informed me that Perspectives articles, as opinion pieces,
+are given some license, and expressed very little confidence in the umbrella review I had
+cited, especially as it was not peer reviewed and in disagreement with medical society
+guidelines (discussion about guidelines is below). Ironically, the NEJM Perspective itself
+cited two unpublished white papers on a Yale website (The Yale Integrity Project, n.d.) for
+many of its misleading or unsupported statements. This was prioritization of expert opinion
+over a systematic review, contrary to a basic principle of evidence-based medicine. I had
+cited this particular umbrella review (Brignardello-Petersen & Wiercioch, 2022) because it
+was comprehensive and letters to the editor are only allowed five references. In addition,
+I had reason to believe it was well conducted as it was led by a McMaster professor
+who develops methodology tools as well as using them; McMaster is a world leader in
+developing and applying evidence-based medicine methods. My further appeals did not
+succeed.
+Since my exchange with NEJM, many more systematic reviews and investigations
+have come out (McDeavitt et al., 2025a, Table 3; Department of Health and Human
+Services, 2025, ch. 5); seven were commissioned for the Cass Review final report (Cass,
+2024; Gender Identity Service Series, 2024). Their findings align with the review I had
+quoted. The Cass Review was an extensive independent review of pediatric gender
+medicine commissioned by England’s National Health Services (NHS). In response
+to Dr. Cass’s final report, NHS England immediately committed to implementing its
+recommendations (NHS England, 2024) and the impact of the Review’s findings has
+extended well beyond the United Kingdom. In addition, soon after, ESCAP [European
+Society for Child & Adolescent Psychiatry], with member adolescent and child psychiatry
+societies from over 30 European countries, released a statement regarding “an urgent
+need for safeguarding clinical, scientific, and ethical standards” (Drobnič Radobuljac et al.,
+2024).
+The lead author of the NEJM article also led a critique of the Cass Review
+final report (McNamara et al., 2024), released on the same abovementioned Yale
+Integrity Project website (several Yale Integrity Project articles [The Yale Integrity Project,
+2025] make similar claims regarding gender medicine). This Yale critique had several
+arguments in common with the NEJM article I had critiqued; however, in this case, two
+peer-reviewed rebuttals were published (Cheung et al., 2025; McDeavitt et al., 2025b).
+Thus some corrections or clarification of the points I had challenged finally did appear in
+peer-reviewed journals (but not in NEJM).
+The fourth example is a JAMA Surgery article “Postoperative Regret Among
+Transgender and Gender-Diverse Recipients of Gender-Affirming Surgery,” by Barbee
+et al. (2024). The authors claimed that the regret rate of gender-affirming surgery is
+“profoundly low,” when in reality the regret rate is not credibly measured (Cohn, 2023), and
+there is no reason to expect it is “profoundly low.” Similarly, they made unsubstantiated
+claims that gender-affirming medical interventions are “safe and effective,” with “clear”
+7
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+benefits. My Letter to the Editor, “Efficacy and regret rates are still unknown for
+gender-affirming surgery,” pointed out these statements were unsupported. It was
+accepted.
+I had followed JAMA’s instructions exactly, one and only one affiliation for a Letter to
+the Editor,9 and for disclosures:
+Authors are expected to provide detailed information about all relevant financial
+interests, activities, relationships, and affiliations (other than those affiliations listed
+in the title page of the manuscript) including … [emphasis mine]
+My relevant (and title page) affiliation was the Society for Evidence-Based Gender
+Medicine (SEGM) and I’d accurately said I had nothing to disclose. However, about a
+month after my letter’s acceptance, another editor wrote to me about my signed author
+agreement and I agreed to add a disclosure with detailed information about my affiliated
+institution, SEGM, its aims and my financial and other relationships to it. But then I
+asked for confidentiality before providing other information she wanted (entirely unrelated
+to gender medicine or my letter), asking for a means of contact. Instead of assuring
+me regarding editorial confidentiality, and to my surprise, the editor simply rejected my
+accepted Letter to the Editor. I asked for reasons; some weren’t clarified even when I
+asked, and the others did not seem accurate to me. My appeal failed.
+More importantly, at no time was the accuracy of my letter called into question. It
+had been accepted and pointed out a serious issue to three editors, critically relevant
+for a patient consenting to undergo these surgeries: the claim of a “profoundly low”
+likelihood of regret for life-altering gender surgeries is unsupported and benefit has not
+been established, and yet the JAMA article to which I was responding incorrectly claims
+the opposite. The article remains unchallenged and, having been published in JAMA,
+continues to be taken very seriously.
+When I submitted a modified version of my letter to another journal, it told me the
+content was more appropriate for JAMA. The original letter is in this paper’s appendix.
+
+4. Body of Literature
+Incorrect papers are not new, and one possibility is that NEJM was just not keeping up
+with every possible correction in spite of claims, or perhaps aims, of high accuracy,10 and
+similarly for JAMA. It was possible that the errors I had tried to rebut (e.g., inaccurate
+claims of known benefit and inaccurate claims of known and known to be low regret rate)
+were uncommon.
+On February 20, 2025, NEJM’s search function returned 32 articles to me with
+the words “gender-affirming” in them. Focusing on those appearing since the article
+I critiqued, I did find a set of letters to the editor (Biggs et al., 2023) pointing out
+serious concerns regarding a single study (Chen et al., 2023), an accompanying
+article (de Vries & Hannema, 2023), and the evidence base. De Vries and Hannema
+(2023) claimed: “current information shows that mental health improves with GAH
+
+9
+10
+
+Letter to the Editor. Instructions for Authors. (2025, February 10) JAMA website. link to the article
+“The Journal’s careful editing process often requires extensive revisions and involves detailed checking
+for accuracy.” link to the article.
+8
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+[gender-affirming hormones], whereas withholding treatment may lead to increased
+gender dysphoria and adversely affect psychological functioning.” Several other NEJM
+articles also had erroneous statements similar to the ones my rejected letter had critiqued:
+“Gender-affirming care is a cornerstone of multidisciplinary health support for transgender
+and nonbinary people; it is widely recognized as essential, evidence based, and often
+lifesaving” (Coelho et al., 2025); “These bills often take aim at gender-affirming care,
+ignoring research demonstrating that such care improves mental health outcomes”
+(Guerra et al., 2025); “Surgical affirmation has been shown to significantly improve the
+health and well-being of trans people” (Murphy et al., 2025); and “It is not hyperbole to
+say that lives are at risk in states pursuing these bans on needed care” (Ulrich, 2024).
+Also, although several NEJM articles have covered current issues in gender medicine
+(e.g., regarding various American laws), the only article NEJM seemed to have published
+by February 2025 regarding the Cass Review, 10 months old at that point, was a recent
+Perspective article which was critical of it (Aaron & Konnoth, 2025). The Perspective
+has many unsupported statements in common with the already rebutted Yale critique by
+McNamara et al. (2024); thus many of its inaccurate or unsupported claims had already
+been rebutted by Cheung et al. (2025) three months before it appeared.
+Similarly, my search on PubMed for “JAMA gender-affirming surgery,” also on 20
+February 2025, retrieved 49 articles. I found one instance where uncertainties and
+growing international caution were pointed out, but again in a Letter to the Editor (Hunter,
+2022) not an article itself, in response to a paper inaccurately claiming “access to
+GAC clearly improves health outcomes” (Park et al., 2021). Another article described
+inadequate implementation of patient-reported outcome measures (Kamran et al., 2023),
+and a third made a plea for collecting outcomes to get high quality information (but
+stated without support “clinical trials would not be ethically or technically feasible for
+gender-affirming interventions” [Agochukwu-Mmonu et al., 2022]). Several papers
+claimed established benefit or low regret rates: “There is a growing body of literature
+supporting the positive outcomes of gender-affirming surgery (GAS) on transgender
+and gender diverse individuals” (Marano et al., 2021); “Given the benefits of GAS”
+(Wright et al., 2023); “regret for transition is exceedingly rare [...] Given the established
+benefits of GAS and the rarity of regret” (Wu & Keuroghlian, 2023); “Despite the fact
+that discontinuation of gender-affirming medical or surgical interventions is rare” (Turban
+et al., 2022); “Despite the demonstrated health and well-being benefits associated with
+genital gender-affirming surgery (GAS)” (Stranix & Bluebond-Langner, 2022), “Genital
+gender-affirming surgery (GAS) is safe and offers substantial benefits to patients”
+(Downing et al., 2022); and “Given the profound benefits and the medical necessity of
+gender-affirming care…” (Peters, 2024).
+Thus, JAMA and NEJM have published many articles with unsupported statements
+of likely benefit and expected low regret rate for gender-affirming surgery in particular and
+gender-affirming medical intervention more generally. The issues in the articles I tried
+to correct in these very influential journals were not anomalous. The journals’ interest in
+accuracy was not consistently resulting in corrections and discussion of disagreements in
+the literature. Thus it was a significant step when JAMA published a Viewpoint by Gorin
+et al. (2025a) the day after the January 2025 USC Censorship in the Sciences Conference:
+
+9
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+Interdisciplinary Perspectives11 reporting on many of the concerns and developments in
+the understanding of pediatric gender medicine, including the Cass Review.
+It should be noted that, all along, a few journals have been publishing research (and
+discussion, e.g., Levine et al. (2022); Drescher (2023), Levine et al. (2023)) on this
+topic, such as the Archives of Sexual Behavior, which published the originally rejected
+rebuttals to the two Turban et al. papers described above. However, this journal was itself
+subject to what appeared to be attempted censorship. There was a public effort (Adams
+et al., 2023) by numerous clinicians, including WPATH’s then president M. Bowers and
+WPATH’s current president A. Radix, to get the journal’s editor removed, which failed. (It
+was combined with a successful effort [Bailey, 2024] to make the journal retract a paper
+[Diaz & Bailey, 2023].) That is, clinicians and researchers in the field attempted to remove
+an editor whose journal was publishing critiques that had been rejected elsewhere.
+PubPeer, a post-publication peer review site which links critiques to published
+articles, is another platform where one can try to make corrections. It is designed for
+open discussion of research and received a 2024 award for its work from the Einstein
+Foundation. The citation read:
+“PubPeer is a widely used online platform for post publication review and legitimate
+discussion of published scientific data.
+[...]
+PubPeer allows everyone to post anonymous or signed comments about research
+that has been published in the scientific literature, open a discussion on its content
+and integrity, and point out shortcomings or commend good methodology.”12
+I learned of PubPeer after my NEJM critique was rejected. I submitted my NEJM critique
+to their site with some minor modifications and it was accepted and published two days
+later. In the next month I submitted critiques of three other articles (another rejected NEJM
+critique, and two critiques I wrote especially for PubPeer), which were all also accepted
+and published within a few days of submission. The three other critiqued articles were:
+•
+•
+•
+
+Moving Beyond Psychiatric Gatekeeping for Gender-Affirming Surgery (Wu &
+Keuroghlian, 2023)
+Psychosocial Functioning in Transgender Youth after 2 Years of Hormones (Chen
+et al., 2023)
+Regret after Gender Affirming Surgery – A Multidisciplinary Approach to a
+Multifaceted Patient Experience (Jedrzejewski et al., 2023)
+
+However, a month after my first critique was accepted and published on the site, all four
+critiques were removed within a five-minute period and then listed on the site as rejected.
+I wrote to PubPeer, asking why they had been removed – they had already been accepted
+and published, and as far as I know I met all their requirements (PubPeer FAQ, n.d.). I
+received no reply. I subsequently asked what I needed to change in order to get them
+
+11
+12
+
+See link to the article.
+PubPeer-Einstein Foundation Institutional Award 2024 (2024). link to the article.
+10
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+published, and received no answer. I sent several emails, and also used their online
+contact form. In addition, I emailed one of the people who had started PubPeer. I have
+not received any reply to any of these queries.
+Thus, in my experience, all three medical information sources have blocked
+corrections to (frequent) important errors and unsupported statements in (their, for JAMA
+and NEJM) articles about gender medicine.
+
+5. Closed Loop between Journals and Medical Societies
+In the censorship of journal articles, medical societies appear to play a key role.
+Medical societies run several of the relevant journals, and also produce guidelines and
+recommendations which are both quoted by research articles and relied upon by many
+clinicians, patients and their families, and policy makers. Articles making incorrect or
+unsupported claims about gender dysphoria or its treatment often rely upon other such
+articles or upon medical society recommendations or statements, rather than systematic
+reviews (that is, they prioritize expert opinion – “eminence” based medicine – rather than
+“evidence” based medicine). As described above, it appears the NEJM editor did this with
+my rejected letter.
+Normally, medical society guidelines would not be in conflict with an expert systematic
+review, because trustworthy medical society guidelines are based upon systematic
+reviews of the evidence (Lima et al., 2023; Steinberg et al., 2011) and link the strength of
+the recommendations to the strength of the evidence (Block, 2023; Brignardello-Petersen
+et al., 2021). However, guideline reviews and investigations have found significant
+shortcomings in key gender medicine guidelines and policies (Block, 2023; Dahlen et al.,
+2021, 2022; Taylor et al., 2024a). For instance, the AAP policy statement (Rafferty
+et al., 2018) recommending US “gender affirming care” is not based on systematic
+reviews; rather, its cited references “repeatedly said the very opposite of what AAP
+attributed to them” (Cantor, 2020), among other issues (McDeavitt, 2025). The Endocrine
+Society guidelines (Hembree et al., 2017) make strong recommendations based upon
+evidence they themselves report to be low or very low certainty (i.e., with limited to
+very little confidence for accurately estimating outcomes), without providing justification
+(Block, 2023). Instead of being based upon systematic reviews, WPATH interfered
+with the systematic reviews it had commissioned, inaccurately claimed a systematic
+review for their adolescent recommendations was not possible (Coleman et al., 2022;
+several already existed [Brignardello-Petersen & Wiercioch, 2022]), and then, after
+publication, dropped all but one minimum age recommendation (for phalloplasty) for
+medical interventions, under pressure from the US Biden Administration and the AAP
+(Block, 2024a; Department of Health and Human Services, 2025, ch. 10; Ghorayshi,
+2024a; “Research into Trans Medicine Has Been Manipulated”, 2024).
+In fact, a recent rigorous pediatric gender medicine guideline review traced how
+most societies’ recommendations rely upon earlier Endocrine Society and WPATH
+recommendations, which were themselves interdependent, rather than following
+standards for international guideline development. They note this “may explain why there
+has until recently been an apparent consensus on key areas of practice for which evidence
+remains lacking” (Taylor et al., 2024a, p. S71). It concludes “Healthcare services and
+professionals should take into account the poor quality and interrelated nature of published
+guidance” (Taylor et al., 2024a, p. S65).
+
+11
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+In the US, the Biden administration’s Health and Human Services (HHS) statement
+advocating for gender affirming care for young people (U.S. Health and Human Services,
+2022) directed readers to the abovementioned AAP, Endocrine Society, and WPATH
+recommendations. HHS claimed medical interventions “improve[s] … mental health and
+overall well-being” and that gender-affirming care is “demonstrated to yield lower rates
+of adverse mental health outcomes, build self-esteem, and improve overall quality of life”
+(one reference cited in support did not “demonstrate” rather saying “emerging research
+suggests [benefits]” [Wagner et al., 2019] the other two cannot establish causality [Green
+et al., 2022; Hughto et al., 2020]). The Editor-in-Chief of the British Medical Journal
+summarized the situation in 2023: “Much of this clinical practice [in the United States]
+is supported by guidance from medical societies and associations, but closer inspection
+of that guidance finds that the strength of clinical recommendations is not in line with the
+strength of the evidence” (Abbasi, 2023).
+Statements from medical societies outside of guidelines also carry weight, and
+include unsupported claims such as there being a “comprehensive body of …
+research supporting the positive impact” of gender interventions (American Psychological
+Association, 2024), that “Youth who are able to access gender-affirming care [...]
+experience significantly improved mental health outcomes” (Endocrine Society, 2020),
+and that “Gender-affirming care is medically-necessary, evidence-based care that
+improves … physical and mental health” (American Medical Association, 2021).
+When the comprehensive Cass Review final report of pediatric gender medicine,
+based upon numerous rigorous systematic reviews finding otherwise, was released, there
+was minimal response from many prominent US medical societies (Block, 2024b). A
+comparison was voiced by Dr. Cass, who said she “respectfully [disagreed] with [the
+AAP] on holding on to a position that is now demonstrated to be out of date by multiple
+systematic reviews” (Ghorayshi, 2024b). The subsequent HHS report (Department of
+Health and Human Services, 2025) got a more explicit response. Although the HHS
+report was based upon rigorous evidence review, the AAP nonetheless characterized
+it as “[prioritizing] opinions over dispassionate reviews of evidence” (Kressley, 2025),
+while WPATH inaccurately responded that “studies consistently show its [gender-affirming
+care’s] positive impact, including improved mental health and overall quality of life”
+(WPATH & USPATH, 2025), and the Endocrine Society inaccurately said “Medical studies
+show that access to this care improves the well-being of transgender and nonbinary
+people” (Christensen, 2025).
+It appears a closed loop has formed. The journals seem to be relying upon society
+guidelines and recommendations to evaluate submitted articles rather than objectively
+examining the merit of the articles themselves. In turn, the society guidelines and societies
+appear to mostly be relying upon each other’s statements (Taylor et al., 2024a) and
+upon (sometimes unreliable) select articles from the journals, rather than systematic
+reviews of the evidence (or, in the case of the Endocrine Society, are making strong
+recommendations based on low and very low certainty evidence). In the absence of
+evidence-based criticism (such as letters to the editor) and ensuing debate to ensure
+accuracy, many errors or unsupported or misleading statements in the literature remain
+uncorrected and continue to be repeated. Published articles in this field are undependable
+and the credibility and basis for authority of the journals and the body of literature more
+generally has been undermined.
+
+12
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+6. Medical Impacts
+It is not only an academic problem that this body of research literature has become
+permeated by erroneous articles. It is also medically dangerous. In medicine, ethical
+informed consent means a person understands the benefits, risks, and alternatives
+(including “doing nothing”) before consenting to undergo treatment (Levine et al., 2022).
+However, in the examples here, the incorrect statements regarding medical gender
+interventions frequently minimize the (unknown) likelihood of serious risk and overstate
+the (unknown) likelihood of benefit, as well as omitting mention of less risky and often
+viable alternatives (or disparaging them, e.g., the claims or implication that psychotherapy
+is harmful or never useful). Harm can extend well beyond the unreliability of the research
+literature, for instance, when an authoritative research article incorrectly tells patients and
+doctors that the regret rate for a serious irreversible procedure is known and less than 1%
+(or rare).
+As mentioned in the introduction, the US affirmative model emphasizes puberty
+blockers, hormones and surgeries. Given the uncertainty as to whether these physical
+modifications of healthy bodies (including removal of healthy organs) are even beneficial
+for the condition they aim to treat, it would best serve these vulnerable patients for there
+to be intense scrutiny of the evidence, and rigorous debate to better understand the best
+way to support each individual. In particular, it would benefit patients and clinicians and
+others to have accurate information about what is and isn’t known about risks, benefits
+and alternatives.
+In response to the improved understanding of the limitations of the evidence,
+repeatedly reported by systematic reviews and synthesized for the case of pediatric
+medicine in the Cass Review 2024 final report (and more recently the HHS 2025 report
+[Department of Health and Human Services, 2025]), many governing and professional
+bodies internationally are turning away from the US affirmative model and towards offering
+psychotherapy as the first intervention (Block, 2023; Drobnič Radobuljac et al., 2024;
+French National Academy of Medicine, 2022; Ghorayshi, 2024c; Hansen et al., 2023).
+It has also been observed (Baxendale, 2025) that those who advocate for
+gender-affirming care for minors (such as the US affirmative model) are tending to rely
+upon expert opinion (the least reliable form of evidence) while those calling for caution
+and prioritizing psychotherapy are relying upon systematic reviews of the evidence (the
+most reliable). Again, many current guidelines are consensus, i.e., expert opinion, based.
+As Baxendale discusses, expert opinion is much more susceptible to cognitive biases
+and group dynamics, and prioritizing it has lain behind many harmful past practices. In
+“The Gender Affirmative Treatment Model for Youth with Gender Dysphoria: A Medical
+Advance or Dangerous Medicine?” Clayton (2022) makes comparisons between gender
+medicine and past medical treatments which have eventually turned out to be harmful.
+She notes that, for instance, “many of the criticisms made about the inadequate evidence
+base of discredited historical treatments can be leveled against chest surgery for GD
+youth.” As Dr. Cass noted to young patients in her final report: “Firstly, you must have the
+same standards of care as everyone else in the NHS, and that means basing treatments
+on good evidence” (Cass, 2024, p. 14).
+
+13
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+7. Conclusions
+To summarize and conclude, misinformation currently plagues the gender medicine
+literature, in spite of attempts such as those described here to correct inaccuracies,
+misrepresentations, unsupported statements, and/or analysis errors. Several influential
+US medical societies and journals appear to be in lockstep, insufficiently implementing
+best practices designed to ensure accuracy and trustworthiness (examples described
+herein included societies not basing recommendations upon systematic reviews of the
+evidence and/or not tying the strength of recommendations to strength of the evidence,
+and journals blocking debate).
+The standards to which journals are believed to adhere is the foundation of their
+impact, their authority and their value. Corrections of errors in the research literature
+are expected, rather, assumed, by readers of professional journals. The accompanying
+debate is widely recognized as essential. To quote a recent article co-authored by many
+of JAMA’s editors:
+The free exchange of ideas is essential to scientific progress, just as it is integral to
+the founding ideals of the US. The integrity of the scientific process does not depend
+on blind trust in science or on an assumption that a scientific finding is always right.
+Rather, this integrity hinges on the confidence that the free exchange of scientific
+ideas grounded in rigorously conducted scientific inquiry, including the discussion,
+debate, and disagreement that results in further inquiry, ultimately leads to insights
+that are likely to be true. (Bibbins-Domingo et al., 2025).
+Efforts by myself and others in support of these aims have been stymied for several
+years.13 It is critically important that JAMA and other journals uphold these principles
+in their editorial processes and decisions in the field of gender medicine. Improvement
+of the body of literature in this field is urgently needed. The January 2025 JAMA article
+(Gorin et al., 2025a) mentioning the Cass Review was a notable step in the right direction,
+as was the more recent publication of debate between the article’s authors and critics
+(Gorin et al., 2025b; Streed & Baker, 2025). The research literature (and medical care)
+in this field would benefit greatly if more “free exchange of scientific ideas grounded in
+rigorously conducted scientific inquiry” regarding the (“remarkably weak” [Cass, 2024, p.
+13] for pediatric, low/very low certainty more generally) gender medicine evidence base
+appeared in the pages of US medical society journals and elsewhere.
+Funding: This research received no external funding.
+Acknowledgments: I thank the reviewer, several researchers, clinicians and other readers
+for their criticisms and suggestions regarding these proceedings and am grateful to the USC
+2025 Censorship in Science conference organizers (and participants) for an incredibly interesting
+conference.
+Conflicts of Interest: The author declares no conflict of interest.
+
+13
+
+I only gave two examples, where an editor stated reasons for rejection of a critique directly to me; I have
+also attempted to correct several other articles where I only received a form letter rejection, and am aware
+of several others’ unsuccessful attempts as well.
+14
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+Appendix A. Submitted Letters to the Editors of NEJM and JAMA
+NEJM Letter to the Editor (rejected)
+McNamara, Lepore and Alstott1 (MLA) incorrectly assert critics of puberty blockers,
+hormones (often taken for life), and surgeries: “claim that gender-affirming care is
+“experimental” because the field is actively growing.” However:
+The evidence does not currently “demonstrate” benefit. The low/very low certainty
+evidence of benefit, found by an expert evidence review synthesis2 (incorrectly described
+by MLA, included reviews certainly evaluate studies before 2020), seems likely to remain
+until there are, e.g., well-conducted comparative observational studies or very large
+representative case series.2 (MLA’s focus on RCTs is a straw man.)
+These uncertain benefits are accompanied by significant risk. MLA say infertility risk
+concern is unsupported, because fertility isn’t always destroyed, then counsel offering
+fertility preservation!
+Cardiovascular and bone harm are also documented.3
+MLA inaccurately claim small regret, quoting studies with large loss to follow-up,
+premature outcomes, inappropriate regret proxies or non-representative samples.4
+Regret rates are unknown.
+Although it is now prioritized in progressive Sweden, Finland and the UK,5 MLA
+denounce psychotherapy as inflammatory, and insinuate an erroneous analogy with the
+pathologization of homosexuality.
+MLA needs correction.
+1 (McNamara et al., 2022).
+2 (Brignardello-Petersen & Wiercioch, 2022).
+3 (Levine et al., 2022).
+4 (Expósito-Campos & D’Angelo, 2021).
+5 (Block, 2022).
+JAMA Letter to the Editor (accepted and then rejected, see main body)
+Efficacy and regret rates are still unknown for gender-affirming surgery
+Dear Editor,
+The recent JAMA Surgery Viewpoint, “Postoperative Regret Among Transgender and
+Gender-Diverse Recipients of Gender-Affirming Surgery”1 appears to need modification
+in order to be accurate.
+For example, current evidence does not support the authors’ description of
+gender-affirming care (GAC) as “a safe and effective form of health care that allows TGD
+individuals to align their bodies with their own internal sense of self.”
+Their cited reference 2 does not appear to have commissioned the requisite systematic
+reviews to rigorously evaluate the effectiveness of surgery. However, a thorough 2016
+US government review found “there is not enough evidence to determine whether gender
+reassignment surgery improves health outcomes for Medicare beneficiaries with gender
+dysphoria,”2 and a recent long term record search, once corrected, found no benefit to
+having had surgery in any of its outcome measures.3 Another study reported “In our study,
+the level of life satisfaction in transgender people was not increased in transgender who
+had undergone gender-affirming surgery as compared to those who were unoperated.”4
+Systematic reviews of the evidence are needed to make reliable statements, for each type
+of surgery.
+15
+
+Journal of Controversial Ideas 2025, 5(2), 3; 10.63466/jci05020003
+
+For regret, the authors note how “technically similar” procedures are “vastly different
+regarding patients’ motive for seeking the procedure.”1 Their point is crucial when looking
+at regret rates, or identifying which/how many patients would have undergone the
+procedure knowing what they do now.
+The regret rate is currently unknown.5 Even though the authors state “evidence suggests
+that less than 1% of TGD individuals who receive GAS report surgical regret,” their source
+(their reference 3) has not held up under scrutiny; see Cohn (2023)5 and references
+therein. Limitations of the included studies include premature and/or insufficiently
+complete follow-up, inadequate measurement instruments and/or non-representative
+sample selection. (Observed regret times are poorly measured and range from
+3–10 years on average, depending upon study population, intervention, etc.5 ) These
+shortcomings appear to undermine the reliability of regret studies more generally; for
+instance, their reference 10 appears to have only included as regretters those who
+volunteered this information, rather than following up their patients. The quoted 1% regret
+rate is thus wholly unreliable.
+As quoted “low” or “profoundly low” surgical regret rates are not reliable, and surgical
+benefit has not been established, telling patients otherwise may compromise informed
+consent and the decision making process, undermining both and leading to harm.
+[Note added for these proceedings: The evidence of benefit for gender surgeries has now
+been found to be very low (for most outcomes) or low certainty in at least 3 systematic
+reviews (Dopp et al., 2025; Georgas et al., 2018; Miroshnychenko et al., 2025a), and a
+recent register study found a higher incidence of depression, anxiety, suicidal ideation,
+and substance abuse amongst those with a previous gender dysphoria diagnosis who
+receive these surgeries, compared to those with no surgery (Kulatunga-Moruzi et al.,
+2025).]
+1 (Barbee et al., 2024).
+2 (Gender Dysphoria and Gender Reassignment Surgery, 2016).
+3 (Correction to Bränström and Pachankis, 2020).
+4 (Grupp et al., 2023).
+5 (Cohn, 2023).
